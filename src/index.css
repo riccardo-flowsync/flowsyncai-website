@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-text font-sans selection:bg-accent/30 selection:text-text;
+    background: linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 100%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Liquid Glass Elements with subtle purple tint */
+  .glass-panel {
+    @apply bg-surface/60 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+  
+  .glass-purple {
+    @apply bg-[#1a1428]/60 backdrop-blur-xl border border-accent/20 shadow-[0_0_30px_rgba(157,124,255,0.1)];
+  }
+
+  /* Typography utilities */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-text via-text to-text/60;
+  }
+
+  .text-gradient-accent {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-[#d0bfff];
+  }
+
+  /* Micro-interactions */
+  .btn-magnetic {
+    @apply relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.03] active:scale-95;
+  }
+  
+  .btn-magnetic::before {
+    content: '';
+    @apply absolute inset-0 bg-white/0 transition-colors duration-300 z-[-1];
+  }
+  
+  .btn-magnetic:hover::before {
+    @apply bg-white/10;
+  }
+}
