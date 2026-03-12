@@ -85,40 +85,46 @@ const Hero = () => {
   }, []);
 
   return (
-    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-end pb-20 md:pb-28 px-6 md:px-16 lg:px-24">
+    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center md:justify-end pb-12 md:pb-28 px-6 md:px-16 lg:px-24 pt-32 md:pt-0">
       
+      {/* Background radial glow specifically for mobile */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] aspect-square bg-accent/10 blur-[120px] rounded-full sm:hidden pointer-events-none" />
+
       {/* Content Container - Split Layout on Desktop */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-end justify-between gap-12 lg:gap-8">
+      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-end justify-between gap-10 md:gap-12 lg:gap-8">
         
         {/* Left Side text */}
-        <div className="flex flex-col items-start text-left w-full lg:w-[65%] xl:w-[75%] z-20">
-          <h1 className="mb-6 md:mb-8 w-full leading-[1.1]">
-            <span className="hero-anim opacity-0 translate-y-8 font-heading font-bold text-3xl md:text-5xl lg:text-[3.25rem] text-text/90 tracking-tight uppercase inline-block mr-3 md:mr-5">
+        <div className="flex flex-col items-center md:items-start text-center md:text-left w-full lg:w-[65%] xl:w-[75%] z-20">
+          <h1 className="mb-6 md:mb-8 w-full leading-[1.15] md:leading-[1.1]">
+            <span className="hero-anim opacity-0 translate-y-8 font-heading font-bold text-[clamp(1.75rem,5vw,3.25rem)] text-text/90 tracking-tight uppercase inline-block md:mr-5">
               Operational scaling beyond
             </span>
-            <span className="hero-drama-text font-drama italic text-5xl md:text-7xl lg:text-[7rem] text-accent tracking-tighter inline-block relative translate-y-1 md:translate-y-2" style={{ filter: 'blur(8px)', opacity: 0 }}>
+            <br className="sm:hidden" />
+            <span className="hero-drama-text font-drama italic text-[clamp(3.5rem,15vw,7.5rem)] text-accent tracking-tighter inline-block relative translate-y-1 md:translate-y-2" style={{ filter: 'blur(8px)', opacity: 0 }}>
               Human limits.
             </span>
           </h1>
           
-          <p className="hero-anim opacity-0 translate-y-8 font-sans text-lg md:text-xl text-text/70 max-w-2xl mb-10 md:mb-12 leading-relaxed">
+          <p className="hero-anim opacity-0 translate-y-8 font-sans text-base md:text-xl text-text/70 max-w-2xl mb-10 md:mb-12 leading-relaxed px-4 md:px-0">
             The definitive AI operations partner for B2B companies that want to scale without adding headcount.
           </p>
           
-          <div className="hero-anim opacity-0 translate-y-8 flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full sm:w-auto">
-            <a href="#waitlist" className="bg-accent text-[#0a0a0b] font-sans font-bold text-base px-8 py-4 rounded-full btn-magnetic whitespace-nowrap shadow-[0_0_20px_rgba(157,124,255,0.3)] hover:shadow-[0_0_30px_rgba(157,124,255,0.5)] transition-shadow">
+          <div className="hero-anim opacity-0 translate-y-8 flex flex-col sm:flex-row items-center md:items-start gap-6 w-full sm:w-auto">
+            <a href="#waitlist" className="bg-accent text-[#0a0a0b] font-sans font-bold text-base px-10 py-4 rounded-full btn-magnetic whitespace-nowrap shadow-[0_0_20px_rgba(157,124,255,0.3)] hover:shadow-[0_0_30px_rgba(157,124,255,0.5)] transition-shadow">
               Join the Waitlist
             </a>
             <div className="flex items-center px-2 py-2 opacity-60">
               <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse mr-3 shadow-[0_0_8px_rgba(157,124,255,1)]" />
-              <span className="font-mono text-[0.65rem] sm:text-xs uppercase tracking-wider text-text/80">We're selective about who we work with.</span>
+              <span className="font-mono text-[0.65rem] sm:text-xs uppercase tracking-wider text-text/80 text-center sm:text-left">We're selective about who we work with.</span>
             </div>
           </div>
         </div>
 
         {/* Right Side - Custom GSAP Animation */}
-        <div className="w-full lg:w-[35%] xl:w-[30%] flex justify-center lg:justify-end lg:mb-12 xl:mb-16">
-          <HeroGraphic />
+        <div className="w-full lg:w-[35%] xl:w-[30%] flex justify-center lg:justify-end lg:mb-12 xl:mb-16 mt-4 md:mt-0">
+          <div className="w-full max-w-[320px] md:max-w-[500px]">
+            <HeroGraphic />
+          </div>
         </div>
       </div>
     </section>

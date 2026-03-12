@@ -163,40 +163,40 @@ const Protocol = () => {
   }, []);
 
   return (
-    <section ref={containerRef} id="protocol" className="relative w-full bg-background pt-32 pb-32">
-      <div className="text-center w-full relative z-10 px-6 mb-12">
-        <span className="font-mono text-xs text-accent uppercase tracking-[0.2em] mb-4 block">Methodology</span>
-        <h2 className="font-heading font-bold text-3xl md:text-5xl text-text">
+    <section ref={containerRef} id="protocol" className="relative w-full bg-background pt-20 md:pt-32 pb-20 md:pb-32">
+      <div className="text-center w-full relative z-10 px-6 mb-8 md:mb-12">
+        <span className="font-mono text-[10px] md:text-xs text-accent uppercase tracking-[0.2em] mb-4 block">Methodology</span>
+        <h2 className="font-heading font-bold text-2xl md:text-5xl text-text">
           Operations Protocol
         </h2>
       </div>
 
-      <div className="relative w-full max-w-6xl mx-auto">
+      <div className="relative w-full max-w-6xl mx-auto px-4 md:px-0">
         {steps.map((step, i) => (
           <div 
             key={i}
             ref={el => cardsRef.current[i] = el}
-            className="w-full h-[100vh] lg:h-[85vh] flex flex-col items-center justify-center p-6 md:p-8 sticky top-0"
+            className="w-full h-[90dvh] md:h-[100vh] lg:h-[85vh] flex flex-col items-center justify-center py-4 md:p-8 sticky top-0 md:top-4"
             style={{ zIndex: i + 1 }}
           >
-            <div className="card-inner w-full h-[80vh] lg:h-[70vh] rounded-[3rem] glass-panel bg-[#0b0b0e] overflow-hidden flex flex-col md:flex-row shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-white/5 mx-auto">
+            <div className="card-inner w-full h-full md:h-[80vh] lg:h-[70vh] rounded-[2rem] md:rounded-[3rem] glass-panel bg-[#0b0b0e] overflow-hidden flex flex-col md:flex-row shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-white/5 mx-auto">
               
-              <div className="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center h-1/2 md:h-full relative z-10">
-                <span className="text-anim font-mono text-xs text-accent mb-6 bg-accent/5 border border-accent/20 px-3 py-1.5 rounded w-fit uppercase tracking-widest">
+              <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center h-1/2 md:h-full relative z-10 text-center md:text-left items-center md:items-start">
+                <span className="text-anim font-mono text-[10px] md:text-xs text-accent mb-4 md:mb-6 bg-accent/5 border border-accent/20 px-3 py-1.5 rounded w-fit uppercase tracking-widest">
                   PHASE {step.num}
                 </span>
-                <h3 className="text-anim font-heading font-bold text-3xl md:text-4xl text-text mb-6 leading-tight">
+                <h3 className="text-anim font-heading font-bold text-2xl md:text-4xl text-text mb-4 md:mb-6 leading-tight">
                   {step.title}
                 </h3>
-                <p className="text-anim font-sans text-base md:text-lg text-text/60 leading-relaxed max-w-md">
+                <p className="text-anim font-sans text-sm md:text-lg text-text/60 leading-relaxed max-w-md">
                   {step.desc}
                 </p>
               </div>
               
-              <div className="w-full md:w-1/2 h-1/2 md:h-full bg-[#050505] border-t md:border-t-0 md:border-l border-white/5 flex items-center justify-center p-8 md:p-16 relative overflow-hidden">
+              <div className="w-full md:w-1/2 h-1/2 md:h-full bg-[#050505] border-t md:border-t-0 md:border-l border-white/5 flex items-center justify-center p-6 md:p-16 relative overflow-hidden">
                  {/* Decorative background glow */}
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-accent/5 blur-[80px] rounded-full pointer-events-none" />
-                 <div className="w-48 h-48 md:w-72 md:h-72 relative z-10 flex items-center justify-center">
+                 <div className="w-40 h-40 md:w-72 md:h-72 relative z-10 flex items-center justify-center">
                     {step.graphic}
                  </div>
               </div>

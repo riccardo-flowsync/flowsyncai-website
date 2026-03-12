@@ -206,7 +206,7 @@ const Features = () => {
       gsap.from(".feature-card", {
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 80%",
+          start: "top 85%",
         },
         y: 20,
         opacity: 0,
@@ -219,21 +219,21 @@ const Features = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} id="features" className="w-full py-32 px-6 md:px-16 lg:px-24 bg-background relative z-20">
+    <section ref={sectionRef} id="features" className="w-full py-20 md:py-32 px-6 md:px-16 lg:px-24 bg-background relative z-20">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-20 text-center flex flex-col items-center">
-          <span className="font-mono text-xs text-accent uppercase tracking-[0.2em] mb-4 block">Functional Artifacts</span>
-          <h2 className="font-heading font-bold text-3xl md:text-5xl text-text overflow-hidden">
+        <div className="mb-12 md:mb-20 text-center flex flex-col items-center">
+          <span className="font-mono text-[10px] md:text-xs text-accent uppercase tracking-[0.2em] mb-4 block">Functional Artifacts</span>
+          <h2 className="font-heading font-bold text-2xl md:text-5xl text-text overflow-hidden">
             <span className="block">Why FlowSync AI Solutions</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           
           {/* Card 1 */}
-          <div className="feature-card glass-panel rounded-[2rem] p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
+          <div className="feature-card glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
             <h3 className="font-heading font-semibold text-xl text-text mb-3">Systems, Not Campaigns</h3>
-            <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-12">
+            <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-10 md:mb-12">
               Bespoke infrastructure that runs daily without manual effort. No retainers needing babysitting.
             </p>
             <div className="mt-auto">
@@ -242,9 +242,9 @@ const Features = () => {
           </div>
 
           {/* Card 2 */}
-          <div className="feature-card glass-panel rounded-[2rem] p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
+          <div className="feature-card glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
             <h3 className="font-heading font-semibold text-xl text-text mb-3">Execution, Not Answers</h3>
-            <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-12">
+            <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-10 md:mb-12">
               Agents push data, book meetings, score leads, and resolve tickets. Action beats conversation.
             </p>
             <div className="mt-auto">
@@ -253,9 +253,9 @@ const Features = () => {
           </div>
 
           {/* Card 3 */}
-          <div className="feature-card glass-panel rounded-[2rem] p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
+          <div className="feature-card glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
             <h3 className="font-heading font-semibold text-xl text-text mb-3">Full-Stack Capability</h3>
-            <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-12">
+            <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-10 md:mb-12">
               One partner across sales, hiring, marketing, and support routing. No fragmented vendors.
             </p>
             <div className="mt-auto">
