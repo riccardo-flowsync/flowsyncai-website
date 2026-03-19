@@ -6,60 +6,80 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const ShufflerCard = () => {
-  const [cards, setCards] = useState([
+  const cards = [
     { id: 1, title: 'Data Pipeline', color: 'from-accent/20 to-transparent' },
     { id: 2, title: 'Automation Engine', color: 'from-purple-500/20 to-transparent' },
     { id: 3, title: 'Operations Hub', color: 'from-indigo-500/20 to-transparent' }
-  ]);
+  ];
+
+  const orderRef = useRef([0, 1, 2]);
+  const cardRefs = useRef([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCards(prev => {
-        const newCards = [...prev];
-        const last = newCards.pop();
-        newCards.unshift(last);
-        return newCards;
-      });
-    }, 3000);
-    return () => clearInterval(interval);
+    let ctx = gsap.context(() => {
+      const updatePositions = () => {
+        orderRef.current.forEach((visualIndex, i) => {
+          const el = cardRefs.current[i];
+          if (!el) return;
+          const isTop = visualIndex === 0;
+          
+          gsap.to(el, {
+            y: visualIndex * 20,
+            scale: 1 - visualIndex * 0.1,
+            opacity: 1 - visualIndex * 0.3,
+            zIndex: 3 - visualIndex,
+            duration: 0.8,
+            ease: "back.out(1.2)"
+          });
+          
+          const dot = el.querySelector('.status-dot');
+          const text = el.querySelector('.status-text');
+          const icon = el.querySelector('.status-icon');
+          
+          if (isTop) {
+            if (dot) dot.className = "status-dot w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(157,124,255,1)]";
+            if (text) text.className = "status-text font-mono text-sm text-text";
+            if (icon) icon.style.opacity = 0.8;
+          } else {
+            if (dot) dot.className = "status-dot w-2 h-2 rounded-full bg-white/20";
+            if (text) text.className = "status-text font-mono text-sm text-text/50";
+            if (icon) icon.style.opacity = 0;
+          }
+        });
+      };
+      
+      updatePositions();
+      const interval = setInterval(() => {
+        orderRef.current = [orderRef.current[2], orderRef.current[0], orderRef.current[1]];
+        updatePositions();
+      }, 3000);
+      return () => clearInterval(interval);
+    });
+    return () => ctx.revert();
   }, []);
 
   return (
     <div className="relative w-full h-48 flex items-center justify-center -mt-4">
-      {cards.map((card, i) => {
-        const isTop = i === 0;
-        const scale = 1 - i * 0.1;
-        const translateY = i * 20;
-        const opacity = 1 - i * 0.3;
-        const zIndex = 3 - i;
-
-        return (
-          <div
-            key={card.id}
-            className={`absolute w-11/12 md:w-[90%] h-24 rounded-2xl border border-white/10 glass-panel flex items-center px-6 transition-all bg-gradient-to-r ${card.color}`}
-            style={{
-              transform: `translateY(${translateY}px) scale(${scale})`,
-              opacity,
-              zIndex,
-              transitionDuration: '800ms',
-              transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-            }}
-          >
-            <div className="flex items-center space-x-4 w-full">
-              <div className={`w-2 h-2 rounded-full ${isTop ? 'bg-accent shadow-[0_0_8px_rgba(157,124,255,1)]' : 'bg-white/20'}`} />
-              <span className={`font-mono text-sm ${isTop ? 'text-text' : 'text-text/50'}`}>{card.title}</span>
-              {isTop && <Activity className="w-4 h-4 ml-auto text-accent opacity-80" />}
-            </div>
+      {cards.map((card, i) => (
+        <div
+          key={card.id}
+          ref={el => cardRefs.current[i] = el}
+          className={`absolute w-11/12 md:w-[90%] h-24 rounded-2xl border border-white/10 glass-panel flex items-center px-6 transition-colors bg-gradient-to-r ${card.color}`}
+          style={{ opacity: 0 }} // Start hidden, GSAP will handle showing
+        >
+          <div className="flex items-center space-x-4 w-full">
+            <div className={`status-dot w-2 h-2 rounded-full bg-white/20`} />
+            <span className={`status-text font-mono text-sm text-text/50`}>{card.title}</span>
+            <Activity className="status-icon w-4 h-4 ml-auto text-accent opacity-0 transition-opacity duration-300" />
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 };
 
 const TypewriterCard = () => {
-  const [text, setText] = useState('');
-  const [messageIndex, setMessageIndex] = useState(0);
+  const textRef = useRef(null);
   
   const messages = [
     "Executing meeting book action...",
@@ -69,16 +89,17 @@ const TypewriterCard = () => {
   ];
 
   useEffect(() => {
-    let currentText = '';
+    let msgIndex = 0;
     let charIndex = 0;
-    const targetMessage = messages[messageIndex];
     let isDeleting = false;
     let timeoutId;
 
     const type = () => {
+      if (!textRef.current) return;
+      const targetMessage = messages[msgIndex];
+      
       if (!isDeleting && charIndex <= targetMessage.length) {
-        currentText = targetMessage.substring(0, charIndex);
-        setText(currentText);
+        textRef.current.textContent = targetMessage.substring(0, charIndex);
         charIndex++;
         timeoutId = setTimeout(type, Math.random() * 50 + 30);
       } else if (!isDeleting && charIndex > targetMessage.length) {
@@ -86,19 +107,18 @@ const TypewriterCard = () => {
         timeoutId = setTimeout(type, 1500);
       } else if (isDeleting && charIndex > 0) {
         charIndex--;
-        currentText = targetMessage.substring(0, charIndex);
-        setText(currentText);
+        textRef.current.textContent = targetMessage.substring(0, charIndex);
         timeoutId = setTimeout(type, 20);
       } else {
         isDeleting = false;
-        setMessageIndex((prev) => (prev + 1) % messages.length);
+        msgIndex = (msgIndex + 1) % messages.length;
+        timeoutId = setTimeout(type, 500);
       }
     };
 
     timeoutId = setTimeout(type, 500);
     return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line
-  }, [messageIndex]);
+  }, []);
 
   return (
     <div className="w-full h-48 bg-[#0a0a0b] border border-white/5 rounded-2xl flex flex-col p-4 relative overflow-hidden group">
@@ -111,7 +131,7 @@ const TypewriterCard = () => {
       </div>
       <div className="flex-1 font-mono text-sm text-text/80 relative z-10">
         <span className="text-accent/80 mr-2 text-xs">»</span>
-        <span>{text}</span>
+        <span ref={textRef}></span>
         <span className="inline-block w-2.5 h-4 bg-accent align-middle ml-1 animate-[pulse_1s_step-end_infinite]" />
       </div>
       

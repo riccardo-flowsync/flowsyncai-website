@@ -19,24 +19,47 @@ const splitTextToSpans = (text, isBold = false, isAccent = false) => {
 const Philosophy = () => {
   const containerRef = useRef(null);
   const textContainerRef = useRef(null);
+  const titleRef = useRef(null);
+  const glowRef = useRef(null);
 
   useEffect(() => {
     let ctx = gsap.context(() => {
-      // Find all the newly created spans
       const words = gsap.utils.toArray('.reveal-word');
 
-      // The Scrubbing scroll animation
       gsap.to(words, {
         scrollTrigger: {
           trigger: textContainerRef.current,
-          start: "top 80%", // Starts revealing exactly when the block enters the bottom 20% of the screen
-          end: "bottom 50%",   // Finishes revealing when the BOTTOM of the block hits the middle of the screen
-          scrub: true,      // Bind directly to the scrollbar
+          start: "top 80%",
+          end: "bottom 50%",
+          scrub: true,
         },
         opacity: 1,
-        stagger: 0.1,       // Reveal one after another
+        stagger: 0.1,
         ease: "none"
       });
+
+      // Parallax for Title
+      gsap.to(titleRef.current, {
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: true,
+        },
+        y: -100,
+        ease: "none"
+      });
+
+      // Breathing Forge Glow
+      gsap.to(glowRef.current, {
+        scale: 1.15,
+        opacity: 0.8,
+        duration: 3,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut"
+      });
+
     }, containerRef);
     return () => ctx.revert();
   }, []);
@@ -84,13 +107,13 @@ const Philosophy = () => {
         </div>
 
         {/* RIGHT SIDE: The Sticky Title */}
-        <div className="w-full md:w-1/2 relative md:sticky md:top-[30vh] flex flex-col items-start md:items-start text-left">
+        <div ref={titleRef} className="w-full md:w-1/2 relative md:sticky md:top-[30vh] flex flex-col items-start md:items-start text-left">
           <span className="font-mono text-xs text-accent uppercase tracking-[0.2em] mb-4 block opacity-80">
             Philosophy
           </span>
           <div className="relative mb-20 md:mb-0">
             {/* Amber Forge Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-orange-500/15 blur-[60px] rounded-[100%] pointer-events-none" />
+            <div ref={glowRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-orange-500/15 blur-[60px] rounded-[100%] pointer-events-none" />
             <h2 className="relative z-10 font-heading font-bold text-2xl md:text-3xl lg:text-4xl xl:text-5xl text-text leading-tight uppercase w-full tracking-normal">
               <span className="whitespace-nowrap">THE HEPHAESTUS</span><br/>
               <span className="text-gradient-accent">FORGE</span>

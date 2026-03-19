@@ -45,6 +45,7 @@ const Services = () => {
           {
             x: 50,
             opacity: 0,
+            filter: "blur(15px)"
           },
           {
             scrollTrigger: {
@@ -54,6 +55,7 @@ const Services = () => {
             },
             x: 0,
             opacity: 1,
+            filter: "blur(0px)",
             duration: 0.8,
             ease: "power3.out",
           }

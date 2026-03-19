@@ -72,6 +72,16 @@ const Hero = () => {
         delay: 0.1
       });
 
+      // Word-by-word staggered reveal for paragraph
+      gsap.to(".hero-word", {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.03,
+        ease: "power2.out",
+        delay: 0.9 // After the headline resolves
+      });
+
       // Headline Blur Reveal
       gsap.to(".hero-drama-text", {
         opacity: 1,
@@ -105,9 +115,13 @@ const Hero = () => {
             </span>
           </h1>
           
-          <p className="hero-anim opacity-0 translate-y-8 font-sans text-base md:text-xl text-text/70 max-w-2xl mb-10 md:mb-12 leading-relaxed px-4 md:px-0">
-            The definitive AI operations partner for B2B companies that want to scale without adding headcount.
-          </p>
+          <div className="max-w-2xl mb-10 md:mb-12 px-4 md:px-0 flex flex-wrap gap-x-[0.35em] gap-y-[0.3em]">
+             {"The definitive AI operations partner for B2B companies that want to scale without adding headcount.".split(" ").map((word, i) => (
+               <span key={i} className="hero-word opacity-0 translate-y-4 font-sans text-base md:text-xl text-text/70 leading-relaxed inline-block">
+                 {word}
+               </span>
+             ))}
+          </div>
           
           <div className="hero-anim opacity-0 translate-y-8 flex flex-col sm:flex-row items-center md:items-start gap-6 w-full sm:w-auto">
             <a href="#waitlist" className="bg-accent text-[#0a0a0b] font-sans font-bold text-base px-10 py-4 rounded-full btn-magnetic whitespace-nowrap shadow-[0_0_20px_rgba(157,124,255,0.3)] hover:shadow-[0_0_30px_rgba(157,124,255,0.5)] transition-shadow">

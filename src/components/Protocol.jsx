@@ -150,13 +150,11 @@ const Protocol = () => {
         }
       );
       
-      // Card 3 animation: Pulsing waveform
-      gsap.to(".ekg-path", {
-        strokeDashoffset: 0,
-        duration: 2.5,
-        repeat: -1,
-        ease: "linear"
-      });
+      // Card 3 animation: Pulsing waveform simulating real cardiac/data spike timing
+      const ekgTl = gsap.timeline({ repeat: -1 });
+      ekgTl.to(".ekg-path", { strokeDashoffset: 120, duration: 0.8, ease: "none" }) 
+           .to(".ekg-path", { strokeDashoffset: 90, duration: 0.15, ease: "power1.inOut" })
+           .to(".ekg-path", { strokeDashoffset: 0, duration: 1.5, ease: "none" });
 
     }, containerRef);
     return () => ctx.revert();
