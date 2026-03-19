@@ -37,9 +37,27 @@ const Navbar = () => {
             : 'bg-transparent text-text border border-transparent'
         }`}
       >
-        <div className="font-heading font-bold text-lg md:text-xl tracking-tight text-white whitespace-nowrap z-[110]">
-          FlowSync <span className="hidden sm:inline">AI Solutions</span>
-          <span className="sm:hidden text-accent">AI</span>
+        <div className="flex items-center gap-2 font-heading font-bold text-lg md:text-xl tracking-tight text-white z-[110]">
+          <div className="flex-shrink-0 w-8 h-8 md:w-12 md:h-12 min-w-[2rem] md:min-w-[3rem]">
+            <div 
+              className="w-full h-full bg-accent"
+              style={{
+                WebkitMaskImage: 'url(/logo.png)',
+                WebkitMaskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskImage: 'url(/logo.png)',
+                maskSize: 'contain',
+                maskRepeat: 'no-repeat',
+                maskPosition: 'center',
+              }}
+              aria-label="FlowSync"
+            />
+          </div>
+          <div className="whitespace-nowrap">
+            FlowSync <span className="hidden sm:inline text-white">AI Solutions</span>
+            <span className="sm:hidden text-accent ml-1">AI</span>
+          </div>
         </div>
         
         {/* Desktop Links */}
