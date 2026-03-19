@@ -17,20 +17,30 @@ const ShufflerCard = () => {
 
   useEffect(() => {
     let ctx = gsap.context(() => {
-      const updatePositions = () => {
+      const updatePositions = (isInitial = false) => {
         orderRef.current.forEach((visualIndex, i) => {
           const el = cardRefs.current[i];
           if (!el) return;
           const isTop = visualIndex === 0;
+          const isGoingToBack = visualIndex === 2 && !isInitial;
           
-          gsap.to(el, {
-            y: visualIndex * 20,
-            scale: 1 - visualIndex * 0.1,
-            opacity: 1 - visualIndex * 0.3,
-            zIndex: 3 - visualIndex,
-            duration: 0.8,
-            ease: "back.out(1.2)"
-          });
+          if (isGoingToBack) {
+            // The card moving to the back gets a cinematic 'pop' over the deck
+            gsap.timeline()
+              .to(el, { y: -30, scale: 1.05, duration: 0.3, ease: "power2.out", zIndex: 4 })
+              .set(el, { zIndex: 1 })
+              .to(el, { y: 40, scale: 0.8, opacity: 0.4, duration: 0.5, ease: "power2.inOut" });
+          } else {
+            // Cards moving forward just slide up smoothly
+            gsap.to(el, {
+              y: visualIndex * 20,
+              scale: 1 - visualIndex * 0.1,
+              opacity: 1 - visualIndex * 0.3,
+              zIndex: 3 - visualIndex,
+              duration: isInitial ? 0 : 0.8,
+              ease: "back.out(1.2)"
+            });
+          }
           
           const dot = el.querySelector('.status-dot');
           const text = el.querySelector('.status-text');
@@ -48,11 +58,13 @@ const ShufflerCard = () => {
         });
       };
       
-      updatePositions();
+      updatePositions(true); // First run is instant
+      
       const interval = setInterval(() => {
         orderRef.current = [orderRef.current[2], orderRef.current[0], orderRef.current[1]];
-        updatePositions();
+        updatePositions(false);
       }, 3000);
+      
       return () => clearInterval(interval);
     });
     return () => ctx.revert();
@@ -65,12 +77,12 @@ const ShufflerCard = () => {
           key={card.id}
           ref={el => cardRefs.current[i] = el}
           className={`absolute w-11/12 md:w-[90%] h-24 rounded-2xl border border-white/10 glass-panel flex items-center px-6 transition-colors bg-gradient-to-r ${card.color}`}
-          style={{ opacity: 0 }} // Start hidden, GSAP will handle showing
+          style={{ opacity: 0 }}
         >
           <div className="flex items-center space-x-4 w-full">
-            <div className={`status-dot w-2 h-2 rounded-full bg-white/20`} />
-            <span className={`status-text font-mono text-sm text-text/50`}>{card.title}</span>
-            <Activity className="status-icon w-4 h-4 ml-auto text-accent opacity-0 transition-opacity duration-300" />
+            <div className={`status-dot w-2 h-2 rounded-full bg-white/20 transition-all duration-500`} />
+            <span className={`status-text font-mono text-sm text-text/50 transition-all duration-500`}>{card.title}</span>
+            <Activity className="status-icon w-4 h-4 ml-auto text-accent opacity-0 transition-opacity duration-500" />
           </div>
         </div>
       ))}
@@ -93,9 +105,10 @@ const TypewriterCard = () => {
     let charIndex = 0;
     let isDeleting = false;
     let timeoutId;
+    let isActive = true;
 
     const type = () => {
-      if (!textRef.current) return;
+      if (!isActive || !textRef.current) return;
       const targetMessage = messages[msgIndex];
       
       if (!isDeleting && charIndex <= targetMessage.length) {
@@ -117,7 +130,10 @@ const TypewriterCard = () => {
     };
 
     timeoutId = setTimeout(type, 500);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   return (
@@ -152,7 +168,7 @@ const PipelineCard = () => {
       const tl = gsap.timeline({ repeat: -1 });
       
       // Initial state
-      tl.set(packetRef.current, { x: 10, y: 30, opacity: 0, scale: 0.5 });
+      tl.set(packetRef.current, { left: "5%", y: 0, x: 0, opacity: 0, scale: 0.5 });
       tl.set([nodeRef1.current, nodeRef2.current, nodeRef3.current], { 
         borderColor: 'rgba(255,255,255,0.05)',
         backgroundColor: 'rgba(255,255,255,0.02)'
@@ -163,7 +179,7 @@ const PipelineCard = () => {
         .to(nodeRef1.current, { borderColor: 'rgba(157,124,255,0.5)', backgroundColor: 'rgba(157,124,255,0.1)', duration: 0.2 }, "<");
       
       // Move to Node 2
-      tl.to(packetRef.current, { x: 130, duration: 1, ease: "power1.inOut" })
+      tl.to(packetRef.current, { left: "50%", x: "-50%", duration: 1, ease: "power1.inOut" })
         .to(nodeRef1.current, { borderColor: 'rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)', duration: 0.2 }, "-=0.2")
         .to(nodeRef2.current, { borderColor: 'rgba(157,124,255,0.5)', backgroundColor: 'rgba(157,124,255,0.1)', duration: 0.2 }, "<");
 
@@ -171,8 +187,13 @@ const PipelineCard = () => {
       tl.to(nodeRef2.current, { scale: 1.05, duration: 0.1, yoyo: true, repeat: 1 })
         .to(packetRef.current, { scale: 1.5, opacity: 0, duration: 0.2 }, "-=0.1"); // Packet gets "processed"
       
-      tl.to(nodeRef2.current, { borderColor: 'rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)', duration: 0.2 })
-        .to(nodeRef3.current, { borderColor: 'rgba(157,124,255,0.5)', backgroundColor: 'rgba(157,124,255,0.1)', duration: 0.2 }, "<");
+      // Packet emerges toward Node 3
+      tl.set(packetRef.current, { left: "50%", x: "-50%", scale: 0.5 })
+        .to(packetRef.current, { scale: 1, opacity: 1, duration: 0.2 })
+        .to(nodeRef2.current, { borderColor: 'rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)', duration: 0.2 }, "<")
+        .to(packetRef.current, { left: "90%", x: "-50%", duration: 0.8, ease: "power1.inOut" })
+        .to(nodeRef3.current, { borderColor: 'rgba(157,124,255,0.5)', backgroundColor: 'rgba(157,124,255,0.1)', duration: 0.2 }, "-=0.1")
+        .to(packetRef.current, { scale: 0, opacity: 0, duration: 0.2 }, "<");
       
       // Node 3 completion state
       tl.to(nodeRef3.current, { scale: 1.05, duration: 0.2, ease: "back.out(1.5)" })
