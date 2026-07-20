@@ -95,7 +95,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center md:justify-end pb-12 md:pb-28 px-6 md:px-16 lg:px-24 pt-32 md:pt-0">
+    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center pb-12 px-6 md:px-16 lg:px-24 pt-32 md:pt-0">
       
       {/* Background radial glow specifically for mobile */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] aspect-square bg-accent/10 blur-[120px] rounded-full sm:hidden pointer-events-none" />

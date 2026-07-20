@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import ScrollLink from './ScrollLink';
 
 const Footer = () => {
   return (
@@ -38,19 +40,20 @@ const Footer = () => {
         <div className="md:col-span-3 flex flex-col">
           <h4 className="font-mono text-xs text-text/40 uppercase tracking-widest mb-6">Navigation</h4>
           <ul className="space-y-4 font-sans text-sm text-text/70">
-            <li><a href="#features" className="hover:text-accent transition-colors">Systems</a></li>
-            <li><a href="#philosophy" className="hover:text-accent transition-colors">Philosophy</a></li>
-            <li><a href="#protocol" className="hover:text-accent transition-colors">Protocol</a></li>
-            <li><a href="#waitlist" className="hover:text-accent transition-colors">Waitlist</a></li>
+            <li><ScrollLink hash="#features" className="hover:text-accent transition-colors">Systems</ScrollLink></li>
+            <li><ScrollLink hash="#philosophy" className="hover:text-accent transition-colors">Philosophy</ScrollLink></li>
+            <li><ScrollLink hash="#protocol" className="hover:text-accent transition-colors">Protocol</ScrollLink></li>
+            <li><ScrollLink hash="#waitlist" className="hover:text-accent transition-colors">Waitlist</ScrollLink></li>
           </ul>
         </div>
         
         <div className="md:col-span-3 flex flex-col">
           <h4 className="font-mono text-xs text-text/40 uppercase tracking-widest mb-6">Legal</h4>
           <ul className="space-y-4 font-sans text-sm text-text/70">
-            <li><a href="#" className="hover:text-text transition-colors">Privacy Policy</a></li>
-            <li><a href="#" className="hover:text-text transition-colors">Terms of Service</a></li>
-            <li><a href="#" className="hover:text-text transition-colors">Contact</a></li>
+            <li><Link to="/privacy" className="hover:text-text transition-colors">Privacy Policy</Link></li>
+            <li><Link to="/terms" className="hover:text-text transition-colors">Terms of Service</Link></li>
+            <li><Link to="/contact" className="hover:text-text transition-colors">Contact</Link></li>
+            <li><a href="mailto:riccardo@flowsyncaisolutions.com" className="hover:text-accent transition-colors">riccardo@flowsyncaisolutions.com</a></li>
           </ul>
         </div>
         
@@ -73,10 +76,6 @@ const Footer = () => {
             }}
             aria-label="FlowSync Logo"
           />
-          <div className="flex space-x-6">
-            <a href="#" className="hover:text-white transition-colors">TW</a>
-            <a href="#" className="hover:text-white transition-colors">LI</a>
-          </div>
         </div>
       </div>
     </footer>

@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const Waitlist = () => {
-  const [status, setStatus] = useState('idle'); // idle | submitting | success
+  const [status, setStatus] = useState('idle'); // idle | submitting | success | error
   const sectionRef = useRef(null);
   const popupRef = useRef(null);
   
@@ -15,16 +15,23 @@ const Waitlist = () => {
     company: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email) return;
 
     setStatus('submitting');
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, source: 'waitlist' }),
+      });
+      if (!res.ok) throw new Error('request failed');
       setStatus('success');
-    }, 1200);
+    } catch {
+      setStatus('error');
+    }
   };
 
   useEffect(() => {
@@ -144,9 +151,16 @@ const Waitlist = () => {
              />
           </div>
 
-          <button 
-            type="submit" 
-            disabled={status !== 'idle'}
+          {status === 'error' && (
+            <p className="font-sans text-sm text-red-400">
+              Something went wrong. Please email us directly at{' '}
+              <a className="underline" href="mailto:riccardo@flowsyncaisolutions.com">riccardo@flowsyncaisolutions.com</a>.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={status === 'submitting' || status === 'success'}
             className="w-full bg-accent text-[#0a0a0b] font-sans font-bold text-base px-8 py-4 rounded-xl mt-2 flex items-center justify-center transition-all hover:shadow-[0_0_30px_rgba(157,124,255,0.4)] disabled:opacity-70 disabled:cursor-not-allowed group"
           >
             {status === 'submitting' ? (

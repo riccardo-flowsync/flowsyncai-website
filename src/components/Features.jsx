@@ -297,7 +297,7 @@ const Features = () => {
           <div className="feature-card glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-full hover:border-white/10 transition-colors duration-500">
             <h3 className="font-heading font-semibold text-xl text-text mb-3">Full-Stack Capability</h3>
             <p className="font-sans text-sm text-text/60 leading-relaxed max-w-[90%] mb-10 md:mb-12">
-              One partner across sales, hiring, marketing, and support routing. No fragmented vendors.
+              One partner across sales, marketing, and support routing. No fragmented vendors.
             </p>
             <div className="mt-auto">
               <PipelineCard />

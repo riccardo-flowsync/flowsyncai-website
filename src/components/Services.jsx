@@ -14,10 +14,6 @@ const servicesData = [
     description: "Your support runs 24/7 without extra headcount. Chat and voice agents handle tickets, pull live data, and execute real actions inside your systems. Human escalation happens only when it genuinely needs to."
   },
   {
-    title: "AI Hiring Automation",
-    description: "Hiring without the inbox chaos. We score CVs against your criteria, rank candidates, and book interviews automatically. We also scrape LinkedIn to actively find and contact prospects. You see the shortlist. You pick who moves forward."
-  },
-  {
     title: "AI Marketing Content Engine",
     description: "Consistent content without the production grind. We run your Instagram and TikTok with AI-driven planning, competitor analysis, video making, and full production. Cinema studio output for cents on the dollar."
   }

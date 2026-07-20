@@ -1,16 +1,38 @@
-# React + Vite
+# FlowSync AI Solutions — Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite + Tailwind + GSAP landing page, deployed on Vercel.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev      # frontend only (form submits will fail locally)
+vercel dev       # frontend + /api/waitlist serverless function
+npm run build    # production build
+```
 
-## React Compiler
+## Pages
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `/` — landing page (Hero, Features, Services, Philosophy, Protocol, CTA, Waitlist)
+- `/privacy`, `/terms`, `/contact` — legal & contact pages, EN/IT toggle
 
-## Expanding the ESLint configuration
+Routing uses `react-router-dom`; `vercel.json` rewrites all non-`/api` routes to `index.html`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Form email delivery
+
+The waitlist form and the contact-page form POST to `api/waitlist.js`, a Vercel
+serverless function that sends the submission by email via SMTP (nodemailer).
+
+Set these environment variables in the Vercel dashboard (Project → Settings →
+Environment Variables):
+
+| Variable | Example |
+|---|---|
+| `SMTP_HOST` | `smtp.yourprovider.com` |
+| `SMTP_PORT` | `587` (or `465` for SSL) |
+| `SMTP_USER` | `riccardo@flowsyncaisolutions.com` |
+| `SMTP_PASS` | mailbox password / app password |
+| `MAIL_TO`   | `riccardo@flowsyncaisolutions.com` |
+
+Without these variables the endpoint returns 500 and the forms show an error
+message with a direct mailto fallback.

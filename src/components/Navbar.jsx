@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import ScrollLink from './ScrollLink';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -63,20 +64,20 @@ const Navbar = () => {
         {/* Desktop Links */}
         <div className="hidden md:flex items-center space-x-8 text-sm font-sans font-medium">
           {navLinks.map((link) => (
-            <a 
+            <ScrollLink
               key={link.name}
-              href={link.href} 
+              hash={link.href}
               className={`transition-colors hover:text-accent ${isScrolled ? 'text-text/80' : 'text-text/90'}`}
             >
               {link.name}
-            </a>
+            </ScrollLink>
           ))}
         </div>
         
         <div className="flex items-center gap-2 md:gap-4 z-[110]">
-          <a href="#waitlist" className="bg-accent text-[#0a0a0b] font-sans font-bold text-xs md:text-sm px-4 md:px-6 py-2 md:py-2.5 rounded-full btn-magnetic shadow-[0_0_15px_rgba(157,124,255,0.3)]">
+          <ScrollLink hash="#waitlist" className="bg-accent text-[#0a0a0b] font-sans font-bold text-xs md:text-sm px-4 md:px-6 py-2 md:py-2.5 rounded-full btn-magnetic shadow-[0_0_15px_rgba(157,124,255,0.3)]">
             Waitlist
-          </a>
+          </ScrollLink>
 
           {/* Mobile Toggle */}
           <button 
@@ -97,9 +98,9 @@ const Navbar = () => {
       >
         <div className="flex flex-col items-center justify-center h-full space-y-8 p-6">
           {navLinks.map((link, i) => (
-            <a 
+            <ScrollLink
               key={link.name}
-              href={link.href}
+              hash={link.href}
               onClick={() => setIsOpen(false)}
               className={`text-4xl font-heading font-bold text-text hover:text-accent transition-all duration-500 ${
                 isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
@@ -107,9 +108,9 @@ const Navbar = () => {
               style={{ transitionDelay: `${i * 100}ms` }}
             >
               {link.name}
-            </a>
+            </ScrollLink>
           ))}
-          
+
           <div className={`pt-12 transition-all duration-700 delay-300 ${isOpen ? 'opacity-40 translate-y-0' : 'opacity-0 translate-y-10'}`}>
              <div className="flex items-center space-x-3">
                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
