@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import ScrollLink from './ScrollLink';
 import WorkflowTrace from './WorkflowTrace';
 import { useCopy, useLang } from '../lib/lang';
@@ -84,6 +84,10 @@ export default function Hero() {
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
+  // The runway appears or collapses with hold && held: re-measure every trigger below it (the pin's own refresh only covers the growing case).
+  const holding = hold && held;
+  useEffect(() => { ScrollTrigger.refresh(); }, [holding]);
+
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
     mm.add(HOLD, () => {
@@ -138,7 +142,7 @@ export default function Hero() {
           </div>
         </div>
       </section>
-    <div ref={runway} aria-hidden="true" style={hold && held ? { height: '200vh' } : undefined} />
+    <div ref={runway} aria-hidden="true" style={holding ? { height: '200vh' } : undefined} />
     </>
   );
 }
