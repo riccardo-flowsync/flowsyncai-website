@@ -20,7 +20,6 @@ export default {
       },
       fontFamily: {
         sans: ['"Mona Sans Variable"', 'system-ui', 'sans-serif'],
-        serif: ['"Cormorant Garamond Variable"', 'Georgia', 'serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       maxWidth: {

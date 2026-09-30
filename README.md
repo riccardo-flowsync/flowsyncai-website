@@ -16,7 +16,7 @@ npm run check:layout   # after a build: 16 screen sizes in EN and IT
 
 ## Pages
 
-- `/`: Hero, Systems, Results, Process, Manifesto, FAQ, Book a call
+- `/`: Hero, Systems, Results, Process, FAQ, Book a call
 - `/contact`: the booking block with the form open
 - `/privacy`, `/terms`: legal pages; any other URL shows a 404
 

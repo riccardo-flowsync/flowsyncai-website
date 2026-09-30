@@ -26,7 +26,7 @@ check the preview, merge only with the owner's OK.
   fg `#f4f3ed`, muted `#b3b1aa`, faint `#82817c` (lowest contrast allowed for text), accent `#9d7cff`.
   Accent is a signal (primary button, live state, key figures), never decoration.
 - Type: Mona Sans Variable for everything, headings at `font-stretch: 112%`. IBM Plex Mono only for machine
-  output inside illustrations. Cormorant Garamond italic only in the manifesto. Fonts are self-hosted (Fontsource).
+  output inside illustrations. Fonts are self-hosted (Fontsource).
 - Classes in `src/index.css`: `.page`, `.t-display`, `.t-h2`, `.t-h3`, `.t-lead`, `.btn-primary`, `.btn-quiet`,
   `.link`, `.field`.
 - Never: glass/backdrop blur, glows, gradient text, pulsing status dots, fake "system online" labels,
@@ -39,7 +39,7 @@ check the preview, merge only with the owner's OK.
 
 - One big moment: the hero headline rises line by line, then the workflow trace plays once and stays on its finished run (it pauses while off screen).
 - Small ones: Systems index follows the reader, Results totals count up and bars grow, the Process line draws,
-  manifesto words brighten on scroll, FAQ answers slide open, magnetic primary button.
+  FAQ answers slide open, magnetic primary button.
 - Use `useGSAP` with a scope; set hidden states inside `gsap.matchMedia('(prefers-reduced-motion: no-preference)')`
   so reduced motion and no-JS show finished content. Never hide content with CSS classes.
 - SplitText headings get `key={lang}` and `revertOnUpdate: true` so the language switch re-splits them.
