@@ -1,9 +1,11 @@
 // Responsive layout check. Run from the repo root:
 //   npm run build && node scripts/check-layout.mjs
 //   node scripts/check-layout.mjs https://example.com    (audit a live URL instead of dist/)
-// Opens the home page at 16 screen sizes in English and Italian, plus a reduced-motion pass, and prints
+// Opens the home page at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
 // one line each: "ok" or "FAIL <what is wrong>". Takes 2-4 minutes. Exit code: 0 all ok, 1 something
 // failed, 2 could not start (no dist/, no Chrome). Uses the installed Google Chrome; CHROME_PATH overrides.
+// Pinned scenes (.pin-spacer): on a normal-motion run each pinned element is checked at the start, middle and end of its
+// hold (fully inside the screen below the 64px navbar, no clipped text); on a touch run no .pin-spacer may exist.
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
@@ -13,6 +15,7 @@ const SIZES = [
   [320, 568], [360, 740], [375, 812], [390, 844], [414, 896], // phones, portrait
   [667, 375], [844, 390], [932, 430], // phones, landscape
   [768, 1024], [820, 1180], [1024, 768], [1180, 820], // tablets
+  [1280, 680], [1440, 780], [1470, 830], // laptops
   [1280, 800], [1440, 900], [1920, 1080], [2560, 1440], // desktops
 ];
 const REDUCED_SIZES = [[390, 844], [1440, 900]];
@@ -22,7 +25,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- This function runs INSIDE the browser page (Puppeteer serialises it): no outside variables ----
 // Returns problems: a string, or [message, items] for a list.
-async function pageChecks({ reduced, portraitPhone, lang, w, h }) { // w x h: the screen size we asked for
+async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w x h: the screen size we asked for
   const problems = [];
   const root = document.documentElement;
   if (root.lang !== lang) problems.push(`page did not switch to ${lang === 'it' ? 'Italian' : 'English'} (html lang="${root.lang}")`);
@@ -57,6 +60,28 @@ async function pageChecks({ reduced, portraitPhone, lang, w, h }) { // w x h: th
     if (stuck.length) problems.push(['stays invisible without animation', stuck]);
     return problems;
   }
+
+  // A hidden-overflow box that is too small for the text it holds directly (used at rest and inside every held scene)
+  const clippedText = () => {
+    const cut = [];
+    for (const e of document.querySelectorAll('body *')) {
+      const s = getComputedStyle(e);
+      if (!/hidden|clip/.test(s.overflowX + s.overflowY) || s.visibility === 'hidden') continue;
+      if (e.clientWidth < 3 || e.clientHeight < 3) continue; // 1px boxes are the screen-reader-only trick
+      if (e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1) continue;
+      if (e.closest('[aria-hidden="true"]') || /(^|\s)(split|mask)/i.test(e.getAttribute('class') || '')) continue; // GSAP SplitText
+      const own = [...e.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim());
+      const box = e.getBoundingClientRect();
+      const spills = own.some((n) => { // the text itself pokes out (a box a bit narrower than its padding needs is fine)
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        const t = range.getBoundingClientRect();
+        return t.right > box.right + 1 || t.bottom > box.bottom + 1 || t.left < box.left - 1 || t.top < box.top - 1;
+      });
+      if (spills) cut.push(`"${own.map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim().slice(0, 40)}" in ${section(e)}`);
+    }
+    return cut;
+  };
 
   // Top bar: the fixed <header> (the old design only has a <nav>)
   const bar = document.querySelector('header, nav');
@@ -101,24 +126,8 @@ async function pageChecks({ reduced, portraitPhone, lang, w, h }) { // w x h: th
   scrollTo({ top: 0, behavior: 'instant' });
   if (worst) problems.push([`page scrolls sideways (${px(worst)} too wide at ${px(at)} down), culprit`, culprits.length ? culprits : ['not found']]);
 
-  // 4. No clipped text: a hidden-overflow box that is too small for the text it holds directly
-  const cut = [];
-  for (const e of document.querySelectorAll('body *')) {
-    const s = getComputedStyle(e);
-    if (!/hidden|clip/.test(s.overflowX + s.overflowY) || s.visibility === 'hidden') continue;
-    if (e.clientWidth < 3 || e.clientHeight < 3) continue; // 1px boxes are the screen-reader-only trick
-    if (e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1) continue;
-    if (e.closest('[aria-hidden="true"]') || /(^|\s)(split|mask)/i.test(e.getAttribute('class') || '')) continue; // GSAP SplitText
-    const own = [...e.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim());
-    const box = e.getBoundingClientRect();
-    const spills = own.some((n) => { // the text itself pokes out (a box a bit narrower than its padding needs is fine)
-      const range = document.createRange();
-      range.selectNodeContents(n);
-      const t = range.getBoundingClientRect();
-      return t.right > box.right + 1 || t.bottom > box.bottom + 1 || t.left < box.left - 1 || t.top < box.top - 1;
-    });
-    if (spills) cut.push(`"${own.map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim().slice(0, 40)}" in ${section(e)}`);
-  }
+  // 4. No clipped text
+  const cut = clippedText();
   if (cut.length) problems.push(['text cut off', cut]);
 
   // 5. Every in-page header link lands with its section heading below the header
@@ -135,6 +144,39 @@ async function pageChecks({ reduced, portraitPhone, lang, w, h }) { // w x h: th
   }
   if (missing.length) problems.push(['header links to sections that do not exist', missing]);
   if (under.length) problems.push(['header links land with the heading under the header', under]);
+
+  // 6. Held scenes. Touch screens never pin. Elsewhere every pinned element stays fully on screen below the navbar
+  // (and keeps its text unclipped) at the start, middle and end of its hold.
+  const spacers = [...document.querySelectorAll('.pin-spacer')];
+  if (touch) {
+    if (spacers.length) problems.push(`scroll pinning is on for a touch screen (${spacers.length} .pin-spacer)`);
+    return problems;
+  }
+  const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const NAV = 64;
+  for (const sp of spacers) {
+    const el = sp.firstElementChild;
+    const name = label(el);
+    const top0 = sp.getBoundingClientRect().top + scrollY;
+    const from = Math.max(0, top0 - h), to = top0 + sp.offsetHeight;
+    const held = []; // scroll positions where the element is pinned (position: fixed)
+    for (let y = from; y <= to; y += 10) {
+      scrollTo({ top: y, behavior: 'instant' });
+      await frame();
+      if (getComputedStyle(el).position === 'fixed') held.push(y);
+    }
+    if (!held.length) continue; // this scene is not held at this size: nothing to hold on screen
+    for (const y of [held[0] + 2, Math.round((held[0] + held.at(-1)) / 2), held.at(-1) - 2]) {
+      scrollTo({ top: y, behavior: 'instant' });
+      await sleep(120);
+      const r = el.getBoundingClientRect();
+      if (r.top < NAV - 0.5 || r.bottom > innerHeight + 0.5 || r.left < -0.5 || r.right > innerWidth + 0.5)
+        problems.push(`held scene ${name} is not inside the screen below the header at ${px(y)} (top ${px(r.top)}, bottom ${px(r.bottom)}, screen ${innerHeight}px)`);
+      const clip = clippedText();
+      if (clip.length) problems.push([`held scene ${name} has cut-off text at ${px(y)}`, clip]);
+    }
+  }
+  scrollTo({ top: 0, behavior: 'instant' });
   return problems;
 }
 
@@ -156,7 +198,7 @@ async function check(page, base, [w, h], lang, reduced) {
   await page.goto(base, { waitUntil: 'load', timeout: 30_000 });
   await page.evaluate(async () => { await document.fonts.ready; });
   await sleep(1600); // intro animations
-  return page.evaluate(pageChecks, { reduced, lang, w, h, portraitPhone: w < 500 && h > w });
+  return page.evaluate(pageChecks, { reduced, lang, w, h, touch: phone || w <= 1180, portraitPhone: w < 500 && h > w });
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url));

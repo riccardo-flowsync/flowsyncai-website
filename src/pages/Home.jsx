@@ -4,6 +4,7 @@ import Results from '../components/Results';
 import Process from '../components/Process';
 import FAQ from '../components/FAQ';
 import Booking from '../components/Booking';
+import ScrollProgress from '../components/ScrollProgress';
 import { useCopy } from '../lib/lang';
 
 const copy = {
@@ -16,6 +17,7 @@ export default function Home() {
   return (
     <>
       <title>{t.docTitle}</title>
+      <ScrollProgress />
       <Hero />
       <Systems />
       <Results />

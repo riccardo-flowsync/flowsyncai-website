@@ -2,13 +2,26 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
+import { CustomEase } from 'gsap/CustomEase';
 import { useGSAP } from '@gsap/react';
 import Lenis from 'lenis';
 
-gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, useGSAP);
+gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, CustomEase, useGSAP);
+
+// A phone address bar sliding in and out must not re-measure every trigger
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 export const REDUCED = '(prefers-reduced-motion: reduce)';
 export const MOTION_OK = '(prefers-reduced-motion: no-preference)';
+// The only condition under which a scene may pin: mouse or trackpad, a wide screen, motion allowed.
+// Phones and touch tablets never pin. Pair it with fitsScreen(el) so a pinned scene is never taller than the screen below the navbar.
+export const HOLD = '(prefers-reduced-motion: no-preference) and (pointer: fine) and (min-width: 1024px)';
+export const NAV_H = 64; // the fixed navbar (h-16 in Navbar.jsx)
+export const fitsScreen = (el) => el.offsetHeight + NAV_H <= window.innerHeight;
+
+// The signature ease of the site: every heading rise uses it (a fast start that settles softly)
+export const RISE = 'rise';
+CustomEase.create(RISE, '0.16, 1, 0.3, 1');
 
 let lenis = null;
 
@@ -58,10 +71,21 @@ export function riseOnScroll(target) {
     onSplit: (self) => gsap.from(self.lines, {
       yPercent: 110,
       duration: 1.1,
-      ease: 'expo.out',
+      ease: RISE,
       stagger: 0.09,
       scrollTrigger: { trigger: target, start: 'top 85%', once: true },
     }),
+  });
+}
+
+// The top rule of a section draws itself from the left as the section enters, scrubbed (it rewinds on the way back).
+// Sections use className "rule" instead of "border-t border-line": the line is a ::before driven by --rule (see index.css),
+// fully drawn by default so reduced motion and no-JS show it. Call inside gsap.matchMedia(MOTION_OK).
+export function drawRule(section) {
+  return gsap.fromTo(section, { '--rule': 0 }, {
+    '--rule': 1,
+    ease: 'none',
+    scrollTrigger: { trigger: section, start: 'top bottom', end: 'top 60%', scrub: true },
   });
 }
 

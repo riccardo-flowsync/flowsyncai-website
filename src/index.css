@@ -105,6 +105,21 @@
     @apply underline decoration-line decoration-1 underline-offset-4 transition-colors hover:decoration-accent;
   }
 
+  /* A section's top rule. Replaces "border-t border-line"; drawRule() in motion.js scrubs --rule from 0 to 1. Default 1 = fully drawn. */
+  .rule {
+    position: relative;
+  }
+  .rule::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: theme('colors.line');
+    transform: scaleX(var(--rule, 1));
+    transform-origin: left;
+    pointer-events: none;
+  }
+
   .field {
     @apply w-full rounded-lg border border-faint bg-canvas px-3.5 py-3 text-fg placeholder:text-faint
       transition-colors focus:border-accent;
