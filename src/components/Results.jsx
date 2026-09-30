@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
 
 // Source: the outbound case studies, updated 2026-09-23. Interested and meetings add up to the totals.
 const ROWS = [
@@ -10,6 +10,9 @@ const ROWS = [
   { rate: 22, interested: null, meetings: 10 },
   { rate: 41, interested: null, meetings: 11 },
 ];
+const TOTAL_KEYS = ['meetings', 'interested']; // the ledger's Total row sums these row figures (the multiple in the big totals is not a sum)
+// A ledger row draws its own bottom rule as it crosses the screen (same length for every row: the rates are different metrics)
+const ROW_RULE = 'relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--row,1))]';
 const CHARTS = [[5.1, 3.4, 2.2, 0.45], [22, 3.5], [41, 28.5]]; // last value = market average
 
 // Source: each support agent's own chat records, counted 2026-09-30, old and new version of the agent together. Chats = at least
@@ -167,61 +170,90 @@ export default function Results() {
   const { lang } = useLang();
   const root = useRef(null);
   const locale = lang === 'it' ? 'it-IT' : 'en-GB';
-  const pct = (v) => `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(v)}%`;
-  const num = (v) => new Intl.NumberFormat(locale, { useGrouping: 'always' }).format(v); // Italian leaves 4-digit numbers ungrouped by default
+  const pf = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+  const nf = new Intl.NumberFormat(locale, { useGrouping: 'always' }); // Italian leaves 4-digit numbers ungrouped by default
+  const pct = (v) => `${pf.format(v)}%`;
+  const num = (v) => nf.format(v);
 
-  // Totals count up and bars grow, once, as they come into view. Counters show their real value until then.
+  // Scroll scene, all scrubbed (it rewinds on the way back) and ending on the printed figures. Text shows its real value until this runs.
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
+    const show = (el, v) => {
+      const s = num(v);
+      if (el.textContent !== s) el.textContent = s;
+    };
+    const restore = (els) => () => els.forEach((el) => show(el, Number(el.dataset.value)));
+    const q = gsap.utils.selector(root);
+    // Each ledger row draws its own rule as its bottom edge rises into view, the same length for every row (the rates are different metrics).
+    // On the table, the Total row at the foot is built from the rows: each row adds only the figures it reports, exactly when its own rule
+    // draws, so the sum never runs ahead of the row that explains it. The table and the phone list are never both visible, so each has its own condition.
+    const rowRules = (sel, sum) => () => {
+      const prog = ROWS.map(() => ({ v: 0 }));
+      const spans = sum ? TOTAL_KEYS.map((k) => q(`[data-sum="${k}"]`)[0]) : [];
+      const paint = () => spans.forEach((el, i) => show(el, Math.round(ROWS.reduce((n, r, k) => n + (r[TOTAL_KEYS[i]] ?? 0) * prog[k].v, 0))));
+      paint();
+      q(sel).forEach((row, k) => {
+        const tl = gsap.timeline({
+          defaults: { ease: 'none', duration: 1 },
+          scrollTrigger: { trigger: row, start: 'bottom 98%', end: 'bottom 82%', scrub: true },
+        }).fromTo(row, { '--row': 0 }, { '--row': 1 });
+        if (sum) tl.to(prog[k], { v: 1, onUpdate: paint }, 0);
+      });
+      return restore(spans);
+    };
+    mm.add(`${MOTION_OK} and (min-width: 640px)`, rowRules('.res-tr', true));
+    mm.add(`${MOTION_OK} and (max-width: 639.98px)`, rowRules('.res-li', false));
+
     mm.add(MOTION_OK, () => {
+      drawRule(root.current);
       riseOnScroll('.res-title');
-      // Tween a plain number, not the text itself: reverting a text tween would leave "0" on screen
-      const counters = gsap.utils.toArray('.res-count');
-      counters.forEach((el) => {
-        const n = { v: 0 };
-        gsap.to(n, {
-          v: Number(el.dataset.value),
-          duration: 1.6,
-          ease: 'power2.out',
-          onUpdate: () => { el.textContent = num(Math.round(n.v)); },
-          scrollTrigger: { trigger: el, start: 'top 90%', once: true },
-        });
-      });
+
+      // Benchmark bars: the market bar fills first, then ours grow against it. Like with like, no labels added.
       gsap.utils.toArray('.res-chart').forEach((chart) => {
-        gsap.from(chart.querySelectorAll('.res-bar'), {
-          scaleX: 0,
-          duration: 1.2,
-          ease: 'expo.out',
-          stagger: 0.08,
-          scrollTrigger: { trigger: chart, start: 'top 80%', once: true },
+        const bars = chart.querySelectorAll('.res-bar');
+        gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: chart, start: 'top 90%', end: 'top 45%', scrub: true },
+        })
+          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.25 })
+          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.55, stagger: 0.1 }, 0.25);
+      });
+
+      // Support cards: the split bar grows and the chat count rises with the scroll (hours stay printed: an estimate is never shown half-way), then what the agent does comes in
+      const cardCounters = [];
+      gsap.utils.toArray('.sup-card').forEach((card) => {
+        const c = gsap.utils.selector(card);
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: card, start: 'top 88%', end: 'top 38%', scrub: true },
+        }).from(c('.sup-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 0.7 }, 0);
+        c('.res-count').forEach((el) => {
+          const n = { v: 0 };
+          cardCounters.push(el);
+          show(el, 0);
+          tl.to(n, { v: Number(el.dataset.value), duration: 0.7, onUpdate: () => show(el, Math.round(n.v)) }, 0);
         });
+        tl.from(c('.sup-do'), { autoAlpha: 0, y: 6, duration: 0.3, stagger: 0.05 }, 0.5);
       });
-      // Support cards: the split bar grows from the left, then what the agent does comes in
-      gsap.utils.toArray('.sup-card').forEach((card, i) => {
-        const q = gsap.utils.selector(card);
-        gsap.timeline({ delay: i * 0.25, scrollTrigger: { trigger: card, start: 'top 80%', once: true } })
-          .from(q('.sup-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 1.2, ease: 'expo.out' }, 0.2)
-          .from(q('.sup-do'), { autoAlpha: 0, y: 6, duration: 0.4, ease: 'power3.out', stagger: 0.07 }, 0.7);
-      });
-      return () => counters.forEach((el) => { el.textContent = num(Number(el.dataset.value)); });
+      return restore(cardCounters);
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="border-t border-line py-24 lg:py-32">
+    <section id="results" ref={root} className="rule py-24 lg:py-32">
       <div className="page">
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
           <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
           <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
         </div>
 
-        <dl className="mt-14 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
+        <dl className="res-totals mt-14 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
           {t.totals.map(([n, unit, label]) => (
             <div key={label} className="flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
               <dt className="max-w-[24ch] text-sm text-muted">{label}</dt>
               <dd className="text-[clamp(2.75rem,2rem+2.6vw,4.25rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums [font-stretch:112%]">
-                <span className="res-count" data-value={n}>{n}</span>{unit}
+                {n}{unit}
               </dd>
             </div>
           ))}
@@ -239,7 +271,7 @@ export default function Results() {
           </thead>
           <tbody>
             {t.rows.map(([name, what, where, rateLabel], i) => (
-              <tr key={name} className="border-b border-line align-top">
+              <tr key={name} className={`res-tr ${ROW_RULE} align-top`}>
                 <th scope="row" className="py-5 pr-4 font-normal">
                   <span className="font-medium">{name}</span>
                   <span className="mt-1 block text-sm text-muted">{what}</span>
@@ -257,15 +289,15 @@ export default function Results() {
           <tfoot>
             <tr>
               <th scope="row" colSpan={2} className="pt-4 text-left font-medium">{t.total}</th>
-              <td className="pt-4 text-right text-lg font-semibold tabular-nums">155</td>
-              <td className="pt-4 text-right text-lg font-semibold tabular-nums">49</td>
+              <td className="pt-4 text-right text-lg font-semibold tabular-nums"><span data-value="155" data-sum="interested">155</span></td>
+              <td className="pt-4 text-right text-lg font-semibold tabular-nums"><span data-value="49" data-sum="meetings">49</span></td>
             </tr>
           </tfoot>
         </table>
 
         <ul className="mt-12 grid border-t border-line sm:hidden">
           {t.rows.map(([name, what, where, rateLabel], i) => (
-            <li key={name} className="border-b border-line py-5">
+            <li key={name} className={`res-li ${ROW_RULE} py-5`}>
               <p className="font-medium">{name}</p>
               <p className="mt-1 text-sm text-muted">{what}</p>
               <p className="text-sm text-faint">{where}</p>
@@ -337,7 +369,7 @@ export default function Results() {
                     <dt className="text-sm text-muted">{t.support.hours}</dt>
                     <dd className="text-[2rem] font-semibold leading-none tabular-nums [font-stretch:112%]">
                       <span className="mr-1.5 text-sm font-normal text-muted [font-stretch:100%]">{t.support.upTo}</span>
-                      <span className="res-count" data-value={s.hours}>{num(s.hours)}</span>
+                      {num(s.hours)}
                     </dd>
                   </div>
                 </dl>

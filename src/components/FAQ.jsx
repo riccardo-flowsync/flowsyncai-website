@@ -1,4 +1,6 @@
-import { useCopy } from '../lib/lang';
+import { useRef } from 'react';
+import { useCopy, useLang } from '../lib/lang';
+import { gsap, ScrollTrigger, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
 
 // The questions prospects ask on calls. Answers stay within what the service does today: no prices, no guarantees.
 const copy = {
@@ -32,18 +34,52 @@ const copy = {
   },
 };
 
+// An open answer moves everything below it, so re-measure once its slide has settled (Booking's triggers depend on it).
+// One pending call at a time. The FAQ lines do not depend on it: they hang off the list's top edge, which never moves.
+let pending = null;
+const refreshSoon = () => {
+  pending?.kill();
+  pending = gsap.delayedCall(0.5, ScrollTrigger.refresh);
+};
+
 export default function FAQ() {
   const t = useCopy(copy);
+  const { lang } = useLang();
+  const root = useRef(null);
+
+  // Scrubbed, so the lines rewind on the way back: the section rule, the list's top line, then each row's divider in a short wave.
+  // The wave is one timeline on the list's top edge (not one trigger per row), so opening an answer cannot undraw a divider.
+  useGSAP(() => {
+    const mm = gsap.matchMedia(root.current);
+    mm.add(MOTION_OK, () => {
+      riseOnScroll('.faq-title');
+      drawRule(root.current);
+      gsap.fromTo('.faq-list', { '--rule': 0 }, {
+        '--rule': 1,
+        ease: 'none',
+        scrollTrigger: { trigger: '.faq-list', start: 'top 92%', end: 'top 76%', scrub: true },
+      });
+      gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: '.faq-list', start: 'top 88%', end: 'top 35%', scrub: true },
+      }).fromTo('.faq-row', { '--d': 0 }, { '--d': 1, duration: 1, stagger: 0.15 });
+    });
+    return () => mm.revert();
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="faq" className="faq border-t border-line py-24 lg:py-32">
+    <section id="faq" ref={root} className="faq rule py-24 lg:py-32">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-4">
-          <h2 className="t-h2 lg:sticky lg:top-28">{t.title}</h2>
+          <h2 key={lang} className="faq-title t-h2 lg:sticky lg:top-28">{t.title}</h2>
         </div>
-        <div className="border-t border-line lg:col-span-8">
+        <div className="faq-list rule lg:col-span-8">
           {t.items.map(([q, a]) => (
-            <details key={q} className="group border-b border-line">
+            <details
+              key={q}
+              onToggle={refreshSoon}
+              className="faq-row group relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--d,1))]"
+            >
               <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-5 text-[1.05rem] font-medium [&::-webkit-details-marker]:hidden">
                 {q}
                 <span aria-hidden="true" className="relative mt-[0.4em] h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-open:rotate-45">
