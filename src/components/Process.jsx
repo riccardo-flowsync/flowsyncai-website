@@ -43,18 +43,22 @@ const copy = {
 // (t runs 0 to 10). When held, the step before settles to 75% opacity: still above the faint colour, never invisible.
 function walk(list, scrollTrigger, settle) {
   const steps = gsap.utils.toArray('.proc-step', list);
-  // Where each node sits along the line, 0 to 1 (the columns are not exactly thirds because of the gap)
-  const at = steps.map((li) => (li.offsetLeft + 5.5) / list.offsetWidth);
   const T0 = 1.5, LINE = 7.5;
-  const tl = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger });
+  // Where each node sits along the line, 0 to 1 (the columns are not exactly thirds because of the gap). Re-read on every refresh.
+  const timeOf = (i) => (i ? T0 + ((steps[i].offsetLeft + 5.5) / list.offsetWidth) * LINE : 0);
+  const parts = steps.map(() => []); // the tweens that start when the line reaches step i
+  const tl = gsap.timeline({ defaults: { ease: 'none' } });
   tl.fromTo('.proc-fill', { scaleX: 0 }, { scaleX: 1, duration: LINE }, T0);
   steps.forEach((li, i) => {
-    const t = i ? T0 + at[i] * LINE : 0;
-    tl.from(li.querySelector('.proc-node'), { scale: 0, duration: 0.6, ease: 'back.out(3)' }, t);
-    tl.from(li.querySelector('.proc-text'), { y: 40, opacity: 0, duration: 1.4, ease: RISE }, t);
-    if (settle && i) tl.to(steps[i - 1].querySelector('.proc-text'), { opacity: 0.75, duration: 1.4 }, t);
+    parts[i].push(
+      tl.from(li.querySelector('.proc-node'), { scale: 0, duration: 0.6, ease: 'back.out(3)' }, timeOf(i)),
+      tl.from(li.querySelector('.proc-text'), { y: 40, opacity: 0, duration: 1.4, ease: RISE }, timeOf(i)),
+    );
+    if (settle && i) parts[i].push(tl.to(steps[i - 1].querySelector('.proc-text'), { opacity: 0.75, duration: 1.4 }, timeOf(i)));
   });
   tl.set({}, {}, 10); // the walk ends with a beat of rest
+  const place = () => parts.forEach((tweens, i) => tweens.forEach((tw) => tw.startTime(timeOf(i))));
+  ScrollTrigger.create({ ...scrollTrigger, animation: tl, scrub: true, invalidateOnRefresh: true, onRefresh: place });
   return tl;
 }
 
@@ -62,35 +66,55 @@ export default function Process() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
-  // Whether the section fits the screen below the navbar (a pinned scene must). Re-measured on resize, language change and font load.
-  const [fits, setFits] = useState(false);
+  // Whether the section fitted the screen below the navbar when the scene was last built (a pinned scene must fit).
+  // A resize across that line, or a font load that changes the height, rebuilds the scene; nothing else does.
+  const built = useRef(null);
+  const [rebuild, setRebuild] = useState(0);
   useEffect(() => {
-    const measure = () => setFits(fitsScreen(root.current));
-    measure();
+    let live = true;
+    const measure = () => {
+      if (live && root.current && fitsScreen(root.current) !== built.current) setRebuild((n) => n + 1);
+    };
     window.addEventListener('resize', measure);
     document.fonts?.ready.then(measure);
-    return () => window.removeEventListener('resize', measure);
+    return () => {
+      live = false;
+      window.removeEventListener('resize', measure);
+    };
   }, [lang]);
+
+  // The heading and the top rule only depend on the language, so a resize never replays them
+  useGSAP(() => {
+    const mm = gsap.matchMedia(root.current);
+    mm.add({ motion: MOTION_OK }, ({ conditions }) => {
+      if (!conditions.motion) return;
+      drawRule(root.current);
+      riseOnScroll('.proc-title');
+    });
+    return () => mm.revert();
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
     mm.add({ hold: HOLD, wide: '(min-width: 1024px)', motion: MOTION_OK }, ({ conditions }) => {
-      if (!conditions.motion) return;
       const section = root.current;
+      built.current = fitsScreen(section);
+      if (!conditions.motion) return;
       const list = section.querySelector('.proc-list');
-      drawRule(section);
-      riseOnScroll('.proc-title');
 
       if (conditions.wide) {
         // Mouse or trackpad and the section fits: pin it and let the scroll walk the three steps.
         // The walk starts a little before the pin so step 1 is already up when the scene locks.
-        if (conditions.hold && fits) {
+        if (conditions.hold && built.current) {
+          // Centred in the space under the navbar, and a hold that stops growing on tall screens
           const pin = ScrollTrigger.create({
-            trigger: section, pin: true, start: `top ${NAV_H}px`, end: () => `+=${Math.round(window.innerHeight * 2.2)}`, invalidateOnRefresh: true,
+            trigger: section, pin: true, invalidateOnRefresh: true,
+            start: () => `top ${Math.max(NAV_H, Math.round((window.innerHeight - section.offsetHeight + NAV_H) / 2))}px`,
+            end: () => `+=${Math.min(Math.round(window.innerHeight * 2.2), 1800)}`,
           });
-          walk(list, { trigger: section, start: 'top 55%', end: () => pin.end, scrub: true, invalidateOnRefresh: true }, true);
+          walk(list, { trigger: section, start: 'top 55%', end: () => pin.end }, true);
         } else {
-          walk(list, { trigger: list, start: 'top 80%', end: 'top 35%', scrub: true, invalidateOnRefresh: true }, false);
+          walk(list, { trigger: list, start: 'top 80%', end: 'top 35%' }, false);
         }
         return;
       }
@@ -106,7 +130,7 @@ export default function Process() {
       });
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang, fits], revertOnUpdate: true });
+  }, { scope: root, dependencies: [lang, rebuild], revertOnUpdate: true });
 
   return (
     <section id="process" ref={root} className="rule py-24 lg:py-32">
