@@ -43,15 +43,15 @@
     text-wrap: balance;
   }
 
-  /* The headings that rise line by line. The two h2s (riseOnScroll) keep h2's balanced wrapping: SplitText measures the same breaks
+  /* The headings that rise line by line. The h2s (riseOnScroll) keep h2's balanced wrapping: SplitText measures the same breaks
      (checked 320 to 1920 px, EN and IT), and plain wrapping would strand "campaign." on its own line.
      flow-root keeps each heading's own box the same height as unsplit text, despite the mask padding below. */
-  .hero-title, .res-title, .book-title {
+  .hero-title, .sys-title, .res-title, .proc-title, .faq-title, .book-title {
     display: flow-root;
   }
 
   /* The line masks clip at the line box (1.02 hero, 1.06 h2), which cuts the tails of g, p and y. Extend the clip downwards, layout unchanged. */
-  .hero-title > div, .res-title > div, .book-title > div {
+  :is(.hero-title, .sys-title, .res-title, .proc-title, .faq-title, .book-title) > div {
     padding-bottom: 0.08em;
     margin-bottom: -0.08em;
   }

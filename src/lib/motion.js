@@ -1,3 +1,4 @@
+import { useLayoutEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
@@ -18,6 +19,29 @@ export const MOTION_OK = '(prefers-reduced-motion: no-preference)';
 export const HOLD = '(prefers-reduced-motion: no-preference) and (pointer: fine) and (min-width: 1024px)';
 export const NAV_H = 64; // the fixed navbar (h-16 in Navbar.jsx)
 export const fitsScreen = (el) => el.offsetHeight + NAV_H <= window.innerHeight;
+
+// fitsScreen as React state, checked again after every ScrollTrigger refresh (resize, late fonts, a pin appearing)
+export function useFits(ref, deps) {
+  const [fits, setFits] = useState(false);
+  useLayoutEffect(() => {
+    const check = () => { if (ref.current) setFits(fitsScreen(ref.current)); };
+    check();
+    ScrollTrigger.addEventListener('refresh', check);
+    return () => ScrollTrigger.removeEventListener('refresh', check);
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+  return fits;
+}
+
+// Late fonts change heights: re-measure every trigger (and every useFits) once they are in
+document.fonts?.ready.then(() => ScrollTrigger.refresh());
+
+// Anything that changes the page's height after ScrollTrigger measured it moves every trigger below it: a heading re-split
+// 200 ms after a resize (SplitText waits, ScrollTrigger does not), an FAQ answer opening. Measure again once it settles.
+let settling;
+new ResizeObserver(() => {
+  clearTimeout(settling);
+  settling = setTimeout(() => ScrollTrigger.refresh(), 300);
+}).observe(document.body);
 
 // The signature ease of the site: every heading rise uses it (a fast start that settles softly)
 export const RISE = 'rise';

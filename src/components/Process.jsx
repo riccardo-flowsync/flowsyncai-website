@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK, HOLD, NAV_H, RISE, fitsScreen, riseOnScroll, drawRule } from '../lib/motion';
+import { gsap, ScrollTrigger, useGSAP, MOTION_OK, HOLD, NAV_H, RISE, useFits, riseOnScroll, drawRule } from '../lib/motion';
 
 const copy = {
   en: {
@@ -66,22 +66,8 @@ export default function Process() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
-  // Whether the section fitted the screen below the navbar when the scene was last built (a pinned scene must fit).
-  // A resize across that line, or a font load that changes the height, rebuilds the scene; nothing else does.
-  const built = useRef(null);
-  const [rebuild, setRebuild] = useState(0);
-  useEffect(() => {
-    let live = true;
-    const measure = () => {
-      if (live && root.current && fitsScreen(root.current) !== built.current) setRebuild((n) => n + 1);
-    };
-    window.addEventListener('resize', measure);
-    document.fonts?.ready.then(measure);
-    return () => {
-      live = false;
-      window.removeEventListener('resize', measure);
-    };
-  }, [lang]);
+  // A pinned scene must fit the screen below the navbar. Crossing that line (resize, late fonts) rebuilds the scene; nothing else does.
+  const fits = useFits(root, [lang]);
 
   // The heading and the top rule only depend on the language, so a resize never replays them
   useGSAP(() => {
@@ -98,19 +84,18 @@ export default function Process() {
     const mm = gsap.matchMedia(root.current);
     mm.add({ hold: HOLD, wide: '(min-width: 1024px)', motion: MOTION_OK }, ({ conditions }) => {
       const section = root.current;
-      built.current = fitsScreen(section);
       if (!conditions.motion) return;
       const list = section.querySelector('.proc-list');
 
       if (conditions.wide) {
         // Mouse or trackpad and the section fits: pin it and let the scroll walk the three steps.
         // The walk starts a little before the pin so step 1 is already up when the scene locks.
-        if (conditions.hold && built.current) {
+        if (conditions.hold && fits) {
           // Centred in the space under the navbar, and a hold that stops growing on tall screens
           const pin = ScrollTrigger.create({
             trigger: section, pin: true, invalidateOnRefresh: true,
             start: () => `top ${Math.max(NAV_H, Math.round((window.innerHeight - section.offsetHeight + NAV_H) / 2))}px`,
-            end: () => `+=${Math.min(Math.round(window.innerHeight * 2.2), 1800)}`,
+            end: () => `+=${Math.min(Math.round(window.innerHeight * 1.6), 1400)}`,
           });
           walk(list, { trigger: section, start: 'top 55%', end: () => pin.end }, true);
         } else {
@@ -130,12 +115,12 @@ export default function Process() {
       });
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang, rebuild], revertOnUpdate: true });
+  }, { scope: root, dependencies: [lang, fits], revertOnUpdate: true });
 
   return (
     <section id="process" ref={root} className="rule py-24 lg:py-32">
       <div className="page">
-        <h2 key={lang} className="proc-title t-h2 max-w-[22ch] flow-root [&>div]:-mb-[0.08em] [&>div]:pb-[0.08em]">{t.title}</h2>
+        <h2 key={lang} className="proc-title t-h2 max-w-[22ch]">{t.title}</h2>
         <div className="proc-list relative mt-14 lg:mt-20">
           {/* Vertical on phones and tablets, horizontal from lg */}
           <div aria-hidden="true" className="absolute bottom-2 left-[5px] top-2 w-px bg-line lg:bottom-auto lg:left-0 lg:right-0 lg:top-[5px] lg:h-px lg:w-auto">

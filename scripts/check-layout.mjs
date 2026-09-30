@@ -48,7 +48,8 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
     const fixed = (e) => { for (let a = e; a; a = a.parentElement) if (getComputedStyle(a).position === 'fixed') return true; return false; };
     const suspects = [main, ...main.querySelectorAll('*')].filter((e) => {
       const r = e.getBoundingClientRect(); // hidden on purpose: tiny boxes (honeypots), closed panels, fixed overlays (closed menus)
-      return invisible(e) && (e === main || !invisible(e.parentElement)) && r.width > 2 && r.height > 2 && !e.closest('details:not([open])') && !fixed(e);
+      // data-motion-only: a state that only exists inside an animation (a chip lighting up, a label that swaps), not content
+      return invisible(e) && (e === main || !invisible(e.parentElement)) && r.width > 2 && r.height > 2 && !e.closest('details:not([open])') && !e.closest('[data-motion-only]') && !fixed(e);
     }).slice(0, 50);
     const stuck = [];
     for (const e of suspects) {

@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import ScrollLink from './ScrollLink';
 import WorkflowTrace from './WorkflowTrace';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, SplitText, MOTION_OK, HOLD, NAV_H, fitsScreen } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, SplitText, MOTION_OK, HOLD, NAV_H, RISE, useFits } from '../lib/motion';
 
 const copy = {
   en: {
@@ -56,19 +56,12 @@ export default function Hero() {
   const stage = useRef(null);
   const runway = useRef(null);
   const scene = useRef(null);
-  const [held, setHeld] = useState(false);
+  const held = useFits(stage, [lang]);
   const hold = useSyncExternalStore(
     (notify) => { const mq = matchMedia(HOLD); mq.addEventListener('change', notify); return () => mq.removeEventListener('change', notify); },
     () => matchMedia(HOLD).matches,
     () => false,
   );
-
-  useLayoutEffect(() => {
-    const check = () => setHeld(fitsScreen(stage.current));
-    check();
-    ScrollTrigger.addEventListener('refresh', check); // resize, font swap, language switch: layout has settled
-    return () => ScrollTrigger.removeEventListener('refresh', check);
-  }, [lang]);
 
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
@@ -77,7 +70,8 @@ export default function Hero() {
         type: 'lines',
         mask: 'lines',
         autoSplit: true,
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: 'expo.out', stagger: 0.09, delay: 0.1 }),
+        reduceWhiteSpace: false,
+        onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09, delay: 0.1 }),
       });
       gsap.from('.hero-rise', { y: 14, autoAlpha: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, delay: 0.5 });
     });
@@ -142,7 +136,7 @@ export default function Hero() {
           </div>
         </div>
       </section>
-    <div ref={runway} aria-hidden="true" style={holding ? { height: '200vh' } : undefined} />
+      <div ref={runway} aria-hidden="true" style={holding ? { height: '200vh' } : undefined} />
     </>
   );
 }

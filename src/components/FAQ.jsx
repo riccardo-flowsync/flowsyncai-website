@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
 
 // The questions prospects ask on calls. Answers stay within what the service does today: no prices, no guarantees.
 const copy = {
@@ -32,14 +32,6 @@ const copy = {
       ['Lavorate anche in inglese e fuori dall’Italia?', 'Sì. Scriviamo in modo nativo in inglese e in italiano, e abbiamo portato avanti campagne nel Regno Unito, in Europa e negli Emirati.'],
     ],
   },
-};
-
-// An open answer moves everything below it, so re-measure once its slide has settled (Booking's triggers depend on it).
-// One pending call at a time. The FAQ lines do not depend on it: they hang off the list's top edge, which never moves.
-let pending = null;
-const refreshSoon = () => {
-  pending?.kill();
-  pending = gsap.delayedCall(0.5, ScrollTrigger.refresh);
 };
 
 export default function FAQ() {
@@ -77,7 +69,6 @@ export default function FAQ() {
           {t.items.map(([q, a]) => (
             <details
               key={q}
-              onToggle={refreshSoon}
               className="faq-row group relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--d,1))]"
             >
               <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-5 text-[1.05rem] font-medium [&::-webkit-details-marker]:hidden">

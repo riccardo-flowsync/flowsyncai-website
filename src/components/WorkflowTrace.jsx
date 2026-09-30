@@ -47,15 +47,21 @@ export default function WorkflowTrace({ held = false, scene }) {
     const mm = gsap.matchMedia(root.current); // scope: selectors below match inside this panel only
     mm.add({ ok: MOTION_OK, hold: HOLD }, (ctx) => {
       if (!ctx.conditions.ok) return undefined;
+      // Waiting steps keep their label in the faint colour, so the whole workflow reads at a glance before anything runs.
+      // A step that is reached fills its dot, its label turns bright and its time and detail appear.
+      const labels = gsap.utils.toArray('.trace-label', root.current);
+      const fg = getComputedStyle(labels[0]).color;
+      const faint = getComputedStyle(root.current.querySelector('.trace-time')).color;
       gsap.set('.trace-fill', { scale: 0 });
       gsap.set('.trace-seg', { scaleY: 0 });
+      gsap.set(labels, { color: faint });
       const scrubbed = ctx.conditions.hold && held && scene;
       // Held scene: opacity and a small lift only (no visibility or clip-path), so the text stays findable and readable by assistive tech.
       if (scrubbed) {
-        gsap.set('.trace-label, .trace-time', { opacity: 0 });
+        gsap.set('.trace-time', { opacity: 0 });
         gsap.set('.trace-detail', { opacity: 0, y: 6 });
       } else {
-        gsap.set('.trace-label, .trace-time', { autoAlpha: 0 });
+        gsap.set('.trace-time', { autoAlpha: 0 });
         gsap.set('.trace-detail', { clipPath: 'inset(0 100% 0 0)' });
       }
       const steps = gsap.utils.toArray('.trace-step', root.current);
@@ -68,7 +74,8 @@ export default function WorkflowTrace({ held = false, scene }) {
         const show = (tl, step, at) => {
           const q = gsap.utils.selector(step);
           return tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at)
-            .to(q('.trace-label, .trace-time'), { opacity: 1, duration: 0.25 }, '<')
+            .to(q('.trace-label'), { color: fg, duration: 0.25 }, '<')
+            .to(q('.trace-time'), { opacity: 1, duration: 0.25 }, '<')
             .to(q('.trace-detail'), { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }, '<0.1');
         };
         const intro = gsap.timeline({ delay: 0.7 }).to(ring, { autoAlpha: 1, duration: 0.3 }, 0);
@@ -93,12 +100,13 @@ export default function WorkflowTrace({ held = false, scene }) {
       // Everywhere else: it plays once when it comes into view and pauses off screen.
       const tl = gsap.timeline({ paused: true });
       tl.to({}, { duration: 0.7 }); // let the headline land first
-      steps.forEach((step) => {
+      steps.forEach((step, i) => {
         const q = gsap.utils.selector(step);
         tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' })
-          .to(q('.trace-label, .trace-time'), { autoAlpha: 1, duration: 0.25 }, '<')
-          .to(q('.trace-detail'), { clipPath: 'inset(0 0% 0 0)', duration: 0.55, ease: 'steps(22)' }, '<0.1')
-          .to(q('.trace-seg'), { scaleY: 1, duration: 0.4, ease: 'power1.inOut' }, '+=0.3');
+          .to(q('.trace-label'), { color: fg, duration: 0.25 }, '<')
+          .to(q('.trace-time'), { autoAlpha: 1, duration: 0.25 }, '<')
+          .to(q('.trace-detail'), { clipPath: 'inset(0 0% 0 0)', duration: 0.55, ease: 'steps(22)' }, '<0.1');
+        if (i < steps.length - 1) tl.to(q('.trace-seg'), { scaleY: 1, duration: 0.4, ease: 'power1.inOut' }, '+=0.3'); // the last step has no line below it
       });
 
       // Only run while visible

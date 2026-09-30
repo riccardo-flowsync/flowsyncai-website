@@ -29,6 +29,8 @@ const copy = {
         ['Sara, Nord Logistica', 'wrong person', 'Try our head of sales, Luca.'],
       ],
       draft: 'Draft reply, waiting for approval',
+      sent: 'Reply approved and sent',
+      from: 'From anna@yourbrand-mail.com',
       draftText: 'Great to hear, Giulia. Here is my calendar: pick any time that suits you.',
       approve: 'Approve and send',
       edit: 'Edit',
@@ -66,6 +68,8 @@ const copy = {
         ['Sara, Nord Logistica', 'persona sbagliata', 'Provate con Luca, il responsabile vendite.'],
       ],
       draft: 'Bozza di risposta, in attesa di approvazione',
+      sent: 'Risposta approvata e inviata',
+      from: 'Da anna@tuobrand-mail.com',
       draftText: 'Ottimo, Giulia. Ecco il mio calendario: scegli l’orario che preferisci.',
       approve: 'Approva e invia',
       edit: 'Modifica',
@@ -87,7 +91,7 @@ const Words = ({ text, cls }) => text.split(' ').map((w, i) => <span key={i} cla
 // One timeline per system, written in seconds. Scrubbed it is spread over the scroll (and rewinds on the way back);
 // played once (touch, short or narrow screens) it runs at 1.5x from when the stage comes into view.
 // Only opacity and transforms move. Each chip lights (its accent ring fades in) when the matching thing happens in the picture.
-// Reduced motion and no-JS show the finished picture, so the chips are lit by default and dimmed here, inside the motion query.
+// Reduced motion and no-JS show the picture without the chips lit: the accent there would only be decoration.
 const lightChip = (tl, chip, at) => tl.to(chip, { opacity: 1, duration: 0.3 }, at);
 const finish = (tl, st) => (st.scrub ? tl.to({}, { duration: 1.2 }) : tl.timeScale(1.5)); // scrubbed: a short rest on the finished picture
 
@@ -95,28 +99,31 @@ function inboxScene(stage, st) {
   const q = gsap.utils.selector(stage);
   const chips = q('.pt-lit');
   const words = q('.ib-w');
-  gsap.set(chips, { opacity: 0 });
   gsap.set(q('.ib-row'), { autoAlpha: 0, y: -10 });
   gsap.set(q('.ib-draft, .ib-w, .ib-btns'), { autoAlpha: 0 });
   const tl = gsap.timeline({ scrollTrigger: st });
-  // Replies arrive one company at a time and each tag scrambles onto its label
+  // Replies arrive one company at a time. Played once, each tag scrambles onto its label; scrubbed, a scramble would freeze
+  // half-garbled whenever the reader stops scrolling, so the tag just fades in.
   q('.ib-row').forEach((row, i) => {
     const tag = row.querySelector('.ib-tag');
-    tl.to(row, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' }, i * 0.9)
-      .to(tag, { scrambleText: { text: tag.textContent, chars: 'lowerCase', speed: 0.6 }, duration: 0.7 }, i * 0.9 + 0.2);
+    tl.to(row, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' }, i * 0.9);
+    if (st.scrub) tl.fromTo(tag, { opacity: 0 }, { opacity: 1, duration: 0.4 }, i * 0.9 + 0.3);
+    else tl.to(tag, { scrambleText: { text: tag.textContent, chars: 'lowerCase', speed: 0.6 }, duration: 0.7 }, i * 0.9 + 0.2);
   });
   lightChip(tl, chips[0], 0.3);
-  lightChip(tl, chips[1], 2.7);
-  // The draft builds word by word, then the buttons appear
+  // The draft builds word by word (sent from the outreach domain, not the main one), then the buttons appear
   tl.to(q('.ib-draft'), { autoAlpha: 1, duration: 0.4 }, 3.3)
     .to(words, { autoAlpha: 1, duration: 0.12, stagger: 0.1 }, 3.6)
     .to(q('.ib-btns'), { autoAlpha: 1, duration: 0.4 }, 3.6 + words.length * 0.1 + 0.4);
-  // Approve is pressed last: its own beat, after a rest with the buttons on screen
-  tl.addLabel('press', '+=1')
+  lightChip(tl, chips[1], 3.5);
+  // Approve is pressed last: its own beat, after a rest with the buttons on screen. The draft's label turns to "approved".
+  tl.addLabel('press', st.scrub ? '+=1' : '+=0.5')
     .to(q('.ib-approve'), { scale: 0.92, duration: 0.2, ease: 'power2.in' }, 'press')
     .to(q('.ib-approve'), { scale: 1, duration: 0.3, ease: 'power2.out' })
     .to(q('.ib-edit'), { opacity: 0.4, duration: 0.3 }, 'press')
-    .fromTo(q('.ib-ok'), { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: 'power2.out' }, 'press+=0.2'); // the ring draws round the draft
+    .fromTo(q('.ib-ok'), { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: 'power2.out' }, 'press+=0.2') // the ring draws round the draft
+    .to(q('.ib-wait'), { opacity: 0, duration: 0.2 }, 'press+=0.2')
+    .fromTo(q('.ib-sent'), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 'press+=0.35');
   lightChip(tl, chips[2], 'press+=0.3');
   return finish(tl, st);
 }
@@ -125,7 +132,6 @@ function chatScene(stage, st) {
   const q = gsap.utils.selector(stage);
   const chips = q('.pt-lit');
   const words = q('.ch-w');
-  gsap.set(chips, { opacity: 0 });
   gsap.set(q('.ch-user, .ch-agent, .ch-w, .ch-act'), { autoAlpha: 0 });
   gsap.set(q('.ch-dot'), { scale: 0 });
   const tl = gsap.timeline({ scrollTrigger: st });
@@ -149,9 +155,11 @@ function chatScene(stage, st) {
 // How much scroll each held stage takes, in screens (Systems total: 1.5)
 const SCENES = { outbound: { run: inboxScene, hold: 0.9 }, support: { run: chatScene, hold: 0.6 } };
 
-// The article's height if nothing were pinned: a pinned stage leaves a tall spacer behind that would inflate offsetHeight
+// The article's height if nothing were pinned: a pinned stage leaves a tall spacer behind that would inflate offsetHeight.
+// Summed from exact heights and rounded up: adding up rounded ones can come out a pixel short and let a scene pin 1px too tall.
 const natural = (article) => {
-  return { offsetHeight: article.firstElementChild.offsetHeight + parseFloat(getComputedStyle(article).rowGap) + article.querySelector('[data-stage]').offsetHeight };
+  const h = (el) => el.getBoundingClientRect().height;
+  return { offsetHeight: Math.ceil(h(article.firstElementChild) + parseFloat(getComputedStyle(article).rowGap) + h(article.querySelector('[data-stage]'))) };
 };
 
 const Panel = ({ title, cls = '', children }) => (
@@ -177,7 +185,13 @@ function Inbox({ t, lang }) {
       </ul>
       <div className="ib-draft relative mt-4 rounded-lg border border-line p-4">
         <span className="ib-ok pointer-events-none absolute -inset-px origin-left scale-x-0 rounded-lg border border-accent" />
-        <p className="text-xs text-faint">{t.draft}</p>
+        <div className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 text-xs text-faint">
+          <p className="grid">
+            <span className="ib-wait [grid-area:1/1]">{t.draft}</span>
+            <span data-motion-only className="ib-sent text-muted opacity-0 [grid-area:1/1]">{t.sent}</span>
+          </p>
+          <p>{t.from}</p>
+        </div>
         <p className="mt-1.5 text-sm"><Words cls="ib-w" text={t.draftText} /></p>
         <div className="ib-btns mt-3 flex flex-wrap gap-2">
           <span className="ib-approve rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-canvas">{t.approve}</span>
@@ -237,7 +251,7 @@ export default function Systems() {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       drawRule(root.current);
-      riseOnScroll(root.current.querySelector('h2'));
+      riseOnScroll(root.current.querySelector('.sys-title'));
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -264,16 +278,18 @@ export default function Systems() {
             const stage = article.querySelector('[data-stage]');
             const pinned = [article, stage][modes[i]];
             // refreshPriority (even 0) makes ScrollTrigger refresh everything in page order, so the pin spacers add up correctly
-            run(stage, pinned
-              ? {
-                trigger: pinned,
-                pin: true,
-                start: () => `top ${Math.round(NAV_H + Math.max(0, (innerHeight - NAV_H - pinned.offsetHeight) / 2))}px`,
-                end: () => `+=${Math.round(innerHeight * screens)}`,
-                scrub: 0.5,
-                invalidateOnRefresh: true,
-                refreshPriority: 0,
-              }
+            // (the pin is refreshed before its scene: its trigger sits higher on the page, or is the same element created first)
+            const pin = pinned && ScrollTrigger.create({
+              trigger: pinned,
+              pin: true,
+              start: () => `top ${Math.round(NAV_H + Math.max(0, (innerHeight - NAV_H - pinned.offsetHeight) / 2))}px`,
+              end: () => `+=${Math.round(innerHeight * screens)}`,
+              invalidateOnRefresh: true,
+              refreshPriority: 0,
+            });
+            // The scene starts as the picture comes into view, so it never scrolls up empty, and ends with the hold
+            run(stage, pin
+              ? { trigger: stage, pinnedContainer: pinned, start: 'top 85%', end: () => pin.end, scrub: 0.5, invalidateOnRefresh: true, refreshPriority: 0 }
               : hold
                 ? { trigger: stage, start: 'top 80%', end: 'bottom 40%', scrub: 0.5, refreshPriority: 0 }
                 : { trigger: stage, start: 'top 70%', once: true, refreshPriority: 0 });
@@ -305,7 +321,7 @@ export default function Systems() {
       <div className="page grid gap-14 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <div className="lg:sticky lg:top-28">
-            <h2 key={lang} className="t-h2">{t.title}</h2>
+            <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
             <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
             <ol className="mt-10 hidden gap-3 border-l border-line lg:grid">
               {t.systems.map((s) => (
@@ -333,7 +349,7 @@ export default function Systems() {
                   {s.points.map((p) => (
                     <li key={p} className="relative rounded-lg border border-line px-3 py-1.5 text-sm text-muted">
                       {p}
-                      <span aria-hidden="true" className="pt-lit pointer-events-none absolute -inset-px rounded-lg border border-accent bg-accent/10" />
+                      <span aria-hidden="true" data-motion-only className="pt-lit pointer-events-none absolute -inset-px rounded-lg border border-accent bg-accent/10 opacity-0" />
                     </li>
                   ))}
                 </ul>
