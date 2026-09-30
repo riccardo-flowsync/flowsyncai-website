@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  /* Anchor targets land below the fixed navbar */
+  [id] {
+    scroll-margin-top: 7rem;
+  }
+
   body {
     @apply text-text font-sans selection:bg-accent/30 selection:text-text;
     background: linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 100%);

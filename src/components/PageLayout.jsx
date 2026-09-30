@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 // Shared shell for legal/contact pages: heading, EN/IT toggle, styled prose.
 const PageLayout = ({ label, title, lang, setLang, children }) => {

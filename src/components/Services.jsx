@@ -35,13 +35,12 @@ const Services = () => {
         pinSpacing: false,
       });
 
-      // Animate each panel on scroll
+      // Animate each panel on scroll (vertical entry: a horizontal offset widens the page on phones)
       panelsRef.current.forEach((panel) => {
-        gsap.fromTo(panel, 
+        gsap.fromTo(panel,
           {
-            x: 50,
-            opacity: 0,
-            filter: "blur(15px)"
+            y: 40,
+            opacity: 0
           },
           {
             scrollTrigger: {
@@ -49,9 +48,8 @@ const Services = () => {
               start: "top 80%", // trigger when top of panel hits 80% of viewport
               toggleActions: "play none none reverse", // play on enter, reverse on leave back
             },
-            x: 0,
+            y: 0,
             opacity: 1,
-            filter: "blur(0px)",
             duration: 0.8,
             ease: "power3.out",
           }

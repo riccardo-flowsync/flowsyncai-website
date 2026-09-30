@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        short: { raw: '(max-height: 560px)' }, // landscape phones: no fixed-height or sticky cards
+      },
       colors: {
         background: '#0a0a0b',
         surface: '#121214',

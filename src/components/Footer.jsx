@@ -53,7 +53,7 @@ const Footer = () => {
             <li><Link to="/privacy" className="hover:text-text transition-colors">Privacy Policy</Link></li>
             <li><Link to="/terms" className="hover:text-text transition-colors">Terms of Service</Link></li>
             <li><Link to="/contact" className="hover:text-text transition-colors">Contact</Link></li>
-            <li><a href="mailto:riccardo@flowsyncaisolutions.com" className="hover:text-accent transition-colors">riccardo@flowsyncaisolutions.com</a></li>
+            <li><a href="mailto:riccardo@flowsyncaisolutions.com" className="break-all hover:text-accent transition-colors">riccardo@flowsyncaisolutions.com</a></li>
           </ul>
         </div>
         

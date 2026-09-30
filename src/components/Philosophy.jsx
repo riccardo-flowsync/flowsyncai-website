@@ -65,7 +65,7 @@ const Philosophy = () => {
   }, []);
 
   return (
-    <section ref={containerRef} id="philosophy" className="relative w-full pt-16 pb-16 md:pt-24 md:pb-24 bg-[#050505] overflow-visible flex items-center justify-center">
+    <section ref={containerRef} id="philosophy" className="relative w-full pt-16 pb-16 md:pt-24 md:pb-24 bg-[#050505] overflow-x-clip flex items-center justify-center">
       
       {/* Background Texture Engine */}
       <div 

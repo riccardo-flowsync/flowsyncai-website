@@ -80,26 +80,30 @@ const Protocol = () => {
   ];
 
   useEffect(() => {
-    let ctx = gsap.context(() => {
+    // Roll-over effect only while cards are sticky (not on short/landscape screens, see `short:` classes)
+    const mm = gsap.matchMedia();
+    mm.add("(min-height: 561px)", () => {
       cardsRef.current.forEach((card, index) => {
+        if (!card || index === cardsRef.current.length - 1) return;
+        gsap.to(card.querySelector('.card-inner'), {
+          scale: 0.9,
+          opacity: 0.4,
+          filter: "blur(20px)",
+          y: -40,
+          ease: "none",
+          scrollTrigger: {
+            trigger: cardsRef.current[index + 1],
+            start: "top 85%", // after the next card starts covering this one, so a settled card is sharp
+            end: "top top",
+            scrub: true,
+          }
+        });
+      });
+    });
+
+    let ctx = gsap.context(() => {
+      cardsRef.current.forEach((card) => {
         if (!card) return;
-        
-        // Effect when next card rolls over
-        if (index < cardsRef.current.length - 1) {
-          gsap.to(card.querySelector('.card-inner'), {
-            scale: 0.9,
-            opacity: 0.4,
-            filter: "blur(20px)",
-            y: -40,
-            ease: "none",
-            scrollTrigger: {
-              trigger: cardsRef.current[index + 1],
-              start: "top bottom",
-              end: "top top",
-              scrub: true,
-            }
-          });
-        }
 
         // Upward Drift Entry Animation for the whole card
         gsap.from(card.querySelector('.card-inner'), {
@@ -157,7 +161,7 @@ const Protocol = () => {
            .to(".ekg-path", { strokeDashoffset: 0, duration: 1.5, ease: "none" });
 
     }, containerRef);
-    return () => ctx.revert();
+    return () => { ctx.revert(); mm.revert(); };
   }, []);
 
   return (
@@ -174,12 +178,12 @@ const Protocol = () => {
           <div 
             key={i}
             ref={el => cardsRef.current[i] = el}
-            className="w-full h-[90dvh] md:h-[100vh] lg:h-[85vh] flex flex-col items-center justify-center py-4 md:p-8 sticky top-0 md:top-4"
+            className="w-full h-[90dvh] md:h-[100vh] lg:h-[85vh] short:h-auto flex flex-col items-center justify-center py-4 md:p-8 sticky short:static top-0 md:top-4"
             style={{ zIndex: i + 1 }}
           >
-            <div className="card-inner w-full h-full md:h-[80vh] lg:h-[70vh] rounded-[2rem] md:rounded-[3rem] glass-panel bg-[#0b0b0e] overflow-hidden flex flex-col md:flex-row shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-white/5 mx-auto">
+            <div className="card-inner w-full h-full md:h-[80vh] lg:h-[70vh] short:h-auto rounded-[2rem] md:rounded-[3rem] glass-panel bg-[#0b0b0e] overflow-hidden flex flex-col md:flex-row shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-white/5 mx-auto">
               
-              <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center h-1/2 md:h-full relative z-10 text-center md:text-left items-center md:items-start">
+              <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center shrink-0 md:h-full short:h-auto relative z-10 text-center md:text-left items-center md:items-start">
                 <span className="text-anim font-mono text-[10px] md:text-xs text-accent mb-4 md:mb-6 bg-accent/5 border border-accent/20 px-3 py-1.5 rounded w-fit uppercase tracking-widest">
                   PHASE {step.num}
                 </span>
@@ -191,10 +195,10 @@ const Protocol = () => {
                 </p>
               </div>
               
-              <div className="w-full md:w-1/2 h-1/2 md:h-full bg-[#050505] border-t md:border-t-0 md:border-l border-white/5 flex items-center justify-center p-6 md:p-16 relative overflow-hidden">
+              <div className="w-full md:w-1/2 flex-1 min-h-0 md:h-full short:h-auto bg-[#050505] border-t md:border-t-0 md:border-l border-white/5 flex items-center justify-center p-6 md:p-16 relative overflow-hidden">
                  {/* Decorative background glow */}
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-accent/5 blur-[80px] rounded-full pointer-events-none" />
-                 <div className="w-40 h-40 md:w-72 md:h-72 relative z-10 flex items-center justify-center">
+                 <div className="w-40 h-40 md:w-72 md:h-72 max-h-full relative z-10 flex items-center justify-center">
                     {step.graphic}
                  </div>
               </div>

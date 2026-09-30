@@ -95,7 +95,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center pb-12 px-6 md:px-16 lg:px-24 pt-32 md:pt-0">
+    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center pb-12 px-6 md:px-16 lg:px-24 pt-28 lg:pt-24">
       
       {/* Background radial glow specifically for mobile */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] aspect-square bg-accent/10 blur-[120px] rounded-full sm:hidden pointer-events-none" />
@@ -105,17 +105,17 @@ const Hero = () => {
         
         {/* Left Side text */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left w-full lg:w-[65%] xl:w-[75%] z-20">
-          <h1 className="mb-6 md:mb-8 w-full leading-[1.15] md:leading-[1.1]">
+          <h1 className="mb-6 md:mb-8 short:mb-2 w-full leading-[1.15] md:leading-[1.1]">
             <span className="hero-anim opacity-0 translate-y-8 font-heading font-bold text-[clamp(1.75rem,5vw,3.25rem)] text-text/90 tracking-tight uppercase inline-block md:mr-5">
               Operational scaling beyond
             </span>
             <br className="sm:hidden" />
-            <span className="hero-drama-text font-drama italic text-[clamp(3.5rem,15vw,7.5rem)] text-accent tracking-tighter inline-block relative translate-y-1 md:translate-y-2" style={{ filter: 'blur(8px)', opacity: 0 }}>
+            <span className="hero-drama-text font-drama italic text-[clamp(3.5rem,min(15vw,18vh),7.5rem)] text-accent tracking-tighter inline-block relative translate-y-1 md:translate-y-2" style={{ filter: 'blur(8px)', opacity: 0 }}>
               Human limits.
             </span>
           </h1>
           
-          <div className="max-w-2xl mb-10 md:mb-12 px-4 md:px-0 flex flex-wrap gap-x-[0.35em] gap-y-[0.3em]">
+          <div className="max-w-2xl mb-10 md:mb-12 short:mb-4 px-4 md:px-0 flex flex-wrap gap-x-[0.35em] gap-y-[0.3em]">
              {"The definitive AI operations partner for B2B companies that want to scale without adding headcount.".split(" ").map((word, i) => (
                <span key={i} className="hero-word opacity-0 translate-y-4 font-sans text-base md:text-xl text-text/70 leading-relaxed inline-block">
                  {word}
