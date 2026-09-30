@@ -67,7 +67,7 @@ function CalendarLink() {
 }
 
 // A quiet, static picture of this month so the frame reads as a calendar before it loads. No availability implied.
-function MonthPreview() {
+function MonthPreview({ animate }) {
   const { lang } = useLang();
   const locale = lang === 'it' ? 'it-IT' : 'en-GB';
   const now = new Date();
@@ -82,6 +82,7 @@ function MonthPreview() {
   // The grid builds itself day by day as it scrolls in, then today's ring is drawn. Scrubbed, so it rewinds on the way back.
   // Its own scope: the preview unmounts when the real calendar opens, and its triggers go with it.
   useGSAP(() => {
+    if (!animate) return undefined; // on /contact the calendar stays as drawn
     const mm = gsap.matchMedia(box.current);
     mm.add(MOTION_OK, () => {
       const tl = gsap.timeline({
@@ -89,8 +90,13 @@ function MonthPreview() {
         scrollTrigger: { trigger: box.current, start: 'top 88%', end: 'bottom 80%', scrub: true },
       });
       tl.from('.cal-wd', { opacity: 0, duration: 0.3, stagger: 0.03 })
-        .from('.cal-day', { opacity: 0, yPercent: 35, duration: 0.5, stagger: 0.05 }, '>-0.1');
-      if (box.current.querySelector('.cal-ring')) tl.fromTo('.cal-ring rect', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2 }, '>-0.2');
+        .from('.cal-day', { opacity: 0, scale: 0.8, duration: 0.5, stagger: 0.05 }, '>-0.1');
+      // A dashed copy draws the ring; once it is done a plain copy takes over, so the finished ring has no seam at the start point.
+      // (Two layers instead of an onUpdate that clears the dash: ScrollTrigger refreshes render without callbacks.)
+      if (box.current.querySelector('.cal-ring')) {
+        tl.fromTo('.cal-ring-draw', { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2 }, '>-0.2')
+          .fromTo('.cal-ring-done', { opacity: 0 }, { opacity: 1, duration: 0.05 }, '>');
+      }
     });
     return () => mm.revert();
   }, { scope: box });
@@ -111,9 +117,11 @@ function MonthPreview() {
           >
             {d}
             {d === today && (
-              // Today's ring is an outline that can be drawn (same look as the old inset ring); pathLength 1 lets the scroll drive the dash
+              // Today's ring is an outline that can be drawn (same look as the old inset ring): a 2px stroke on the cell edge, half of it clipped by the svg.
+              // Plain percentage attributes, so it renders the same everywhere; pathLength 1 lets the scroll drive the dash
               <svg aria-hidden="true" className="cal-ring pointer-events-none absolute inset-0 h-full w-full text-accent">
-                <rect x="0.5" y="0.5" rx="5.5" pathLength="1" strokeDasharray="1" fill="none" stroke="currentColor" strokeWidth="1" style={{ width: 'calc(100% - 1px)', height: 'calc(100% - 1px)' }} />
+                <rect className="cal-ring-draw" width="100%" height="100%" rx="6" pathLength="1" fill="none" stroke="currentColor" strokeWidth="2" />
+                <rect className="cal-ring-done" width="100%" height="100%" rx="6" fill="none" stroke="currentColor" strokeWidth="2" />
               </svg>
             )}
           </span>
@@ -140,13 +148,19 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
     mm.add(MOTION_OK, () => {
       riseOnScroll('.book-title');
       drawRule(root.current);
-      // The agenda's own rule draws, then its three marks one by one (scrubbed, so they rewind)
-      gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: { trigger: '.book-agenda', start: 'top 88%', end: 'bottom 80%', scrub: true },
-      })
-        .fromTo('.book-agenda', { '--rule': 0 }, { '--rule': 1, duration: 1 })
-        .from('.book-mark', { scaleX: 0, transformOrigin: 'left center', duration: 1, stagger: 0.7 }, '>-0.2');
+      // The agenda's own rule draws, then each mark as its own line scrolls fully into view (scrubbed, so they rewind).
+      // Each line has its own trigger and ends at the screen's bottom edge, so landing on #book shows them all drawn.
+      gsap.fromTo('.book-agenda', { '--rule': 0 }, {
+        '--rule': 1,
+        ease: 'none',
+        scrollTrigger: { trigger: '.book-agenda', start: 'top 100%', end: 'top 85%', scrub: true },
+      });
+      gsap.utils.toArray('.book-agenda li').forEach((li) => gsap.from(li.querySelector('.book-mark'), {
+        scaleX: 0,
+        transformOrigin: 'left center',
+        ease: 'none',
+        scrollTrigger: { trigger: li, start: 'top 100%', end: 'bottom 100%', scrub: true },
+      }));
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -204,7 +218,7 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
                     {t.note} <Link to="/privacy" className="link">{t.privacy}</Link>
                   </p>
                 </div>
-                <MonthPreview />
+                <MonthPreview animate={heading === 'h2'} />
               </div>
             )}
           </div>

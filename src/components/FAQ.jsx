@@ -34,27 +34,35 @@ const copy = {
   },
 };
 
-// An open answer moves everything below it, so re-measure once its slide has settled (the scrubbed lines and Booking depend on it)
-const refreshSoon = () => gsap.delayedCall(0.5, ScrollTrigger.refresh);
+// An open answer moves everything below it, so re-measure once its slide has settled (Booking's triggers depend on it).
+// One pending call at a time. The FAQ lines do not depend on it: they hang off the list's top edge, which never moves.
+let pending = null;
+const refreshSoon = () => {
+  pending?.kill();
+  pending = gsap.delayedCall(0.5, ScrollTrigger.refresh);
+};
 
 export default function FAQ() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
 
-  // Scrubbed, so the lines rewind on the way back: the section rule, the list's top line, then each row's divider as that row arrives
+  // Scrubbed, so the lines rewind on the way back: the section rule, the list's top line, then each row's divider in a short wave.
+  // The wave is one timeline on the list's top edge (not one trigger per row), so opening an answer cannot undraw a divider.
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       riseOnScroll('.faq-title');
       drawRule(root.current);
-      const line = (el, vars, start, end) => gsap.fromTo(el, vars.from, {
-        ...vars.to,
+      gsap.fromTo('.faq-list', { '--rule': 0 }, {
+        '--rule': 1,
         ease: 'none',
-        scrollTrigger: { trigger: el, start, end, scrub: true },
+        scrollTrigger: { trigger: '.faq-list', start: 'top 92%', end: 'top 76%', scrub: true },
       });
-      line('.faq-list', { from: { '--rule': 0 }, to: { '--rule': 1 } }, 'top 92%', 'top 76%');
-      gsap.utils.toArray('.faq-row').forEach((row) => line(row, { from: { '--d': 0 }, to: { '--d': 1 } }, 'bottom 96%', 'bottom 78%'));
+      gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: '.faq-list', start: 'top 88%', end: 'top 35%', scrub: true },
+      }).fromTo('.faq-row', { '--d': 0 }, { '--d': 1, duration: 1, stagger: 0.15 });
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
