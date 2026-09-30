@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets and Vercel CLI files never belong in this public repo
+.env
+.env.*
+.vercel
