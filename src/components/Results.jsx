@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
 
 // Source: the outbound case studies, updated 2026-09-23. Interested and meetings add up to the totals.
 const ROWS = [
@@ -10,6 +10,9 @@ const ROWS = [
   { rate: 22, interested: null, meetings: 10 },
   { rate: 41, interested: null, meetings: 11 },
 ];
+const TOTAL_KEYS = ['meetings', 'interested']; // the first two totals are sums of these row figures; the third (the multiple) is not counted
+// A ledger row draws its own bottom rule as it crosses the screen (same length for every row: the rates are different metrics)
+const ROW_RULE = 'relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--row,1))]';
 const CHARTS = [[5.1, 3.4, 2.2, 0.45], [22, 3.5], [41, 28.5]]; // last value = market average
 
 // Source: each support agent's own chat records, counted 2026-09-30, old and new version of the agent together. Chats = at least
@@ -170,58 +173,88 @@ export default function Results() {
   const pct = (v) => `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(v)}%`;
   const num = (v) => new Intl.NumberFormat(locale, { useGrouping: 'always' }).format(v); // Italian leaves 4-digit numbers ungrouped by default
 
-  // Totals count up and bars grow, once, as they come into view. Counters show their real value until then.
+  // Scroll scene, all scrubbed (it rewinds on the way back) and ending on the printed figures. Text shows its real value until this runs.
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
+    const show = (el, v) => { el.textContent = num(v); };
+    const restore = (els) => () => els.forEach((el) => show(el, Number(el.dataset.value)));
+    const q = gsap.utils.selector(root);
+    // Each ledger row draws its own rule. The table and the phone list are never both visible, so each has its own condition.
+    const rowRules = (sel) => () => gsap.utils.toArray(sel).forEach((row) => gsap.fromTo(row, { '--row': 0 }, {
+      '--row': 1,
+      ease: 'none',
+      scrollTrigger: { trigger: row, start: 'top 92%', end: 'top 70%', scrub: true },
+    }));
+    mm.add(`${MOTION_OK} and (min-width: 640px)`, rowRules('.res-tr'));
+    mm.add(`${MOTION_OK} and (max-width: 639.98px)`, rowRules('.res-li'));
+
     mm.add(MOTION_OK, () => {
+      drawRule(root.current);
       riseOnScroll('.res-title');
-      // Tween a plain number, not the text itself: reverting a text tween would leave "0" on screen
-      const counters = gsap.utils.toArray('.res-count');
-      counters.forEach((el) => {
-        const n = { v: 0 };
-        gsap.to(n, {
-          v: Number(el.dataset.value),
-          duration: 1.6,
-          ease: 'power2.out',
-          onUpdate: () => { el.textContent = num(Math.round(n.v)); },
-          scrollTrigger: { trigger: el, start: 'top 90%', once: true },
-        });
+
+      // The two big totals are built from the rows, one row at a time, while the totals are still on screen.
+      // Only rows that report a figure add to it. Tween plain numbers, not the text itself.
+      const sums = { meetings: 0, interested: 0 };
+      const spans = TOTAL_KEYS.map((k) => q(`[data-sum="${k}"]`)[0]);
+      const paint = () => spans.forEach((el, i) => show(el, Math.round(sums[TOTAL_KEYS[i]])));
+      paint();
+      const build = gsap.timeline({
+        onUpdate: paint,
+        scrollTrigger: { trigger: '.res-totals', start: 'top 67%', end: 'top 12%', scrub: true },
       });
+      const run = { meetings: 0, interested: 0 };
+      ROWS.forEach((row, k) => {
+        const from = { ...run };
+        TOTAL_KEYS.forEach((key) => { run[key] += row[key] ?? 0; });
+        build.fromTo(sums, from, { ...run, ease: 'none', duration: 1, immediateRender: false }, k);
+      });
+
+      // Benchmark bars: the market bar fills first, then ours grow against it. Like with like, no labels added.
       gsap.utils.toArray('.res-chart').forEach((chart) => {
-        gsap.from(chart.querySelectorAll('.res-bar'), {
-          scaleX: 0,
-          duration: 1.2,
-          ease: 'expo.out',
-          stagger: 0.08,
-          scrollTrigger: { trigger: chart, start: 'top 80%', once: true },
+        const bars = chart.querySelectorAll('.res-bar');
+        gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: chart, start: 'top 90%', end: 'top 45%', scrub: true },
+        })
+          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.25 })
+          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.55, stagger: 0.1 }, 0.25);
+      });
+
+      // Support cards: the split bar grows and the figures count up with the scroll, then what the agent does comes in
+      const cardCounters = [];
+      gsap.utils.toArray('.sup-card').forEach((card) => {
+        const c = gsap.utils.selector(card);
+        const tl = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: card, start: 'top 88%', end: 'top 38%', scrub: true },
+        }).from(c('.sup-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 0.7 }, 0);
+        c('.res-count').forEach((el) => {
+          const n = { v: 0 };
+          cardCounters.push(el);
+          show(el, 0);
+          tl.to(n, { v: Number(el.dataset.value), duration: 0.7, onUpdate: () => show(el, Math.round(n.v)) }, 0);
         });
+        tl.from(c('.sup-do'), { autoAlpha: 0, y: 6, duration: 0.3, stagger: 0.05 }, 0.5);
       });
-      // Support cards: the split bar grows from the left, then what the agent does comes in
-      gsap.utils.toArray('.sup-card').forEach((card, i) => {
-        const q = gsap.utils.selector(card);
-        gsap.timeline({ delay: i * 0.25, scrollTrigger: { trigger: card, start: 'top 80%', once: true } })
-          .from(q('.sup-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 1.2, ease: 'expo.out' }, 0.2)
-          .from(q('.sup-do'), { autoAlpha: 0, y: 6, duration: 0.4, ease: 'power3.out', stagger: 0.07 }, 0.7);
-      });
-      return () => counters.forEach((el) => { el.textContent = num(Number(el.dataset.value)); });
+      return restore([...spans, ...cardCounters]);
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="border-t border-line py-24 lg:py-32">
+    <section id="results" ref={root} className="rule py-24 lg:py-32">
       <div className="page">
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
           <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
           <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
         </div>
 
-        <dl className="mt-14 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
-          {t.totals.map(([n, unit, label]) => (
+        <dl className="res-totals mt-14 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
+          {t.totals.map(([n, unit, label], ti) => (
             <div key={label} className="flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
               <dt className="max-w-[24ch] text-sm text-muted">{label}</dt>
               <dd className="text-[clamp(2.75rem,2rem+2.6vw,4.25rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums [font-stretch:112%]">
-                <span className="res-count" data-value={n}>{n}</span>{unit}
+                <span data-value={n} data-sum={TOTAL_KEYS[ti]}>{n}</span>{unit}
               </dd>
             </div>
           ))}
@@ -239,7 +272,7 @@ export default function Results() {
           </thead>
           <tbody>
             {t.rows.map(([name, what, where, rateLabel], i) => (
-              <tr key={name} className="border-b border-line align-top">
+              <tr key={name} className={`res-tr ${ROW_RULE} align-top`}>
                 <th scope="row" className="py-5 pr-4 font-normal">
                   <span className="font-medium">{name}</span>
                   <span className="mt-1 block text-sm text-muted">{what}</span>
@@ -265,7 +298,7 @@ export default function Results() {
 
         <ul className="mt-12 grid border-t border-line sm:hidden">
           {t.rows.map(([name, what, where, rateLabel], i) => (
-            <li key={name} className="border-b border-line py-5">
+            <li key={name} className={`res-li ${ROW_RULE} py-5`}>
               <p className="font-medium">{name}</p>
               <p className="mt-1 text-sm text-muted">{what}</p>
               <p className="text-sm text-faint">{where}</p>
