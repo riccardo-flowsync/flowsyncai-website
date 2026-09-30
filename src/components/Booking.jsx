@@ -2,7 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LeadForm from './LeadForm';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, scrollToEl } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, scrollToEl } from '../lib/motion';
 import { CAL_LINK } from '../lib/cal';
 
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
@@ -77,22 +77,45 @@ function MonthPreview() {
   const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const weekdays = [...Array(7)].map((_, i) => new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2024, 0, 1 + i)));
   const cells = [...Array(offset).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+  const box = useRef(null);
+
+  // The grid builds itself day by day as it scrolls in, then today's ring is drawn. Scrubbed, so it rewinds on the way back.
+  // Its own scope: the preview unmounts when the real calendar opens, and its triggers go with it.
+  useGSAP(() => {
+    const mm = gsap.matchMedia(box.current);
+    mm.add(MOTION_OK, () => {
+      const tl = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: box.current, start: 'top 88%', end: 'bottom 80%', scrub: true },
+      });
+      tl.from('.cal-wd', { opacity: 0, duration: 0.3, stagger: 0.03 })
+        .from('.cal-day', { opacity: 0, yPercent: 35, duration: 0.5, stagger: 0.05 }, '>-0.1');
+      if (box.current.querySelector('.cal-ring')) tl.fromTo('.cal-ring rect', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2 }, '>-0.2');
+    });
+    return () => mm.revert();
+  }, { scope: box });
 
   return (
-    <div aria-hidden="true" className="select-none">
+    <div ref={box} aria-hidden="true" className="select-none">
       <p className="mb-3 text-sm font-medium capitalize text-muted">
         {new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(month)}
       </p>
       <div className="grid grid-cols-7 gap-1 text-center text-xs tabular-nums">
-        {weekdays.map((d, i) => <span key={`w${i}`} className="pb-1 text-faint">{d}</span>)}
+        {weekdays.map((d, i) => <span key={`w${i}`} className="cal-wd pb-1 text-faint">{d}</span>)}
         {cells.map((d, i) => (
           <span
             key={i}
-            className={`grid h-8 place-items-center rounded-md ${
-              d === today ? 'ring-1 ring-inset ring-accent text-fg' : d && d > today ? 'bg-raised text-muted' : 'text-faint/60'
+            className={`${d ? 'cal-day ' : ''}relative grid h-8 place-items-center rounded-md ${
+              d === today ? 'text-fg' : d && d > today ? 'bg-raised text-muted' : 'text-faint/60'
             }`}
           >
             {d}
+            {d === today && (
+              // Today's ring is an outline that can be drawn (same look as the old inset ring); pathLength 1 lets the scroll drive the dash
+              <svg aria-hidden="true" className="cal-ring pointer-events-none absolute inset-0 h-full w-full text-accent">
+                <rect x="0.5" y="0.5" rx="5.5" pathLength="1" strokeDasharray="1" fill="none" stroke="currentColor" strokeWidth="1" style={{ width: 'calc(100% - 1px)', height: 'calc(100% - 1px)' }} />
+              </svg>
+            )}
           </span>
         ))}
       </div>
@@ -110,11 +133,21 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   const frame = useRef(null);
   const root = useRef(null);
 
-  // Only the h2 rises: on /contact the heading is the h1 and stays still
+  // Only the home page section moves: on /contact the heading is the h1 at the top of the page and everything stays still
   useGSAP(() => {
     if (heading !== 'h2') return undefined;
     const mm = gsap.matchMedia(root.current);
-    mm.add(MOTION_OK, () => { riseOnScroll('.book-title'); });
+    mm.add(MOTION_OK, () => {
+      riseOnScroll('.book-title');
+      drawRule(root.current);
+      // The agenda's own rule draws, then its three marks one by one (scrubbed, so they rewind)
+      gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: '.book-agenda', start: 'top 88%', end: 'bottom 80%', scrub: true },
+      })
+        .fromTo('.book-agenda', { '--rule': 0 }, { '--rule': 1, duration: 1 })
+        .from('.book-mark', { scaleX: 0, transformOrigin: 'left center', duration: 1, stagger: 0.7 }, '>-0.2');
+    });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
@@ -124,7 +157,7 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   };
 
   return (
-    <section id="book" ref={root} className="border-t border-line py-24 lg:py-32">
+    <section id="book" ref={root} className="rule py-24 lg:py-32">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
@@ -143,10 +176,10 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
             </div>
           </div>
 
-          <ul className="mt-8 grid gap-3 border-t border-line pt-6 text-muted">
+          <ul className="book-agenda rule mt-8 grid gap-3 pt-6 text-muted">
             {t.agenda.map((item) => (
               <li key={item} className="grid grid-cols-[14px_1fr] gap-3">
-                <span aria-hidden="true" className="mt-[0.6em] h-px w-3.5 bg-accent" />
+                <span aria-hidden="true" className="book-mark mt-[0.6em] h-px w-3.5 bg-accent" />
                 {item}
               </li>
             ))}
