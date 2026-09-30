@@ -38,8 +38,9 @@ check the preview, merge only with the owner's OK.
 ## Motion
 
 - One big moment: the hero headline rises line by line, then the workflow trace plays once and stays on its finished run (it pauses while off screen).
-- Small ones: Systems index follows the reader, Results totals count up and bars grow, the Process line draws,
-  FAQ answers slide open, magnetic primary button.
+- Small ones: Systems index follows the reader, the Systems inbox sorts itself and the chat reply streams in (once),
+  the Results and Booking headings rise line by line (only those two), Results totals count up and bars grow,
+  the Process line draws, FAQ answers slide open, the form draws a tick when sent, magnetic primary button.
 - Use `useGSAP` with a scope; set hidden states inside `gsap.matchMedia('(prefers-reduced-motion: no-preference)')`
   so reduced motion and no-JS show finished content. Never hide content with CSS classes.
 - SplitText headings get `key={lang}` and `revertOnUpdate: true` so the language switch re-splits them.
@@ -63,6 +64,8 @@ What the site may claim:
   over through a ticket.
 - Case-study figures exactly as the dated case-study pack prints them, anonymised, framed as real campaigns
   (never "clients"). Never put a headline reply rate next to the market benchmark: the bars compare like with like.
+- Support-agent figures come from each agent's own chat records, dated, anonymised by trade and country. Time saved is
+  never measured: show it only as "up to", labelled an estimate, with its method and source in the note.
 - No prices, fee structure, guarantees, contract length, "GDPR compliant", client names or testimonials.
 
 ## Leads

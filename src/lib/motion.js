@@ -1,10 +1,11 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
+import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import { useGSAP } from '@gsap/react';
 import Lenis from 'lenis';
 
-gsap.registerPlugin(ScrollTrigger, SplitText, useGSAP);
+gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, useGSAP);
 
 export const REDUCED = '(prefers-reduced-motion: reduce)';
 export const MOTION_OK = '(prefers-reduced-motion: no-preference)';
@@ -44,6 +45,24 @@ export function scrollToTop() {
 export function lockScroll(locked) {
   if (lenis) locked ? lenis.stop() : lenis.start();
   document.documentElement.style.overflow = locked ? 'hidden' : '';
+}
+
+// A heading rises line by line, once, as it comes into view (the hero gesture, reused on the two headings that ask for a decision).
+// Call inside gsap.matchMedia(MOTION_OK); the heading needs key={lang} so the language switch re-splits it.
+export function riseOnScroll(target) {
+  return SplitText.create(target, {
+    type: 'lines',
+    mask: 'lines',
+    autoSplit: true,
+    reduceWhiteSpace: false, // the default turns the non-breaking space in "30 minuti" into a breakable one
+    onSplit: (self) => gsap.from(self.lines, {
+      yPercent: 110,
+      duration: 1.1,
+      ease: 'expo.out',
+      stagger: 0.09,
+      scrollTrigger: { trigger: target, start: 'top 85%', once: true },
+    }),
+  });
 }
 
 export { gsap, ScrollTrigger, SplitText, useGSAP };

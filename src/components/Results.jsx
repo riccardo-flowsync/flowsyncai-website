@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll } from '../lib/motion';
 
 // Source: the outbound case studies, updated 2026-09-23. Interested and meetings add up to the totals.
 const ROWS = [
@@ -11,6 +11,19 @@ const ROWS = [
   { rate: 41, interested: null, meetings: 11 },
 ];
 const CHARTS = [[5.1, 3.4, 2.2, 0.45], [22, 3.5], [41, 28.5]]; // last value = market average
+
+// Source: each support agent's own chat records, counted 2026-09-30, old and new version of the agent together. Chats = at least
+// one customer message, test chats left out. split = share of chats [closed with no ticket, done by the agent then the team told
+// by ticket, handed to the team], in %. hours = estimate: chats with no ticket x 8 min 25 s (LiveChat 2024 average chat length), per month.
+// Party shop: 1,706 chats 2026-04-01 to 09-28, 1,569 with no ticket, 137 handed over (its agent cannot act on orders).
+// UK brand: 3,835 chats 2026-04-01 to 09-30 (old agent 3,000 to 09-23, new agent 835 from 09-22), 1,809 with no ticket, 1,324 with
+// a ticket plus a return, exchange or sheet entry made by the agent, 702 handed over. 1,809 x 8 min 25 s = 254 h over 183 days.
+// Its test chats: no country recorded (from 2026-05-01 on, when the country starts being recorded) or from Italy (our own tests).
+const SUPPORT = [
+  { chats: 1706, hours: 37, split: [92, 0, 8] },
+  { chats: 3835, hours: 42, split: [47, 35, 18] },
+];
+const SPLIT_COLORS = ['bg-accent', 'bg-accent/50', 'bg-faint/60'];
 
 const copy = {
   en: {
@@ -53,6 +66,27 @@ const copy = {
       },
     ],
     note: 'Past results: yours depend on your offer and your market. Reply rates as reported by the sending platform for each campaign’s period. Interested means the person replied asking for details, a price or a call. Updated 23 September 2026.',
+    support: {
+      title: 'Support agents in two online shops',
+      intro: 'Each one answers customers on its own and passes what it cannot solve to the team as a ticket. Names withheld.',
+      chats: 'customer chats',
+      upTo: 'up to',
+      hours: 'hours of staff time saved a month (estimate)',
+      split: ['Closed with no ticket', 'Done by the agent, team told by ticket', 'Handed to the team by ticket'],
+      cases: [
+        {
+          name: 'Party-supplies shop, Italy',
+          scope: 'Website chat and Instagram, April to September 2026',
+          does: ['Finds products among 16,178', 'Plans a party, with quantities', 'Answers shipping, payment and returns questions', 'Opens a ticket for the team', 'Signs customers up with an emailed code'],
+        },
+        {
+          name: 'Outdoor clothing brand, UK',
+          scope: 'Website chat in English, customers in the UK and US, April to September 2026',
+          does: ['Starts returns and exchanges', 'Recommends a size', 'Finds an order, checks a refund', 'Suggests products, checks stock', 'Hands over to the team with a ticket'],
+        },
+      ],
+      note: 'Customer chats have at least one message from the customer, counted from each agent’s own chat records on 30 September 2026. Time saved is an estimate, not a measurement: chats closed with no ticket × 8\u00a0min 25\u00a0s, the average length of a support chat in LiveChat’s 2024 customer service report (1.7\u00a0billion chats). Staff often handle 2 or 3 chats at once, so read it as a maximum.',
+    },
   },
   it: {
     title: 'I risultati, campagna per campagna.',
@@ -94,6 +128,27 @@ const copy = {
       },
     ],
     note: 'Risultati passati: i tuoi dipendono dalla tua offerta e dal tuo mercato. Tassi di risposta come riportati dalla piattaforma di invio per il periodo di ciascuna campagna. Interessato significa che la persona ha risposto chiedendo dettagli, un prezzo o una call. Aggiornato il 23 settembre 2026.',
+    support: {
+      title: 'Agenti di assistenza in due negozi online',
+      intro: 'Ognuno risponde ai clienti da solo e passa al team, con un ticket, quello che non può risolvere. Nomi riservati.',
+      chats: 'chat dei clienti',
+      upTo: 'fino a',
+      hours: 'ore di lavoro risparmiate al mese (stima)',
+      split: ['Chiuse senza ticket', 'Fatte dall’agente, team avvisato con un ticket', 'Passate al team con un ticket'],
+      cases: [
+        {
+          name: 'Negozio di articoli per feste, Italia',
+          scope: 'Chat del sito e Instagram, da aprile a settembre 2026',
+          does: ['Trova prodotti tra 16.178', 'Organizza una festa, con le quantità', 'Risponde su spedizioni, pagamenti e resi', 'Apre un ticket per il team', 'Iscrive i clienti con un codice via email'],
+        },
+        {
+          name: 'Marchio di abbigliamento outdoor, Regno Unito',
+          scope: 'Chat del sito in inglese, clienti in Regno Unito e Stati Uniti, da aprile a settembre 2026',
+          does: ['Avvia resi e cambi', 'Consiglia la taglia', 'Trova un ordine, controlla un rimborso', 'Suggerisce prodotti, controlla le scorte', 'Passa la mano al team con un ticket'],
+        },
+      ],
+      note: 'Contiamo le chat con almeno un messaggio del cliente, dai registri di ogni agente, il 30 settembre 2026. Il tempo risparmiato è una stima, non una misura: chat chiuse senza ticket × 8\u00a0min 25\u00a0s, la durata media di una chat di assistenza nel report 2024 di LiveChat (1,7\u00a0miliardi di chat). Spesso chi fa assistenza segue 2 o 3 chat alla volta: leggila come un massimo.',
+    },
   },
 };
 
@@ -111,12 +166,15 @@ export default function Results() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
-  const pct = (v) => `${new Intl.NumberFormat(lang === 'it' ? 'it-IT' : 'en-GB', { maximumFractionDigits: 2 }).format(v)}%`;
+  const locale = lang === 'it' ? 'it-IT' : 'en-GB';
+  const pct = (v) => `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(v)}%`;
+  const num = (v) => new Intl.NumberFormat(locale, { useGrouping: 'always' }).format(v); // Italian leaves 4-digit numbers ungrouped by default
 
   // Totals count up and bars grow, once, as they come into view. Counters show their real value until then.
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
+      riseOnScroll('.res-title');
       // Tween a plain number, not the text itself: reverting a text tween would leave "0" on screen
       const counters = gsap.utils.toArray('.res-count');
       counters.forEach((el) => {
@@ -125,7 +183,7 @@ export default function Results() {
           v: Number(el.dataset.value),
           duration: 1.6,
           ease: 'power2.out',
-          onUpdate: () => { el.textContent = Math.round(n.v); },
+          onUpdate: () => { el.textContent = num(Math.round(n.v)); },
           scrollTrigger: { trigger: el, start: 'top 90%', once: true },
         });
       });
@@ -138,7 +196,14 @@ export default function Results() {
           scrollTrigger: { trigger: chart, start: 'top 80%', once: true },
         });
       });
-      return () => counters.forEach((el) => { el.textContent = el.dataset.value; });
+      // Support cards: the split bar grows from the left, then what the agent does comes in
+      gsap.utils.toArray('.sup-card').forEach((card, i) => {
+        const q = gsap.utils.selector(card);
+        gsap.timeline({ delay: i * 0.25, scrollTrigger: { trigger: card, start: 'top 80%', once: true } })
+          .from(q('.sup-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 1.2, ease: 'expo.out' }, 0.2)
+          .from(q('.sup-do'), { autoAlpha: 0, y: 6, duration: 0.4, ease: 'power3.out', stagger: 0.07 }, 0.7);
+      });
+      return () => counters.forEach((el) => { el.textContent = num(Number(el.dataset.value)); });
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -147,7 +212,7 @@ export default function Results() {
     <section id="results" ref={root} className="border-t border-line py-24 lg:py-32">
       <div className="page">
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
-          <h2 className="t-h2 lg:col-span-7">{t.title}</h2>
+          <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
           <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
         </div>
 
@@ -251,6 +316,57 @@ export default function Results() {
         </div>
 
         <p className="mt-8 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
+
+        <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>
+        <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+          {t.support.cases.map((c, ci) => {
+            const s = SUPPORT[ci];
+            return (
+              <article key={c.name} className="sup-card flex flex-col rounded-[10px] border border-line bg-surface p-6">
+                <h4 className="font-medium">{c.name}</h4>
+                <p className="mt-1 text-sm text-faint">{c.scope}</p>
+                <dl className="mt-6 grid grid-cols-2 gap-6">
+                  <div className="flex flex-col-reverse justify-end gap-2">
+                    <dt className="text-sm text-muted">{t.support.chats}</dt>
+                    <dd className="text-[2rem] font-semibold leading-none tabular-nums [font-stretch:112%]">
+                      <span className="res-count" data-value={s.chats}>{num(s.chats)}</span>
+                    </dd>
+                  </div>
+                  <div className="flex flex-col-reverse justify-end gap-2">
+                    <dt className="text-sm text-muted">{t.support.hours}</dt>
+                    <dd className="text-[2rem] font-semibold leading-none tabular-nums [font-stretch:112%]">
+                      <span className="mr-1.5 text-sm font-normal text-muted [font-stretch:100%]">{t.support.upTo}</span>
+                      <span className="res-count" data-value={s.hours}>{num(s.hours)}</span>
+                    </dd>
+                  </div>
+                </dl>
+                <div aria-hidden="true" className="mt-7 h-1.5 overflow-hidden rounded-full bg-raised">
+                  <div className="sup-bar flex h-full">
+                    {s.split.map((v, i) => v > 0 && <div key={i} className={SPLIT_COLORS[i]} style={{ width: `${v}%` }} />)}
+                  </div>
+                </div>
+                <ul className="mt-4 grid gap-2 text-sm">
+                  {s.split.map((v, i) => v > 0 && (
+                    <li key={i} className="flex items-baseline justify-between gap-3">
+                      <span className="flex items-baseline gap-2.5 text-muted">
+                        <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-sm ${SPLIT_COLORS[i]}`} />
+                        {t.support.split[i]}
+                      </span>
+                      <span className="font-medium tabular-nums">{pct(v)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <ul className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
+                  {c.does.map((d) => (
+                    <li key={d} className="sup-do rounded-lg border border-line px-3 py-1.5 text-sm text-muted">{d}</li>
+                  ))}
+                </ul>
+              </article>
+            );
+          })}
+        </div>
+        <p className="mt-8 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p>
       </div>
     </section>
   );

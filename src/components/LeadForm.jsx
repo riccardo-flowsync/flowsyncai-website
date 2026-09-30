@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useCopy, useLang } from '../lib/lang';
+import { gsap, useGSAP, MOTION_OK } from '../lib/motion';
 
 const EMAIL = 'riccardo@flowsyncaisolutions.com';
 
@@ -59,6 +60,20 @@ export default function LeadForm({ onSent, onPickTime }) {
     if (status === 'sent' || status === 'invalid' || status === 'failed') note.current?.focus();
   }, [status]);
 
+  // The tick draws, then the rest of the card settles in. Only the tweens hide anything (from values), so reduced motion and no-JS show the finished card.
+  // The card itself is never animated: it holds focus. Opacity, not autoAlpha: visibility would pull the live region's children out of the accessibility tree and back in.
+  // Only the status matters here, so a language switch after sending does not replay it.
+  useGSAP(() => {
+    if (status !== 'sent') return undefined;
+    const mm = gsap.matchMedia(note.current);
+    mm.add(MOTION_OK, () => {
+      // autoRound off: GSAP rounds px values to whole numbers, which would snap the 0 to 1 offset instead of drawing it
+      gsap.from('.sent-tick', { strokeDashoffset: 1, autoRound: false, duration: 0.5, ease: 'power2.out', delay: 0.15 });
+      gsap.from([...note.current.children].slice(1), { y: 8, opacity: 0, duration: 0.5, ease: 'power3.out', stagger: 0.1, delay: 0.3 });
+    });
+    return () => mm.revert();
+  }, { scope: note, dependencies: [status] });
+
   async function submit(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
@@ -86,7 +101,12 @@ export default function LeadForm({ onSent, onPickTime }) {
   if (status === 'sent') {
     return (
       <div ref={note} tabIndex={-1} role="status" className="rounded-[10px] border border-line bg-surface p-6">
-        <p className="text-lg font-semibold [font-stretch:110%]">{t.thanks(sent.name.split(' ')[0])}</p>
+        <p className="flex items-start gap-3 text-lg font-semibold [font-stretch:110%]">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 h-6 w-6 shrink-0 fill-none stroke-accent" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path className="sent-tick" d="M5 12.5l4.5 4.5L19 7.5" pathLength="1" strokeDasharray="1 2" />
+          </svg>
+          {t.thanks(sent.name.split(' ')[0])}
+        </p>
         <p className="mt-3 text-muted">{t.pick}</p>
         <button type="button" onClick={onPickTime} className="btn-primary mt-4">{t.see}</button>
       </div>

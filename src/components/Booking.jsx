@@ -2,7 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LeadForm from './LeadForm';
 import { useCopy, useLang } from '../lib/lang';
-import { scrollToEl } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, scrollToEl } from '../lib/motion';
 import { CAL_LINK } from '../lib/cal';
 
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
@@ -103,10 +103,20 @@ function MonthPreview() {
 export default function Booking({ heading = 'h2', formOpen = false }) {
   const Heading = heading; // h1 on the contact page
   const t = useCopy(copy);
+  const { lang } = useLang();
   const [calOpen, setCalOpen] = useState(false);
   const [prefill, setPrefill] = useState(null);
   const [writing, setWriting] = useState(formOpen);
   const frame = useRef(null);
+  const root = useRef(null);
+
+  // Only the h2 rises: on /contact the heading is the h1 and stays still
+  useGSAP(() => {
+    if (heading !== 'h2') return undefined;
+    const mm = gsap.matchMedia(root.current);
+    mm.add(MOTION_OK, () => { riseOnScroll('.book-title'); });
+    return () => mm.revert();
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   const openCalendar = () => {
     setCalOpen(true);
@@ -114,10 +124,10 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   };
 
   return (
-    <section id="book" className="border-t border-line py-24 lg:py-32">
+    <section id="book" ref={root} className="border-t border-line py-24 lg:py-32">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
-          <Heading className="t-h2">{t.title}</Heading>
+          <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
           <p className="t-lead mt-5 text-muted">{t.sub}</p>
 
           <div className="mt-8 flex items-center gap-4">

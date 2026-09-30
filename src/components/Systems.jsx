@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK } from '../lib/motion';
 
 const copy = {
   en: {
@@ -79,31 +79,34 @@ const copy = {
   },
 };
 
-const Panel = ({ title, children }) => (
-  <div aria-hidden="true" className="select-none overflow-hidden rounded-[10px] border border-line bg-surface">
+// One span per word: React owns them, so the reply can stream in without SplitText and hidden words keep their space
+const Words = ({ text, cls }) => text.split(' ').map((w, i) => <span key={i} className={cls}>{w}{' '}</span>);
+
+const Panel = ({ title, cls = '', children }) => (
+  <div aria-hidden="true" className={`${cls} select-none overflow-hidden rounded-[10px] border border-line bg-surface`}>
     <p className="border-b border-line px-5 py-3 text-sm font-semibold [font-stretch:110%]">{title}</p>
     <div className="p-5">{children}</div>
   </div>
 );
 
-function Inbox({ t }) {
+function Inbox({ t, lang }) {
   return (
-    <Panel title={t.title}>
+    <Panel title={t.title} cls="ib-panel">
       <ul className="grid gap-3">
         {t.rows.map(([who, tag, text], i) => (
-          <li key={who} className={`rounded-lg px-3.5 py-3 ${i === 0 ? 'bg-raised' : ''}`}>
+          <li key={who} className={`ib-row rounded-lg px-3.5 py-3 ${i === 0 ? 'bg-raised' : ''}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium">{who}</span>
-              <span className={`rounded-md px-2 py-0.5 font-mono text-[0.72rem] ${i === 0 ? 'bg-accent/15 text-accent' : 'bg-raised text-faint'}`}>{tag}</span>
+              <span key={lang} className={`ib-tag rounded-md px-2 py-0.5 font-mono text-[0.72rem] ${i === 0 ? 'bg-accent/15 text-accent' : 'bg-raised text-faint'}`}>{tag}</span>
             </div>
             <p className="mt-1 text-sm text-muted">{text}</p>
           </li>
         ))}
       </ul>
-      <div className="mt-4 rounded-lg border border-line p-4">
+      <div className="ib-draft mt-4 rounded-lg border border-line p-4">
         <p className="text-xs text-faint">{t.draft}</p>
-        <p className="mt-1.5 text-sm">{t.draftText}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <p className="ib-text mt-1.5 text-sm">{t.draftText}</p>
+        <div className="ib-btns mt-3 flex flex-wrap gap-2">
           <span className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-canvas">{t.approve}</span>
           <span className="rounded-md px-3 py-1.5 text-xs font-semibold text-muted ring-1 ring-inset ring-line">{t.edit}</span>
         </div>
@@ -114,13 +117,13 @@ function Inbox({ t }) {
 
 function Chat({ t }) {
   return (
-    <Panel title={t.title}>
-      <p className="ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-raised px-3.5 py-2.5 text-sm text-muted">{t.user}</p>
-      <p className="mt-3 max-w-[85%] rounded-lg rounded-bl-sm border border-line px-3.5 py-2.5 text-sm">{t.agent}</p>
+    <Panel title={t.title} cls="ch-panel">
+      <p className="ch-user ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-raised px-3.5 py-2.5 text-sm text-muted">{t.user}</p>
+      <p className="ch-agent mt-3 max-w-[85%] rounded-lg rounded-bl-sm border border-line px-3.5 py-2.5 text-sm"><Words cls="ch-w" text={t.agent} /></p>
       <ul className="mt-4 grid gap-1.5 border-t border-line pt-4">
         {t.actions.map((a) => (
-          <li key={a} className="flex items-center gap-2 font-mono text-[0.75rem] text-muted">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          <li key={a} className="ch-act flex items-center gap-2 font-mono text-[0.75rem] text-muted">
+            <span className="ch-dot h-1.5 w-1.5 rounded-full bg-accent" />
             {a}
           </li>
         ))}
@@ -133,7 +136,7 @@ export default function Systems() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
-  const artifacts = { outbound: <Inbox t={t.inbox} />, support: <Chat t={t.chat} /> };
+  const artifacts = { outbound: <Inbox t={t.inbox} lang={lang} />, support: <Chat t={t.chat} /> };
 
   // Highlight the system being read in the sticky index (desktop only, pure class toggles)
   useGSAP(() => {
@@ -145,6 +148,45 @@ export default function Systems() {
         toggleClass: { targets: root.current.querySelector(`[data-index="${el.dataset.system}"]`), className: 'is-active' },
       });
     });
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+
+  // The two panels play once when they come into view: the inbox sorts itself, the chat agent works while it answers
+  useGSAP(() => {
+    const mm = gsap.matchMedia(root.current);
+    mm.add(MOTION_OK, () => {
+      const panel = (sel) => root.current.querySelector(sel);
+
+      // Inbox: replies arrive, tags scramble onto their label, the draft wipes in, buttons last
+      gsap.set('.ib-row', { autoAlpha: 0, y: -10 });
+      gsap.set('.ib-draft, .ib-btns', { autoAlpha: 0 });
+      gsap.set('.ib-text', { clipPath: 'inset(0 100% 0 0)' });
+      const inbox = gsap.timeline({ scrollTrigger: { trigger: panel('.ib-panel'), start: 'top 70%', once: true } });
+      gsap.utils.toArray('.ib-row', root.current).forEach((row, i) => {
+        const tag = row.querySelector('.ib-tag');
+        // The scramble starts with the row, so the real label is never seen before it scrambles
+        inbox.to(row, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power3.out' }, i * 0.6)
+          .to(tag, { scrambleText: { text: tag.textContent, chars: 'lowerCase', speed: 0.6 }, duration: 0.6 }, i * 0.6);
+      });
+      inbox.to('.ib-draft', { autoAlpha: 1, duration: 0.3 }, '+=0.2')
+        .to('.ib-text', { clipPath: 'inset(0 0% 0 0)', duration: 0.9, ease: 'steps(24)' }, '<0.1')
+        .to('.ib-btns', { autoAlpha: 1, duration: 0.3 }, '+=0.1');
+
+      // Chat: the question lands, the reply streams word by word, each action lands as the reply passes its clause
+      const span = gsap.utils.toArray('.ch-w', root.current).length * 0.05;
+      gsap.set('.ch-user, .ch-agent, .ch-w, .ch-act', { autoAlpha: 0 });
+      gsap.set('.ch-dot', { scale: 0 });
+      const chat = gsap.timeline({ scrollTrigger: { trigger: panel('.ch-panel'), start: 'top 70%', once: true } });
+      chat.fromTo('.ch-user', { y: 8 }, { y: 0, autoAlpha: 1, duration: 0.4, ease: 'power3.out' })
+        .to('.ch-agent', { autoAlpha: 1, duration: 0.25 }, '+=0.6') // a silent beat, no typing dots
+        .addLabel('reply')
+        .to('.ch-w', { autoAlpha: 1, duration: 0.12, stagger: 0.05 }, 'reply');
+      gsap.utils.toArray('.ch-act', root.current).forEach((act, i) => {
+        const at = `reply+=${span * (0.2 + i * 0.3)}`;
+        chat.to(act, { autoAlpha: 1, duration: 0.25 }, at)
+          .to(act.querySelector('.ch-dot'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at);
+      });
+    });
+    return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
