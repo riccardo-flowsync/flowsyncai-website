@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, MOTION_OK } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, NAV_H, fitsScreen, riseOnScroll, drawRule } from '../lib/motion';
 
 const copy = {
   en: {
@@ -82,6 +82,78 @@ const copy = {
 // One span per word: React owns them, so the reply can stream in without SplitText and hidden words keep their space
 const Words = ({ text, cls }) => text.split(' ').map((w, i) => <span key={i} className={cls}>{w}{' '}</span>);
 
+
+// ---- Scroll scenes ----
+// One timeline per system, written in seconds. Scrubbed it is spread over the scroll (and rewinds on the way back);
+// played once (touch, short or narrow screens) it runs at 1.5x from when the stage comes into view.
+// Only opacity and transforms move. Each chip lights (its accent ring fades in) when the matching thing happens in the picture.
+// Reduced motion and no-JS show the finished picture, so the chips are lit by default and dimmed here, inside the motion query.
+const lightChip = (tl, chip, at) => tl.to(chip, { opacity: 1, duration: 0.3 }, at);
+const finish = (tl, st) => (st.scrub ? tl.to({}, { duration: 1.2 }) : tl.timeScale(1.5)); // scrubbed: a short rest on the finished picture
+
+function inboxScene(stage, st) {
+  const q = gsap.utils.selector(stage);
+  const chips = q('.pt-lit');
+  const words = q('.ib-w');
+  gsap.set(chips, { opacity: 0 });
+  gsap.set(q('.ib-row'), { autoAlpha: 0, y: -10 });
+  gsap.set(q('.ib-draft, .ib-w, .ib-btns'), { autoAlpha: 0 });
+  const tl = gsap.timeline({ scrollTrigger: st });
+  // Replies arrive one company at a time and each tag scrambles onto its label
+  q('.ib-row').forEach((row, i) => {
+    const tag = row.querySelector('.ib-tag');
+    tl.to(row, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' }, i * 0.9)
+      .to(tag, { scrambleText: { text: tag.textContent, chars: 'lowerCase', speed: 0.6 }, duration: 0.7 }, i * 0.9 + 0.2);
+  });
+  lightChip(tl, chips[0], 0.3);
+  lightChip(tl, chips[1], 2.7);
+  // The draft builds word by word, then the buttons appear
+  tl.to(q('.ib-draft'), { autoAlpha: 1, duration: 0.4 }, 3.3)
+    .to(words, { autoAlpha: 1, duration: 0.12, stagger: 0.1 }, 3.6)
+    .to(q('.ib-btns'), { autoAlpha: 1, duration: 0.4 }, 3.6 + words.length * 0.1 + 0.4);
+  // Approve is pressed last: its own beat, after a rest with the buttons on screen
+  tl.addLabel('press', '+=1')
+    .to(q('.ib-approve'), { scale: 0.92, duration: 0.2, ease: 'power2.in' }, 'press')
+    .to(q('.ib-approve'), { scale: 1, duration: 0.3, ease: 'power2.out' })
+    .to(q('.ib-edit'), { opacity: 0.4, duration: 0.3 }, 'press')
+    .fromTo(q('.ib-ok'), { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: 'power2.out' }, 'press+=0.2'); // the ring draws round the draft
+  lightChip(tl, chips[2], 'press+=0.3');
+  return finish(tl, st);
+}
+
+function chatScene(stage, st) {
+  const q = gsap.utils.selector(stage);
+  const chips = q('.pt-lit');
+  const words = q('.ch-w');
+  gsap.set(chips, { opacity: 0 });
+  gsap.set(q('.ch-user, .ch-agent, .ch-w, .ch-act'), { autoAlpha: 0 });
+  gsap.set(q('.ch-dot'), { scale: 0 });
+  const tl = gsap.timeline({ scrollTrigger: st });
+  tl.fromTo(q('.ch-user'), { y: 8 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: 'power3.out' })
+    .to(q('.ch-agent'), { autoAlpha: 1, duration: 0.3 }, '+=0.5') // a silent beat, no typing dots
+    .addLabel('reply')
+    .to(words, { autoAlpha: 1, duration: 0.12, stagger: 0.09 }, 'reply');
+  lightChip(tl, chips[0], 'reply');
+  // Each action lands as the reply reaches its clause; the last one is the hand-over
+  const span = words.length * 0.09;
+  q('.ch-act').forEach((act, i) => {
+    const at = `reply+=${span * (0.2 + i * 0.3)}`;
+    tl.to(act, { autoAlpha: 1, duration: 0.25 }, at)
+      .to(act.querySelector('.ch-dot'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at);
+    if (i === 0) lightChip(tl, chips[1], at);
+    if (i === 2) lightChip(tl, chips[2], at);
+  });
+  return finish(tl, st);
+}
+
+// How much scroll each held stage takes, in screens (Systems total: 1.5)
+const SCENES = { outbound: { run: inboxScene, hold: 0.9 }, support: { run: chatScene, hold: 0.6 } };
+
+// The article's height if nothing were pinned: a pinned stage leaves a tall spacer behind that would inflate offsetHeight
+const natural = (article) => {
+  return { offsetHeight: article.firstElementChild.offsetHeight + parseFloat(getComputedStyle(article).rowGap) + article.querySelector('[data-stage]').offsetHeight };
+};
+
 const Panel = ({ title, cls = '', children }) => (
   <div aria-hidden="true" className={`${cls} select-none overflow-hidden rounded-[10px] border border-line bg-surface`}>
     <p className="border-b border-line px-5 py-3 text-sm font-semibold [font-stretch:110%]">{title}</p>
@@ -103,12 +175,13 @@ function Inbox({ t, lang }) {
           </li>
         ))}
       </ul>
-      <div className="ib-draft mt-4 rounded-lg border border-line p-4">
+      <div className="ib-draft relative mt-4 rounded-lg border border-line p-4">
+        <span className="ib-ok pointer-events-none absolute -inset-px origin-left scale-x-0 rounded-lg border border-accent" />
         <p className="text-xs text-faint">{t.draft}</p>
-        <p className="ib-text mt-1.5 text-sm">{t.draftText}</p>
+        <p className="mt-1.5 text-sm"><Words cls="ib-w" text={t.draftText} /></p>
         <div className="ib-btns mt-3 flex flex-wrap gap-2">
-          <span className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-canvas">{t.approve}</span>
-          <span className="rounded-md px-3 py-1.5 text-xs font-semibold text-muted ring-1 ring-inset ring-line">{t.edit}</span>
+          <span className="ib-approve rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-canvas">{t.approve}</span>
+          <span className="ib-edit rounded-md px-3 py-1.5 text-xs font-semibold text-muted ring-1 ring-inset ring-line">{t.edit}</span>
         </div>
       </div>
     </Panel>
@@ -138,63 +211,101 @@ export default function Systems() {
   const root = useRef(null);
   const artifacts = { outbound: <Inbox t={t.inbox} lang={lang} />, support: <Chat t={t.chat} /> };
 
-  // Highlight the system being read in the sticky index (desktop only, pure class toggles)
+  // The sticky index follows the reader: a system is active from when its article reaches mid-screen until the next one does
+  // (the last one until the note under them), so it stays active through a hold. Read live from where things are on screen,
+  // so it does not depend on the order ScrollTrigger measures pins in.
   useGSAP(() => {
-    gsap.utils.toArray('[data-system]', root.current).forEach((el) => {
-      ScrollTrigger.create({
-        trigger: el,
-        start: 'top 55%',
-        end: 'bottom 55%',
-        toggleClass: { targets: root.current.querySelector(`[data-index="${el.dataset.system}"]`), className: 'is-active' },
-      });
-    });
+    const articles = gsap.utils.toArray('[data-system]', root.current);
+    const note = root.current.querySelector('[data-note]');
+    const items = articles.map((el) => root.current.querySelector(`[data-index="${el.dataset.system}"]`));
+    const slot = (el) => el.closest('.pin-spacer') || el; // a pinned article is fixed: its spacer holds its place in the flow
+    let shown = -2;
+    const update = () => {
+      const y = innerHeight * 0.55;
+      let on = -1;
+      articles.forEach((el, i) => { if (slot(el).getBoundingClientRect().top <= y) on = i; });
+      if (note.getBoundingClientRect().top <= y) on = -1;
+      if (on === shown) return;
+      shown = on;
+      items.forEach((li, i) => li.classList.toggle('is-active', i === on));
+    };
+    ScrollTrigger.create({ trigger: root.current, start: 'top bottom', end: 'bottom top', onUpdate: update, onRefresh: update, onToggle: update });
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // The two panels play once when they come into view: the inbox sorts itself, the chat agent works while it answers
+  // The section's top rule draws in and the heading rises (motion allowed only)
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
-      const panel = (sel) => root.current.querySelector(sel);
+      drawRule(root.current);
+      riseOnScroll(root.current.querySelector('h2'));
+    });
+    return () => mm.revert();
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-      // Inbox: replies arrive, tags scramble onto their label, the draft wipes in, buttons last
-      gsap.set('.ib-row', { autoAlpha: 0, y: -10 });
-      gsap.set('.ib-draft, .ib-btns', { autoAlpha: 0 });
-      gsap.set('.ib-text', { clipPath: 'inset(0 100% 0 0)' });
-      const inbox = gsap.timeline({ scrollTrigger: { trigger: panel('.ib-panel'), start: 'top 70%', once: true } });
-      gsap.utils.toArray('.ib-row', root.current).forEach((row, i) => {
-        const tag = row.querySelector('.ib-tag');
-        // The scramble starts with the row, so the real label is never seen before it scrambles
-        inbox.to(row, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power3.out' }, i * 0.6)
-          .to(tag, { scrambleText: { text: tag.textContent, chars: 'lowerCase', speed: 0.6 }, duration: 0.6 }, i * 0.6);
-      });
-      inbox.to('.ib-draft', { autoAlpha: 1, duration: 0.3 }, '+=0.2')
-        .to('.ib-text', { clipPath: 'inset(0 0% 0 0)', duration: 0.9, ease: 'steps(24)' }, '<0.1')
-        .to('.ib-btns', { autoAlpha: 1, duration: 0.3 }, '+=0.1');
-
-      // Chat: the question lands, the reply streams word by word, each action lands as the reply passes its clause
-      const span = gsap.utils.toArray('.ch-w', root.current).length * 0.05;
-      gsap.set('.ch-user, .ch-agent, .ch-w, .ch-act', { autoAlpha: 0 });
-      gsap.set('.ch-dot', { scale: 0 });
-      const chat = gsap.timeline({ scrollTrigger: { trigger: panel('.ch-panel'), start: 'top 70%', once: true } });
-      chat.fromTo('.ch-user', { y: 8 }, { y: 0, autoAlpha: 1, duration: 0.4, ease: 'power3.out' })
-        .to('.ch-agent', { autoAlpha: 1, duration: 0.25 }, '+=0.6') // a silent beat, no typing dots
-        .addLabel('reply')
-        .to('.ch-w', { autoAlpha: 1, duration: 0.12, stagger: 0.05 }, 'reply');
-      gsap.utils.toArray('.ch-act', root.current).forEach((act, i) => {
-        const at = `reply+=${span * (0.2 + i * 0.3)}`;
-        chat.to(act, { autoAlpha: 1, duration: 0.25 }, at)
-          .to(act.querySelector('.ch-dot'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at);
-      });
+  // The two stages. Under HOLD each one is pinned and scrubbed: the whole article if it fits below the navbar, else only its
+  // chips + picture, else it is only scrubbed while it scrolls by. Outside HOLD (touch, narrow) it plays once.
+  // Fit is checked again after every ScrollTrigger refresh (resize, fonts loading), rebuilding the scenes if it changed.
+  useGSAP(() => {
+    const mm = gsap.matchMedia(root.current);
+    mm.add({ hold: HOLD, ok: MOTION_OK }, (ctx) => {
+      const { hold } = ctx.conditions;
+      const articles = gsap.utils.toArray('[data-system]', root.current);
+      // per article: -1 nothing pins, 0 the article pins, 1 its stage pins
+      const plan = () => articles.map((a) => (!hold ? -1 : fitsScreen(natural(a)) ? 0 : fitsScreen(a.querySelector('[data-stage]')) ? 1 : -1)).join();
+      let inner;
+      let key;
+      const build = () => {
+        inner?.revert();
+        key = plan();
+        const modes = key.split(',');
+        inner = gsap.context(() => {
+          articles.forEach((article, i) => {
+            const { run, hold: screens } = SCENES[article.dataset.system];
+            const stage = article.querySelector('[data-stage]');
+            const pinned = [article, stage][modes[i]];
+            // refreshPriority (even 0) makes ScrollTrigger refresh everything in page order, so the pin spacers add up correctly
+            run(stage, pinned
+              ? {
+                trigger: pinned,
+                pin: true,
+                start: () => `top ${Math.round(NAV_H + Math.max(0, (innerHeight - NAV_H - pinned.offsetHeight) / 2))}px`,
+                end: () => `+=${Math.round(innerHeight * screens)}`,
+                scrub: 0.5,
+                invalidateOnRefresh: true,
+                refreshPriority: 0,
+              }
+              : hold
+                ? { trigger: stage, start: 'top 80%', end: 'bottom 40%', scrub: 0.5, refreshPriority: 0 }
+                : { trigger: stage, start: 'top 70%', once: true, refreshPriority: 0 });
+          });
+        }, root.current);
+      };
+      build();
+      let alive = true;
+      const recheck = () => {
+        if (plan() === key) return;
+        requestAnimationFrame(() => {
+          if (!alive) return;
+          build();
+          ScrollTrigger.refresh();
+        });
+      };
+      ScrollTrigger.addEventListener('refresh', recheck);
+      return () => {
+        alive = false;
+        ScrollTrigger.removeEventListener('refresh', recheck);
+        inner.revert();
+      };
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="systems" ref={root} className="border-t border-line py-24 lg:py-32">
+    <section id="systems" ref={root} className="rule py-24 lg:py-32">
       <div className="page grid gap-14 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <div className="lg:sticky lg:top-28">
-            <h2 className="t-h2">{t.title}</h2>
+            <h2 key={lang} className="t-h2">{t.title}</h2>
             <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
             <ol className="mt-10 hidden gap-3 border-l border-line lg:grid">
               {t.systems.map((s) => (
@@ -212,20 +323,25 @@ export default function Systems() {
 
         <div className="grid gap-20 lg:col-span-7 lg:gap-28">
           {t.systems.map((s) => (
-            <article key={s.id} data-system={s.id} className="grid gap-7">
+            <article key={s.id} data-system={s.id} className="grid gap-5">
               <div>
                 <h3 className="t-h3 text-[1.5rem]">{s.name}</h3>
                 <p className="mt-3 text-muted">{s.body}</p>
-                <ul className="mt-5 flex flex-wrap gap-2">
+              </div>
+              <div data-stage className="grid gap-7">
+                <ul className="flex flex-wrap gap-2">
                   {s.points.map((p) => (
-                    <li key={p} className="rounded-lg border border-line px-3 py-1.5 text-sm text-muted">{p}</li>
+                    <li key={p} className="relative rounded-lg border border-line px-3 py-1.5 text-sm text-muted">
+                      {p}
+                      <span aria-hidden="true" className="pt-lit pointer-events-none absolute -inset-px rounded-lg border border-accent bg-accent/10" />
+                    </li>
                   ))}
                 </ul>
+                {artifacts[s.id]}
               </div>
-              {artifacts[s.id]}
             </article>
           ))}
-          <p className="-mt-10 text-xs text-faint lg:-mt-16">{t.note}</p>
+          <p data-note className="-mt-10 text-xs text-faint lg:-mt-16">{t.note}</p>
         </div>
       </div>
     </section>
