@@ -1,38 +1,71 @@
-import React from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { LangProvider } from './lib/lang';
+import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop } from './lib/motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
-import Contact from './pages/Contact';
+import NotFound from './pages/NotFound';
 
-// Scroll to top when navigating to a non-hash route
-const ScrollToTop = () => {
+// ScrollTrigger re-measures the page when the fonts and the page finish loading, which cancels a scroll under way
+const settled = () => Promise.all([
+  document.fonts?.ready,
+  document.readyState === 'complete' || new Promise((done) => window.addEventListener('load', done, { once: true })),
+]);
+
+// New page: start at the top, with focus on its content instead of on the link that was used.
+// Link to /#section: go to that section once the page has laid out and loaded.
+function ScrollManager() {
   const { pathname, hash } = useLocation();
+  const shown = useRef(pathname);
   useEffect(() => {
-    if (!hash) window.scrollTo(0, 0);
+    const newPage = shown.current !== pathname;
+    shown.current = pathname;
+    if (!hash) {
+      scrollToTop();
+      if (newPage) document.getElementById('main')?.focus({ preventScroll: true });
+      return undefined;
+    }
+    let frame;
+    let live = true;
+    settled().then(() => {
+      if (live) frame = requestAnimationFrame(() => scrollToEl(document.getElementById(hash.slice(1))));
+    });
+    return () => {
+      live = false;
+      cancelAnimationFrame(frame);
+    };
   }, [pathname, hash]);
   return null;
-};
-
-function App() {
-  return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <main className="w-full min-h-screen bg-transparent text-text selection:bg-accent/30 selection:text-text">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
-        <Footer />
-      </main>
-    </BrowserRouter>
-  );
 }
 
-export default App;
+export default function App() {
+  useEffect(() => {
+    const stop = startSmoothScroll();
+    document.fonts?.ready.then(() => ScrollTrigger.refresh()); // text reflows once the web fonts land
+    return stop;
+  }, []);
+
+  return (
+    <LangProvider>
+      <BrowserRouter>
+        <ScrollManager />
+        <Navbar />
+        <main id="main" tabIndex={-1} className="outline-none">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <Footer />
+        <div className="grain" aria-hidden="true" />
+      </BrowserRouter>
+    </LangProvider>
+  );
+}

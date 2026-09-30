@@ -1,28 +1,26 @@
-import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { scrollToEl } from '../lib/motion';
 
-// Anchor link that scrolls in-page on the homepage and navigates to /#hash
-// from any other route.
-const ScrollLink = ({ hash, children, onClick, ...props }) => {
-  const location = useLocation();
+// Link to a home-page section (to="#results"): scrolls in place on the home page, navigates there from any other page.
+export default function ScrollLink({ to, onClick, children, ...props }) {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
 
   const handleClick = (e) => {
+    onClick?.(e);
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
-    if (onClick) onClick(e);
-    if (location.pathname === '/') {
-      const el = document.querySelector(hash);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (pathname === '/') {
+      scrollToEl(document.getElementById(to.slice(1)));
+      history.replaceState(null, '', to);
     } else {
-      navigate('/' + hash);
+      navigate('/' + to);
     }
   };
 
   return (
-    <a href={'/' + hash} onClick={handleClick} {...props}>
+    <a href={'/' + to} onClick={handleClick} {...props}>
       {children}
     </a>
   );
-};
-
-export default ScrollLink;
+}

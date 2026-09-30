@@ -1,38 +1,29 @@
-import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import Hero from '../components/Hero';
-import Features from '../components/Features';
-import Services from '../components/Services';
-import Philosophy from '../components/Philosophy';
-import Protocol from '../components/Protocol';
-import CTA from '../components/CTA';
-import Waitlist from '../components/Waitlist';
+import Systems from '../components/Systems';
+import Results from '../components/Results';
+import Process from '../components/Process';
+import Manifesto from '../components/Manifesto';
+import FAQ from '../components/FAQ';
+import Booking from '../components/Booking';
+import { useCopy } from '../lib/lang';
 
-const Home = () => {
-  const location = useLocation();
-
-  // Support landing on /#section from other pages
-  useEffect(() => {
-    if (location.hash) {
-      const el = document.querySelector(location.hash);
-      if (el) {
-        // wait a tick so GSAP layouts settle
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
-      }
-    }
-  }, [location.hash]);
-
-  return (
-    <>
-      <Hero />
-      <Features />
-      <Services />
-      <Philosophy />
-      <Protocol />
-      <CTA />
-      <Waitlist />
-    </>
-  );
+const copy = {
+  en: { docTitle: 'FlowSync AI Solutions: AI systems that book B2B meetings' },
+  it: { docTitle: 'FlowSync AI Solutions: sistemi AI che portano appuntamenti B2B' },
 };
 
-export default Home;
+export default function Home() {
+  const t = useCopy(copy);
+  return (
+    <>
+      <title>{t.docTitle}</title>
+      <Hero />
+      <Systems />
+      <Results />
+      <Process />
+      <Manifesto />
+      <FAQ />
+      <Booking />
+    </>
+  );
+}
