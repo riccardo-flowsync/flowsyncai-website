@@ -65,10 +65,10 @@ export default function Hero() {
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section ref={root} className="pb-16 pt-24 sm:pt-32 lg:flex lg:min-h-[100svh] lg:items-center lg:pb-16 lg:pt-24">
+    <section ref={root} className="pb-16 pt-24 sm:pt-32 lg:flex lg:min-h-[100svh] lg:items-center lg:pb-6 lg:pt-20">
       <div className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
         <div className="lg:col-span-7">
-          <h1 key={lang} className="hero-title t-display max-w-[17ch]">{t.title}</h1>
+          <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,min(1.2rem_+_4.6vw,8.5vh),4.6rem)]">{t.title}</h1>
           <p className="hero-rise t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
           <div className="hero-rise mt-8 flex flex-wrap items-center gap-3">
             <ScrollLink ref={book} to="#book" className="btn-primary">{t.book}</ScrollLink>

@@ -32,19 +32,31 @@ check the preview, merge only with the owner's OK.
 - Never: glass/backdrop blur, glows, gradient text, pulsing status dots, fake "system online" labels,
   all-caps or monospace labels, eyebrow labels above headings, one accented word in a headline, arrows
   appended to links, metadata joined with middle dots, numbered markers on things that are not a sequence,
-  fade-up on every section, invented metrics.
+  fade-up on every section, invented metrics, horizontal-scroll galleries, stacked-card piles, mesh gradients or
+  WebGL colour washes, scrolling marquees, looping "live" ticks.
 - Proof beats adjectives: figures come from the dated case studies; illustrations say they are illustrations.
 
 ## Motion
 
-- One big moment: the hero headline rises line by line, then the workflow trace plays once and stays on its finished run (it pauses while off screen).
-- Small ones: Systems index follows the reader, the Systems inbox sorts itself and the chat reply streams in (once),
-  the Results and Booking headings rise line by line (only those two), Results totals count up and bars grow,
-  the Process line draws, FAQ answers slide open, the form draws a tick when sent, magnetic primary button.
+Every scroll shows something new: the moving parts follow the scroll (scrub, and rewind on the way back), they do not
+just play once. Owner's decision 2026-09-30; built in levels, each only if Lighthouse stays >= 90: A scroll story with
+GSAP, then B illustrated extras (SVG morphs, a picture per Process step), then C one light WebGL moment.
+
+- Three held scenes, pinned and scrubbed: the hero trace walks one lead through the workflow step by step (the primary
+  button stays on screen); the Systems stage (the inbox sorts, a reply drafts, "Approve" is pressed last, then the chat
+  reply types); the Process walk (the line draws, each step rises as the line reaches it).
+- Every other section gets one scroll moment of its own: Results bars grow against the market bar and the totals build
+  from the campaign rows; section rules and FAQ dividers draw in; the booking calendar builds; a thin progress line runs
+  down the page edge. Headings rise through a line mask with one signature ease. The form draws a tick when sent.
+- Pin only with a mouse or trackpad (`(pointer: fine)`) and only when the section fits the screen below the navbar.
+  Phones, touch tablets and short screens get a simple scrub or the finished state. Never capture the wheel page-wide.
+  Held distance in total stays around 6 screens.
+- Scrubbed numbers end exactly on the printed figures. Unlike metrics never count up in one comparable column.
 - Use `useGSAP` with a scope; set hidden states inside `gsap.matchMedia('(prefers-reduced-motion: no-preference)')`
   so reduced motion and no-JS show finished content. Never hide content with CSS classes.
 - SplitText headings get `key={lang}` and `revertOnUpdate: true` so the language switch re-splits them.
 - Lenis runs on mouse/trackpad only; scroll via `scrollToEl` / `lockScroll` in `src/lib/motion.js`.
+- After every motion change: Lighthouse mobile home >= 90, and `npm run check:layout` including the held states.
 
 ## Responsive rules
 
