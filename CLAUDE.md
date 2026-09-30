@@ -42,9 +42,10 @@ Every scroll shows something new: the moving parts follow the scroll (scrub, and
 just play once. Owner's decision 2026-09-30; built in levels, each only if Lighthouse stays >= 90: A scroll story with
 GSAP, then B illustrated extras (SVG morphs, a picture per Process step), then C one light WebGL moment.
 
-- Three held scenes, pinned and scrubbed: the hero trace walks one lead through the workflow step by step (the primary
-  button stays on screen); the Systems stage (the inbox sorts, a reply drafts, "Approve" is pressed last, then the chat
-  reply types); the Process walk (the line draws, each step rises as the line reaches it).
+- Three held scenes, pinned and scrubbed: the hero trace walks one lead through the workflow step by step (a ring rides
+  the line, the primary button stays on screen; where it cannot be held it plays once); the Systems stage (the picture
+  starts filling in as it scrolls up, the inbox sorts, a reply drafts, "Approve" is pressed last, then the chat reply
+  types); the Process walk (the line draws, each step rises as the line reaches it).
 - Every other section gets one scroll moment of its own: Results bars grow against the market bar and the totals build
   from the campaign rows; section rules and FAQ dividers draw in; the booking calendar builds; a thin progress line runs
   down the page edge. Headings rise through a line mask with one signature ease. The form draws a tick when sent.
@@ -53,7 +54,10 @@ GSAP, then B illustrated extras (SVG morphs, a picture per Process step), then C
   Held distance in total stays around 6 screens.
 - Scrubbed numbers end exactly on the printed figures. Unlike metrics never count up in one comparable column.
 - Use `useGSAP` with a scope; set hidden states inside `gsap.matchMedia('(prefers-reduced-motion: no-preference)')`
-  so reduced motion and no-JS show finished content. Never hide content with CSS classes.
+  so reduced motion and no-JS show finished content. Never hide content with CSS classes. A state that only exists
+  inside an animation (a chip lighting up, a label that swaps) is not content: mark it `data-motion-only`.
+- Late height changes (a heading re-split after a resize, an FAQ answer opening) re-measure every trigger through the
+  body ResizeObserver in `src/lib/motion.js`: no per-component `ScrollTrigger.refresh()` for that.
 - SplitText headings get `key={lang}` and `revertOnUpdate: true` so the language switch re-splits them.
 - Lenis runs on mouse/trackpad only; scroll via `scrollToEl` / `lockScroll` in `src/lib/motion.js`.
 - After every motion change: Lighthouse mobile home >= 90, and `npm run check:layout` including the held states.
