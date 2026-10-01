@@ -2,7 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LeadForm from './LeadForm';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, scrollToEl } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, HOLD, riseOnScroll, drawRule, scrollToEl } from '../lib/motion';
 import { CAL_LINK } from '../lib/cal';
 
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
@@ -165,13 +165,33 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
+  // The page's one WebGL moment (a dot field settling into the calendar's grid, see lib/dotField.js). Desktop with a mouse
+  // and motion allowed only, fetched when the section is a screen away. Phones, touch and reduced motion get nothing:
+  // the settled grid is quiet by design, and a static copy could not keep clear of the text without the same measuring.
+  useGSAP(() => {
+    if (heading !== 'h2') return undefined;
+    const mm = gsap.matchMedia();
+    mm.add(HOLD, () => {
+      let stop;
+      let gone = false;
+      const io = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        import('../lib/dotField').then(({ default: mount }) => { if (!gone) stop = mount(root.current); }).catch(() => {});
+      }, { rootMargin: '100% 0px' });
+      io.observe(root.current);
+      return () => { gone = true; io.disconnect(); stop?.(); };
+    });
+    return () => mm.revert();
+  }, { scope: root });
+
   const openCalendar = () => {
     setCalOpen(true);
     scrollToEl(frame.current);
   };
 
   return (
-    <section id="book" ref={root} className="rule py-24 lg:py-32">
+    <section id="book" ref={root} className="rule isolate py-24 lg:py-32">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
