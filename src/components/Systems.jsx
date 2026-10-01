@@ -147,9 +147,54 @@ function chatScene(stage, st) {
     tl.to(act, { autoAlpha: 1, duration: 0.25 }, at)
       .to(act.querySelector('.ch-dot'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at);
     if (i === 0) lightChip(tl, chips[1], at);
-    if (i === 2) lightChip(tl, chips[2], at);
+    if (i === 2) lightChip(tl, chips[2], at).addLabel('handover', at);
   });
   return finish(tl, st);
+}
+
+// The line icon beside the index (wide screens with a mouse only): an envelope while the outbound system is on screen, a chat
+// bubble as the index moves to support, a ticket at the hand-over. Elsewhere (touch, reduced motion) it stays hidden: a still
+// envelope would be wrong half the time, and the index already says which system is on screen.
+// All three outlines are drawn with the same commands (a rounded box, a notch on each side, a tail under the bottom left; the
+// parts a shape does not have are flat or zero length), so GSAP tweens the numbers in `d` directly and every in-between frame
+// is the same box stretched. The inner marks never morph (a line into a line would spin): they cross-fade.
+const outline = (t, b, notch, tail) => {
+  const m = (t + b) / 2;
+  const k = 1.1; // corner radius 2 as a cubic
+  const c = (4 / 3) * notch; // notch half circle as a cubic, flat when 0
+  return `M5 ${t}L19 ${t}C${19 + k} ${t} 21 ${t + 2 - k} 21 ${t + 2}L21 ${m - 2.5}C${21 - c} ${m - 2.5} ${21 - c} ${m + 2.5} 21 ${m + 2.5}`
+    + `L21 ${b - 2}C21 ${b - 2 + k} ${19 + k} ${b} 19 ${b}L11 ${b}L6 ${b + tail}L6 ${b}L5 ${b}`
+    + `C${5 - k} ${b} 3 ${b - 2 + k} 3 ${b - 2}L3 ${m + 2.5}C${3 + c} ${m + 2.5} ${3 + c} ${m - 2.5} 3 ${m - 2.5}`
+    + `L3 ${t + 2}C3 ${t + 2 - k} ${5 - k} ${t} 5 ${t}Z`;
+};
+const ICON = { envelope: outline(5, 19, 0, 0), bubble: outline(4, 17, 0, 4), ticket: outline(5, 19, 2.5, 0) };
+
+// The bubble forms while the support article's top crosses 60% to 50% of the screen: the index switches at 55%, same rule.
+// The ticket forms over the 0.4 s of the chat timeline after its hand-over line. One draw() reads both and sets the icon,
+// so the two never fight over the same attribute when the reader jumps.
+function iconScene(svg, article, chat) {
+  const [line, flap, dash, stub] = svg.children;
+  // fromTo throughout: each frame is a pure function of the time, whatever order the tweens first rendered in
+  const icon = gsap.timeline({ paused: true, defaults: { ease: 'power1.inOut', immediateRender: false } })
+    .fromTo(line, { attr: { d: ICON.envelope } }, { attr: { d: ICON.bubble }, duration: 1 }, 0)
+    .fromTo(flap, { opacity: 1 }, { opacity: 0, duration: 0.5 }, 0)
+    .fromTo(dash, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.5)
+    .fromTo(line, { attr: { d: ICON.bubble } }, { attr: { d: ICON.ticket }, duration: 1 }, 1)
+    .fromTo(dash, { opacity: 1 }, { opacity: 0, duration: 0.5 }, 1)
+    .fromTo(stub, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 1.5);
+  const bubble = { p: 0 };
+  const draw = () => {
+    const ticket = gsap.utils.clamp(0, 1, (chat.time() - chat.labels.handover) / 0.4);
+    icon.time(ticket > 0 ? 1 + ticket : bubble.p);
+  };
+  gsap.to(bubble, {
+    p: 1,
+    ease: 'none',
+    onUpdate: draw,
+    scrollTrigger: { trigger: article, start: 'top 60%', end: 'top 50%', scrub: 0.5, refreshPriority: 0 },
+  });
+  chat.eventCallback('onUpdate', draw);
+  draw();
 }
 
 // How much scroll each held stage takes, in screens (Systems total: 1.5)
@@ -233,12 +278,15 @@ export default function Systems() {
     const note = root.current.querySelector('[data-note]');
     const items = articles.map((el) => root.current.querySelector(`[data-index="${el.dataset.system}"]`));
     const slot = (el) => el.closest('.pin-spacer') || el; // a pinned article is fixed: its spacer holds its place in the flow
+    const icon = root.current.querySelector('.sys-icon');
+    const hold = window.matchMedia(HOLD); // the icon only moves under HOLD (see iconScene)
     let shown = -2;
     const update = () => {
       const y = innerHeight * 0.55;
       let on = -1;
       articles.forEach((el, i) => { if (slot(el).getBoundingClientRect().top <= y) on = i; });
       if (note.getBoundingClientRect().top <= y) on = -1;
+      icon.classList.toggle('is-active', on !== -1 && hold.matches);
       if (on === shown) return;
       shown = on;
       items.forEach((li, i) => li.classList.toggle('is-active', i === on));
@@ -268,6 +316,7 @@ export default function Systems() {
       const plan = () => articles.map((a) => (!hold ? -1 : fitsScreen(natural(a)) ? 0 : fitsScreen(a.querySelector('[data-stage]')) ? 1 : -1)).join();
       let inner;
       let key;
+      let alive = true;
       const build = () => {
         inner?.revert();
         key = plan();
@@ -288,16 +337,16 @@ export default function Systems() {
               refreshPriority: 0,
             });
             // The scene starts as the picture comes into view, so it never scrolls up empty, and ends with the hold
-            run(stage, pin
+            const tl = run(stage, pin
               ? { trigger: stage, pinnedContainer: pinned, start: 'top 85%', end: () => pin.end, scrub: 0.5, invalidateOnRefresh: true, refreshPriority: 0 }
               : hold
                 ? { trigger: stage, start: 'top 80%', end: 'bottom 40%', scrub: 0.5, refreshPriority: 0 }
                 : { trigger: stage, start: 'top 70%', once: true, refreshPriority: 0 });
+            if (hold && article.dataset.system === 'support') iconScene(root.current.querySelector('.sys-icon'), article, tl);
           });
         }, root.current);
       };
       build();
-      let alive = true;
       const recheck = () => {
         if (plan() === key) return;
         requestAnimationFrame(() => {
@@ -323,17 +372,27 @@ export default function Systems() {
           <div className="lg:sticky lg:top-28">
             <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
             <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
-            <ol className="mt-10 hidden gap-3 border-l border-line lg:grid">
-              {t.systems.map((s) => (
-                <li
-                  key={s.id}
-                  data-index={s.id}
-                  className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
-                >
-                  {s.name}
-                </li>
-              ))}
-            </ol>
+            <div className="mt-10 hidden items-center gap-8 lg:flex">
+              {/* the list is wider than its longest label in either language, so the icon does not move on a switch */}
+              <ol className="grid min-w-[15rem] gap-3 border-l border-line">
+                {t.systems.map((s) => (
+                  <li
+                    key={s.id}
+                    data-index={s.id}
+                    className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
+                  >
+                    {s.name}
+                  </li>
+                ))}
+              </ol>
+              {/* stroke 2/3 of a unit = 1px at 36px */}
+              <svg aria-hidden="true" data-motion-only className="sys-icon h-9 w-9 shrink-0 text-muted opacity-0 transition-opacity duration-300 [&.is-active]:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2 / 3} strokeLinecap="round" strokeLinejoin="round">
+                <path d={ICON.envelope} />
+                <path d="M3.5 7.5 12 13l8.5-5.5" />
+                <path d="M8 10.5h8" opacity="0" />
+                <path d="M15 8v8" opacity="0" strokeDasharray="1.5 2" />
+              </svg>
+            </div>
           </div>
         </div>
 
