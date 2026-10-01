@@ -10,8 +10,8 @@ export default function CalendarEmbed({ prefill }) {
   const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Rome');
   const zones = useMemo(() => [...new Set([timezone, ...Intl.supportedValuesOf('timeZone')])], [timezone]);
   const config = useMemo(
-    () => ({ layout: 'column_view', theme: 'dark', useSlotsViewOnSmallScreen: 'true', locale: lang, 'cal.tz': timezone, ...(prefill?.name && { name: prefill.name }), ...(prefill?.email && { email: prefill.email }) }),
-    [prefill, lang, timezone],
+    () => ({ layout: 'column_view', theme: 'dark', useSlotsViewOnSmallScreen: 'true', 'cal.tz': timezone, ...(prefill?.name && { name: prefill.name }), ...(prefill?.email && { email: prefill.email }) }),
+    [prefill, timezone],
   );
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function CalendarEmbed({ prefill }) {
           {zones.map((zone) => <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>)}
         </select>
       </label>
-      <Cal key={`${lang}-${timezone}`} namespace="intro" calLink={CAL_LINK} config={config} style={{ width: '100%', minHeight: 400 }} />
+      <Cal key={timezone} namespace="intro" calLink={CAL_LINK} config={config} style={{ width: '100%', minHeight: 400 }} />
     </div>
   );
 }
