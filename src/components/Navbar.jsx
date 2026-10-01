@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 import ScrollLink from './ScrollLink';
 import { useCopy, useLang } from '../lib/lang';
 import { lockScroll } from '../lib/motion';
+import logoMask from '../assets/logo-mask.webp'; // 1.4 KB, so the build inlines it: the first paint waits for no image request
 
 const copy = {
   en: {
@@ -29,7 +30,7 @@ const copy = {
 const LANGUAGES = [['en', 'English'], ['it', 'Italiano']]; // each in its own language, whatever the page language
 
 export function Logo({ className = '' }) {
-  const mask = 'url(/logo.png) center / contain no-repeat';
+  const mask = `url(${logoMask}) center / contain no-repeat`; // 112 px: 4x the 28 px it is shown at
   return <span aria-hidden="true" className={`inline-block shrink-0 bg-accent ${className}`} style={{ mask, WebkitMask: mask }} />;
 }
 

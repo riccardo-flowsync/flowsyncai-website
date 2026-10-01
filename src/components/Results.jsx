@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, later } from '../lib/motion';
 
 // Source: the outbound case studies, updated 2026-09-23. Interested and meetings add up to the totals.
 const ROWS = [
@@ -176,7 +176,7 @@ export default function Results() {
   const num = (v) => nf.format(v);
 
   // Scroll scene, all scrubbed (it rewinds on the way back) and ending on the printed figures. Text shows its real value until this runs.
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     const show = (el, v) => {
       const s = num(v);
@@ -238,7 +238,7 @@ export default function Results() {
       return restore(cardCounters);
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
     <section id="results" ref={root} className="rule py-24 lg:py-32">

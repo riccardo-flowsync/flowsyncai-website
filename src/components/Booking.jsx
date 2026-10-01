@@ -2,7 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LeadForm from './LeadForm';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, scrollToEl } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, scrollToEl, later } from '../lib/motion';
 import { CAL_LINK } from '../lib/cal';
 
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
@@ -80,9 +80,8 @@ function MonthPreview({ animate }) {
   const box = useRef(null);
 
   // The grid builds itself day by day as it scrolls in, then today's ring is drawn. Scrubbed, so it rewinds on the way back.
-  // Its own scope: the preview unmounts when the real calendar opens, and its triggers go with it.
-  useGSAP(() => {
-    if (!animate) return undefined; // on /contact the calendar stays as drawn
+  // Its own scope: the preview unmounts when the real calendar opens, and its triggers go with it. On /contact it stays as drawn.
+  useGSAP((context) => animate && later(context, () => {
     const mm = gsap.matchMedia(box.current);
     mm.add(MOTION_OK, () => {
       const tl = gsap.timeline({
@@ -99,7 +98,7 @@ function MonthPreview({ animate }) {
       }
     });
     return () => mm.revert();
-  }, { scope: box });
+  }), { scope: box });
 
   return (
     <div ref={box} aria-hidden="true" className="select-none">
@@ -142,8 +141,7 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   const root = useRef(null);
 
   // Only the home page section moves: on /contact the heading is the h1 at the top of the page and everything stays still
-  useGSAP(() => {
-    if (heading !== 'h2') return undefined;
+  useGSAP((context) => heading === 'h2' && later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       riseOnScroll('.book-title');
@@ -163,7 +161,7 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
       }));
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   const openCalendar = () => {
     setCalOpen(true);

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, NAV_H, fitsScreen, riseOnScroll, drawRule } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, NAV_H, fitsScreen, riseOnScroll, drawRule, later } from '../lib/motion';
 
 const copy = {
   en: {
@@ -228,7 +228,7 @@ export default function Systems() {
   // The sticky index follows the reader: a system is active from when its article reaches mid-screen until the next one does
   // (the last one until the note under them), so it stays active through a hold. Read live from where things are on screen,
   // so it does not depend on the order ScrollTrigger measures pins in.
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const articles = gsap.utils.toArray('[data-system]', root.current);
     const note = root.current.querySelector('[data-note]');
     const items = articles.map((el) => root.current.querySelector(`[data-index="${el.dataset.system}"]`));
@@ -244,22 +244,22 @@ export default function Systems() {
       items.forEach((li, i) => li.classList.toggle('is-active', i === on));
     };
     ScrollTrigger.create({ trigger: root.current, start: 'top bottom', end: 'bottom top', onUpdate: update, onRefresh: update, onToggle: update });
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   // The section's top rule draws in and the heading rises (motion allowed only)
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       drawRule(root.current);
       riseOnScroll(root.current.querySelector('.sys-title'));
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   // The two stages. Under HOLD each one is pinned and scrubbed: the whole article if it fits below the navbar, else only its
   // chips + picture, else it is only scrubbed while it scrolls by. Outside HOLD (touch, narrow) it plays once.
   // Fit is checked again after every ScrollTrigger refresh (resize, fonts loading), rebuilding the scenes if it changed.
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add({ hold: HOLD, ok: MOTION_OK }, (ctx) => {
       const { hold } = ctx.conditions;
@@ -314,7 +314,7 @@ export default function Systems() {
       };
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
     <section id="systems" ref={root} className="rule py-24 lg:py-32">
