@@ -39,20 +39,21 @@ const copy = {
         body: 'Le email partono nei giorni feriali, in orario d’ufficio, entro un limite giornaliero. Le risposte vengono preparate e, di norma, approvate da una persona. Chi è interessato prenota nel tuo calendario e tu fai le call. Vedi ogni contatto in una dashboard.',
       },
     ],
-    tools: ['La tua email', 'Il tuo calendario', 'Il tuo CRM'],
+    tools: ['La tua posta', 'Il tuo calendario', 'Il tuo CRM'],
     days: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
     note: 'Illustrazioni.',
   },
 };
 
 // One small picture per step, each a row of chips: a 30-minute slot being booked, your tools joined into one system,
-// the five working days. The .pic-in parts appear, then the .pic-draw parts (the accent signal) draw along their length.
-// Below lg the tools stack, so their connectors run down instead of across.
+// the five working days. The .pic-in parts appear, then the .pic-draw parts draw along their length.
+// Below 360 px the tools stack, so their connectors run down instead of across.
 const chip = 'pic-in relative whitespace-nowrap rounded-md px-1.5 py-1 text-xs ring-1 ring-inset ring-line';
 const SLOTS = ['10:00', '10:30', '11:00', '11:30'];
 const pictures = [
   () => (
-    <div className="flex gap-1.5">
+    // Equal columns, so the four slots match in width without tabular digits (Mona Sans draws those with a slashed zero)
+    <div className="grid w-max grid-cols-4 gap-1.5 text-center">
       {SLOTS.map((s, i) => (
         <span key={s} className={`${chip} ${i === 1 ? 'text-accent' : 'text-faint'}`}>
           {i === 1 && <span className="pic-draw absolute -inset-px origin-left rounded-md border border-accent bg-accent/15" />}
@@ -62,10 +63,10 @@ const pictures = [
     </div>
   ),
   (t) => (
-    <div className="flex flex-col items-start lg:flex-row lg:items-center">
+    <div className="flex flex-col items-start min-[360px]:flex-row min-[360px]:items-center">
       {t.tools.map((s, i) => (
         <span key={s} className="contents">
-          {i > 0 && <span className="pic-draw ml-3 h-2.5 w-px shrink-0 origin-top bg-accent lg:ml-0 lg:h-px lg:w-2 lg:origin-left" />}
+          {i > 0 && <span className="pic-draw ml-3 h-2.5 w-px shrink-0 origin-top bg-line min-[360px]:ml-0 min-[360px]:h-px min-[360px]:w-2.5 min-[360px]:origin-left" />}
           <span className={`${chip} text-muted`}>{s}</span>
         </span>
       ))}
@@ -74,7 +75,7 @@ const pictures = [
   (t) => (
     <div className="flex gap-1.5">
       {t.days.map((d, i) => (
-        <span key={d} className={`pic-in w-8 pt-1 text-center text-xs leading-4 ${i < 5 ? 'text-fg' : 'text-faint'}`}>
+        <span key={d} className={`pic-in w-8 pt-1 text-center text-xs leading-4 ${i < 5 ? 'text-muted' : 'text-faint'}`}>
           {d}
           <span className={`mt-0.5 block h-0.5 origin-left rounded-full ${i < 5 ? 'pic-draw bg-accent' : 'bg-line'}`} />
         </span>
@@ -88,8 +89,8 @@ const pictures = [
 function picture(li) {
   const tl = gsap.timeline();
   const ins = li.querySelectorAll('.pic-in');
-  ins.forEach((el, i) => tl.from(el, { opacity: 0, y: 8, duration: 0.6, ease: RISE }, i * 0.1));
-  li.querySelectorAll('.pic-draw').forEach((el, i) => tl.from(el, { [el.offsetHeight > el.offsetWidth ? 'scaleY' : 'scaleX']: 0, duration: 0.5, ease: 'power2.inOut' }, ins.length * 0.1 + 0.25 + i * 0.1));
+  ins.forEach((el, i) => tl.from(el, { opacity: 0, y: 8, duration: 0.6, ease: RISE }, i * 0.05));
+  li.querySelectorAll('.pic-draw').forEach((el, i) => tl.from(el, { [el.offsetHeight > el.offsetWidth ? 'scaleY' : 'scaleX']: 0, duration: 0.4, ease: 'power2.inOut' }, ins.length * 0.05 + 0.1 + i * 0.06));
   return tl;
 }
 
@@ -111,7 +112,7 @@ function walk(list, scrollTrigger, settle) {
     const pic = picture(li); // a nested timeline, so place() moves it as one piece and its inner timing stays
     tl.add(pic, timeOf(i));
     parts[i].push(pic);
-    if (settle && i) parts[i].push(tl.to(steps[i - 1].querySelector('.proc-text'), { opacity: 0.75, duration: 1.4 }, timeOf(i)));
+    if (settle && i) parts[i].push(tl.to(steps[i - 1].querySelectorAll('.proc-text, .proc-pic'), { opacity: 0.75, duration: 1.4 }, timeOf(i)));
   });
   tl.set({}, {}, 10); // the walk ends with a beat of rest
   const place = () => parts.forEach((tweens, i) => tweens.forEach((tw) => tw.startTime(timeOf(i))));
@@ -161,15 +162,21 @@ export default function Process() {
         return;
       }
 
-      // Phones and narrow screens: the line runs down the page and its tip stays at 70% of the screen, each step rises as the tip reaches it
+      // Phones and narrow screens: the line runs down the page and its tip stays at 70% of the screen, each step rises as the tip reaches it.
+      // The picture sits under the step's text, so it plays on its own trigger: with the step, or later if it is not yet fully on screen
+      // (its bottom at 95%, which is 27% of the screen below the step's own 68% line).
       gsap.fromTo('.proc-fill', { scaleY: 0 }, {
         scaleY: 1, ease: 'none', scrollTrigger: { trigger: list, start: 'top 70%', end: 'bottom 70%', scrub: true },
       });
       gsap.utils.toArray('.proc-step', list).forEach((li) => {
         gsap.timeline({ scrollTrigger: { trigger: li, start: 'top 68%', toggleActions: 'play none none reverse' } })
           .from(li.querySelector('.proc-text'), { y: 32, opacity: 0, duration: 0.8, ease: RISE })
-          .from(li.querySelector('.proc-node'), { scale: 0, duration: 0.45, ease: 'back.out(3)' }, 0)
-          .add(picture(li), 0.3);
+          .from(li.querySelector('.proc-node'), { scale: 0, duration: 0.45, ease: 'back.out(3)' }, 0);
+        const pic = li.querySelector('.proc-pic');
+        gsap.timeline({ scrollTrigger: {
+          trigger: li, toggleActions: 'play none none reverse',
+          start: () => `top+=${Math.max(0, pic.offsetTop + pic.offsetHeight - li.offsetTop - window.innerHeight * 0.27)} 68%`,
+        } }).add(picture(li));
       });
     });
     return () => mm.revert();
@@ -196,14 +203,14 @@ export default function Process() {
                   <h3 className="t-h3">{s.title}</h3>
                   <p className="mt-3 text-muted">{s.body}</p>
                 </div>
-                <div aria-hidden="true" className="col-start-2 mt-5 select-none lg:col-start-1 lg:row-start-1 lg:mb-4 lg:mt-0">
+                <div aria-hidden="true" className="proc-pic col-start-2 mt-5 select-none lg:col-start-1 lg:row-start-1 lg:mb-4 lg:mt-0">
                   {pictures[i](t)}
                 </div>
               </li>
             ))}
           </ol>
           {/* Absolute from lg: it sits in the section's bottom padding and costs the pinned scene no height */}
-          <p className="mt-10 text-xs text-faint lg:absolute lg:top-full lg:mt-10">{t.note}</p>
+          <p aria-hidden="true" className="mt-10 text-xs text-faint lg:absolute lg:top-full lg:mt-10">{t.note}</p>
         </div>
       </div>
     </section>
