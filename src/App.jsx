@@ -1,18 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { LangProvider } from './lib/lang';
-import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop } from './lib/motion';
+import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop, scenesReady } from './lib/motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import Contact from './pages/Contact';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import NotFound from './pages/NotFound';
 
-// ScrollTrigger re-measures the page when the fonts and the page finish loading, which cancels a scroll under way
+// Only the home page is in the first download; the other pages load when visited
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// ScrollTrigger re-measures the page when the fonts and the page finish loading and when a pinned scene is set up,
+// which cancels a scroll under way
 const settled = () => Promise.all([
   document.fonts?.ready,
+  scenesReady(),
   document.readyState === 'complete' || new Promise((done) => window.addEventListener('load', done, { once: true })),
 ]);
 
@@ -45,7 +49,9 @@ function ScrollManager() {
 export default function App() {
   useEffect(() => {
     const stop = startSmoothScroll();
-    document.fonts?.ready.then(() => ScrollTrigger.refresh()); // text reflows once the web fonts land
+    // Text reflows once the web fonts land: re-measure every trigger (and every useFits). Here and not at module load,
+    // where fonts.ready resolves at once because no font has started loading yet.
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
     return stop;
   }, []);
 
@@ -55,13 +61,15 @@ export default function App() {
         <ScrollManager />
         <Navbar />
         <main id="main" tabIndex={-1} className="outline-none">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </main>
         <Footer />
         <div className="grain" aria-hidden="true" />

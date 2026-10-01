@@ -20,27 +20,81 @@ export const HOLD = '(prefers-reduced-motion: no-preference) and (pointer: fine)
 export const NAV_H = 64; // the fixed navbar (h-16 in Navbar.jsx)
 export const fitsScreen = (el) => el.offsetHeight + NAV_H <= window.innerHeight;
 
-// fitsScreen as React state, checked again after every ScrollTrigger refresh (resize, late fonts, a pin appearing)
+// ---- Nothing measures before the first paint ----
+// Anything that reads the layout (a split heading, a ScrollTrigger, a fit check) waits until the first frame is on screen, then
+// runs as one job per task (no single task blocks the page for long), in the order asked, which is page order. Before that frame
+// only plain style writes happen (see startAt), so the page paints as soon as React has rendered it. After the first load,
+// jobs run at once. Returns a cancel.
+const jobs = [];
+let phase = 0; // 0 nothing asked yet, 1 waiting for the first paint or running the jobs, 2 done
+let allDone;
+const done = new Promise((resolve) => { allDone = resolve; });
+const run = () => {
+  const job = jobs.shift();
+  if (!job) {
+    phase = 2;
+    allDone();
+    return;
+  }
+  job();
+  setTimeout(run);
+};
+export function afterPaint(job) {
+  if (phase === 2) {
+    job();
+    return () => {};
+  }
+  jobs.push(job);
+  if (phase === 0) {
+    phase = 1;
+    requestAnimationFrame(() => setTimeout(run)); // the frame after this commit is painted first
+  }
+  return () => { const i = jobs.indexOf(job); if (i > -1) jobs.splice(i, 1); };
+}
+
+// A useGSAP setup that measures, run after the first paint inside the given context (useGSAP's, or a matchMedia's): scope and
+// revert as usual. Reverted before its turn, it is dropped.
+export function later(context, setup) {
+  const cancel = afterPaint(() => context.add(setup));
+  context.add(() => cancel);
+}
+
+// Resolves once every waiting job has run: a jump to a section waits for this, as pins change positions
+export const scenesReady = () => (phase === 1 ? done : Promise.resolve());
+
+// A hidden state for the first frame, as plain style writes ({ opacity: '0', transform: 'scale(0)' }). A GSAP set first reads the
+// computed style, which makes the browser compute the page's styles (and start its font downloads) before it can paint.
+// Returns the undo, for a matchMedia cleanup (it runs after GSAP's own revert).
+export function startAt(targets, styles) {
+  const els = gsap.utils.toArray(targets);
+  els.forEach((el) => Object.assign(el.style, styles));
+  return () => els.forEach((el) => Object.keys(styles).forEach((k) => { el.style[k] = ''; }));
+}
+
+// fitsScreen as React state, checked after the first paint and again after every ScrollTrigger refresh (resize, late fonts, a pin appearing)
 export function useFits(ref, deps) {
   const [fits, setFits] = useState(false);
   useLayoutEffect(() => {
     const check = () => { if (ref.current) setFits(fitsScreen(ref.current)); };
-    check();
+    const cancel = afterPaint(check);
     ScrollTrigger.addEventListener('refresh', check);
-    return () => ScrollTrigger.removeEventListener('refresh', check);
+    return () => {
+      cancel();
+      ScrollTrigger.removeEventListener('refresh', check);
+    };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
   return fits;
 }
 
-// Late fonts change heights: re-measure every trigger (and every useFits) once they are in
-document.fonts?.ready.then(() => ScrollTrigger.refresh());
-
 // Anything that changes the page's height after ScrollTrigger measured it moves every trigger below it: a heading re-split
 // 200 ms after a resize (SplitText waits, ScrollTrigger does not), an FAQ answer opening. Measure again once it settles.
+// A height that a refresh has already measured (late fonts: their own refresh in App.jsx ran first) needs no second one.
 let settling;
+let measured = -1;
+ScrollTrigger.addEventListener('refresh', () => { measured = document.body.offsetHeight; });
 new ResizeObserver(() => {
   clearTimeout(settling);
-  settling = setTimeout(() => ScrollTrigger.refresh(), 300);
+  settling = setTimeout(() => document.body.offsetHeight !== measured && ScrollTrigger.refresh(), 300);
 }).observe(document.body);
 
 // The signature ease of the site: every heading rise uses it (a fast start that settles softly)

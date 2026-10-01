@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, later, startAt } from '../lib/motion';
 
 // One lead moving through the outbound system. On a mouse screen where it fits, the scroll walks it (Hero holds the scene);
 // elsewhere it plays once and stays on the finished run.
@@ -49,28 +49,35 @@ export default function WorkflowTrace({ held = false, scene }) {
       if (!ctx.conditions.ok) return undefined;
       // Waiting steps keep their label in the faint colour, so the whole workflow reads at a glance before anything runs.
       // A step that is reached fills its dot, its label turns bright and its time and detail appear.
-      const labels = gsap.utils.toArray('.trace-label', root.current);
-      const fg = getComputedStyle(labels[0]).color;
-      const faint = getComputedStyle(root.current.querySelector('.trace-time')).color;
-      gsap.set('.trace-fill', { scale: 0 });
-      gsap.set('.trace-seg', { scaleY: 0 });
-      gsap.set(labels, { color: faint });
+      // The hidden states are plain style writes, in the first frame; the timelines are built after the first paint (they measure).
+      const all = (sel) => root.current.querySelectorAll(sel);
+      const labels = all('.trace-label');
+      const steps = gsap.utils.toArray(all('.trace-step'));
+      const ring = marker.current;
       const scrubbed = ctx.conditions.hold && held && scene;
-      // Held scene: opacity and a small lift only (no visibility or clip-path), so the text stays findable and readable by assistive tech.
+      labels.forEach((el) => el.classList.add('text-faint'));
+      const undo = [
+        () => labels.forEach((el) => el.classList.remove('text-faint')),
+        startAt(all('.trace-fill'), { transform: 'scale(0)' }),
+        startAt(all('.trace-seg'), { transform: 'scaleY(0)' }),
+      ];
       if (scrubbed) {
-        gsap.set('.trace-time', { opacity: 0 });
-        gsap.set('.trace-detail', { opacity: 0, y: 6 });
-      } else {
-        gsap.set('.trace-time', { autoAlpha: 0 });
-        gsap.set('.trace-detail', { clipPath: 'inset(0 100% 0 0)' });
-      }
-      const steps = gsap.utils.toArray('.trace-step', root.current);
-
-      if (scrubbed) {
-        // Held scene: step 1 appears by itself, the scroll then walks the lead down the line (Hero builds the pin around this timeline).
-        const ring = marker.current;
+        // Held scene: opacity and a small lift only (no visibility or clip-path), so the text stays findable and readable by assistive tech.
+        undo.push(startAt(all('.trace-time'), { opacity: '0' }), startAt(all('.trace-detail'), { opacity: '0', transform: 'translateY(6px)' }));
         ring.hidden = false;
-        gsap.set(ring, { autoAlpha: 0, y: 0 });
+        undo.push(startAt(ring, { opacity: '0', visibility: 'hidden' }), () => { ring.hidden = true; scene.current = null; });
+      } else {
+        undo.push(startAt(all('.trace-time'), { opacity: '0', visibility: 'hidden' }), startAt(all('.trace-detail'), { clipPath: 'inset(0 100% 0 0)' }));
+      }
+      let fg;
+      later(ctx, () => {
+        fg = getComputedStyle(root.current).color; // a reached step's label turns to the panel's own text colour
+        return scrubbed ? scrub() : playOnce();
+      });
+      return () => undo.forEach((u) => u());
+
+      function scrub() {
+        // Held scene: step 1 appears by itself, the scroll then walks the lead down the line (Hero builds the pin around this timeline).
         const show = (tl, step, at) => {
           const q = gsap.utils.selector(step);
           return tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at)
@@ -94,29 +101,29 @@ export default function WorkflowTrace({ held = false, scene }) {
         });
         tl.to({}, { duration: 0.5 }); // the finished run holds for a moment before the page moves on
         scene.current = { tl };
-        return () => { scene.current = null; ring.hidden = true; };
       }
 
       // Everywhere else: it plays once when it comes into view and pauses off screen.
-      const tl = gsap.timeline({ paused: true });
-      tl.to({}, { duration: 0.7 }); // let the headline land first
-      steps.forEach((step, i) => {
-        const q = gsap.utils.selector(step);
-        tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' })
-          .to(q('.trace-label'), { color: fg, duration: 0.25 }, '<')
-          .to(q('.trace-time'), { autoAlpha: 1, duration: 0.25 }, '<')
-          .to(q('.trace-detail'), { clipPath: 'inset(0 0% 0 0)', duration: 0.55, ease: 'steps(22)' }, '<0.1');
-        if (i < steps.length - 1) tl.to(q('.trace-seg'), { scaleY: 1, duration: 0.4, ease: 'power1.inOut' }, '+=0.3'); // the last step has no line below it
-      });
+      function playOnce() {
+        const tl = gsap.timeline({ paused: true });
+        tl.to({}, { duration: 0.7 }); // let the headline land first
+        steps.forEach((step, i) => {
+          const q = gsap.utils.selector(step);
+          tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' })
+            .to(q('.trace-label'), { color: fg, duration: 0.25 }, '<')
+            .to(q('.trace-time'), { autoAlpha: 1, duration: 0.25 }, '<')
+            .to(q('.trace-detail'), { clipPath: 'inset(0 0% 0 0)', duration: 0.55, ease: 'steps(22)' }, '<0.1');
+          if (i < steps.length - 1) tl.to(q('.trace-seg'), { scaleY: 1, duration: 0.4, ease: 'power1.inOut' }, '+=0.3'); // the last step has no line below it
+        });
 
-      // Only run while visible
-      ScrollTrigger.create({
-        trigger: root.current,
-        start: 'top bottom',
-        end: 'bottom top',
-        onToggle: (self) => (self.isActive ? tl.play() : tl.pause()),
-      });
-      return undefined;
+        // Only run while visible
+        ScrollTrigger.create({
+          trigger: root.current,
+          start: 'top bottom',
+          end: 'bottom top',
+          onToggle: (self) => (self.isActive ? tl.play() : tl.pause()),
+        });
+      }
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang, held], revertOnUpdate: true });

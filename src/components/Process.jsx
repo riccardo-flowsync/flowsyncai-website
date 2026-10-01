@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK, HOLD, NAV_H, RISE, useFits, riseOnScroll, drawRule } from '../lib/motion';
+import { gsap, ScrollTrigger, useGSAP, MOTION_OK, HOLD, NAV_H, RISE, useFits, riseOnScroll, drawRule, later } from '../lib/motion';
 
 const copy = {
   en: {
@@ -70,7 +70,7 @@ export default function Process() {
   const fits = useFits(root, [lang]);
 
   // The heading and the top rule only depend on the language, so a resize never replays them
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add({ motion: MOTION_OK }, ({ conditions }) => {
       if (!conditions.motion) return;
@@ -78,9 +78,9 @@ export default function Process() {
       riseOnScroll('.proc-title');
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add({ hold: HOLD, wide: '(min-width: 1024px)', motion: MOTION_OK }, ({ conditions }) => {
       const section = root.current;
@@ -115,7 +115,7 @@ export default function Process() {
       });
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang, fits], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, fits], revertOnUpdate: true });
 
   return (
     <section id="process" ref={root} className="rule py-24 lg:py-32">

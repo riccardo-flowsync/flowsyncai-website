@@ -2,7 +2,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import ScrollLink from './ScrollLink';
 import WorkflowTrace from './WorkflowTrace';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, SplitText, MOTION_OK, HOLD, NAV_H, RISE, useFits } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, SplitText, MOTION_OK, HOLD, NAV_H, RISE, useFits, later, startAt } from '../lib/motion';
 
 const copy = {
   en: {
@@ -23,7 +23,7 @@ const copy = {
 
 // Button that leans toward the pointer (mouse and trackpad only)
 function useMagnetic(ref) {
-  useGSAP((_, contextSafe) => {
+  useGSAP((context, contextSafe) => later(context, () => {
     const el = ref.current;
     if (!el || !matchMedia(`(pointer: fine) and ${MOTION_OK}`).matches) return undefined;
     const xTo = gsap.quickTo(el, 'x', { duration: 0.5, ease: 'power3' });
@@ -40,7 +40,7 @@ function useMagnetic(ref) {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerleave', leave);
     };
-  });
+  }));
 }
 
 export default function Hero() {
@@ -63,26 +63,40 @@ export default function Hero() {
     () => false,
   );
 
+  // The headline rises line by line through its masks. It is hidden for the first frame (opacity, which costs no layout), then split
+  // and shown right after the first paint: splitting measures the lines. The subtitle, the buttons and the proof line do not move:
+  // the subtitle is the page's largest paint and counts from the first frame.
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
-    mm.add(MOTION_OK, () => {
-      SplitText.create('.hero-title', {
-        type: 'lines',
-        mask: 'lines',
-        autoSplit: true,
-        reduceWhiteSpace: false,
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09, delay: 0.1 }),
+    mm.add(MOTION_OK, (ctx) => {
+      const title = root.current.querySelector('.hero-title');
+      const undo = startAt(title, { opacity: '0' }); // first, as later() runs at once after the first load
+      later(ctx, () => {
+        SplitText.create(title, {
+          type: 'lines',
+          mask: 'lines',
+          autoSplit: true,
+          reduceWhiteSpace: false,
+          onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09 }),
+        });
+        title.style.opacity = ''; // the lines now sit below their masks
       });
-      gsap.from('.hero-rise', { y: 14, autoAlpha: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, delay: 0.5 });
+      return undo;
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // The runway appears or collapses with hold && held: re-measure every trigger below it (the pin's own refresh only covers the growing case).
+  // The runway collapses when hold && held turns false: re-measure every trigger below it (the pin's own refresh covers the growing case).
+  // Not on mount: nothing has moved yet, and a full re-measure there would delay the first paint.
   const holding = hold && held;
-  useEffect(() => { ScrollTrigger.refresh(); }, [holding]);
+  const wasHolding = useRef(holding);
+  useEffect(() => {
+    if (wasHolding.current && !holding) ScrollTrigger.refresh();
+    wasHolding.current = holding;
+  }, [holding]);
 
-  useGSAP(() => {
+  // After the first paint, and after the trace's own job (WorkflowTrace is a child, so it asked first)
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(HOLD, () => {
       const s = scene.current; // the trace's scrubbed timeline, built by WorkflowTrace under the same conditions
@@ -113,7 +127,7 @@ export default function Hero() {
       return undefined;
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang, held], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, held], revertOnUpdate: true });
 
   return (
     <>
@@ -121,12 +135,12 @@ export default function Hero() {
         <div ref={stage} className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
             <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,min(1.2rem_+_4.6vw,8.5vh),4.6rem)]">{t.title}</h1>
-            <p className="hero-rise t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
-            <div className="hero-rise mt-8 flex flex-wrap items-center gap-3">
+            <p className="t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <ScrollLink ref={book} to="#book" className="btn-primary">{t.book}</ScrollLink>
               <ScrollLink to="#results" className="btn-quiet">{t.results}</ScrollLink>
             </div>
-            <p className="hero-rise mt-10 max-w-[31rem] border-t border-line pt-5 text-sm text-muted">
+            <p className="mt-10 max-w-[31rem] border-t border-line pt-5 text-sm text-muted">
               <span className="mr-1.5 text-base font-semibold text-fg tabular-nums">49</span>
               {t.proof}
             </p>

@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, later } from '../lib/motion';
 
 // The questions prospects ask on calls. Answers stay within what the service does today: no prices, no guarantees.
 const copy = {
@@ -41,7 +41,7 @@ export default function FAQ() {
 
   // Scrubbed, so the lines rewind on the way back: the section rule, the list's top line, then each row's divider in a short wave.
   // The wave is one timeline on the list's top edge (not one trigger per row), so opening an answer cannot undraw a divider.
-  useGSAP(() => {
+  useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       riseOnScroll('.faq-title');
@@ -57,7 +57,7 @@ export default function FAQ() {
       }).fromTo('.faq-row', { '--d': 0 }, { '--d': 1, duration: 1, stagger: 0.15 });
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
     <section id="faq" ref={root} className="faq rule py-24 lg:py-32">
