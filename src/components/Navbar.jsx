@@ -76,7 +76,7 @@ export default function Navbar() {
     lockScroll(true);
     const behind = document.querySelectorAll('main, footer'); // out of reach for keyboard and screen readers until the menu closes
     behind.forEach((el) => el.setAttribute('inert', ''));
-    const wide = matchMedia('(min-width: 768px)'); // the menu button is gone from md up, so the menu goes with it
+    const wide = matchMedia('(min-width: 1280px)'); // close when the desktop navigation replaces the menu
     const onWide = () => wide.matches && setOpen(false);
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
@@ -105,12 +105,12 @@ export default function Navbar() {
         {t.skip}
       </a>
       <nav aria-label={t.nav} className="page flex h-16 items-center justify-between gap-4">
-        <Link to="/" onClick={close} aria-label={t.home} className="flex items-center gap-2.5 text-[1.05rem] font-semibold tracking-tight [font-stretch:115%] coarse:min-h-11">
+        <Link to="/" onClick={close} aria-label={t.home} className="flex items-center gap-2.5 text-sm sm:text-[1.05rem] font-semibold tracking-tight [font-stretch:115%] coarse:min-h-11">
           <Logo className="h-7 w-7" />
-          <span translate="no">FlowSync</span>
+          <span translate="no" className="max-w-[150px] leading-tight sm:max-w-none">FlowSync AI Solutions</span>
         </Link>
 
-        <ul className="hidden items-center gap-7 text-[0.94rem] text-muted md:flex">
+        <ul className="hidden items-center gap-7 text-[0.94rem] text-muted xl:flex">
           {t.links.map(([to, label]) => (
             <li key={to}>
               <ScrollLink to={to} className="transition-colors hover:text-fg coarse:inline-flex coarse:min-h-11 coarse:items-center">{label}</ScrollLink>
@@ -119,8 +119,8 @@ export default function Navbar() {
         </ul>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <LangSwitch className="hidden md:flex" />
-          <ScrollLink to="#book" onClick={close} className="btn-primary hidden px-3.5 py-2 text-sm min-[360px]:inline-flex sm:px-4 coarse:min-h-11">
+          <LangSwitch className="hidden xl:flex" />
+          <ScrollLink to="#book" onClick={close} className="btn-primary hidden px-3.5 py-2 text-sm sm:inline-flex sm:px-4 coarse:min-h-11">
             {t.book}
           </ScrollLink>
           <button
@@ -130,7 +130,7 @@ export default function Navbar() {
             aria-expanded={open}
             aria-controls="mobile-menu"
             aria-label={t.menu}
-            className="-mr-2 rounded-lg p-2 text-muted transition-colors hover:text-fg md:hidden coarse:min-h-11"
+            className="-mr-2 rounded-lg p-2 text-muted transition-colors hover:text-fg xl:hidden coarse:min-h-11"
           >
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -138,7 +138,7 @@ export default function Navbar() {
       </nav>
 
       {open && (
-        <div id="mobile-menu" className="fixed inset-x-0 bottom-0 top-16 overflow-y-auto overscroll-contain bg-canvas md:hidden">
+        <div id="mobile-menu" className="fixed inset-x-0 bottom-0 top-16 overflow-y-auto overscroll-contain bg-canvas xl:hidden">
           <div className="page flex min-h-full flex-col gap-10 py-10">
             <ul className="flex flex-col gap-5">
               {t.links.map(([to, label]) => (
