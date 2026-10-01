@@ -2,11 +2,18 @@
 //   npm run build && node scripts/check-layout.mjs
 //   node scripts/check-layout.mjs https://example.com    (audit a live URL instead of dist/)
 // Opens the home page at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
-// one line each: "ok" or "FAIL <what is wrong>". Takes 2-4 minutes. Exit code: 0 all ok, 1 something
-// failed, 2 could not start (no dist/, no Chrome). Uses the installed Google Chrome; CHROME_PATH overrides.
+// one line each: "ok" or "FAIL <what is wrong>". Checks several pages at once, one Chrome per worker, and prints the
+// lines in the usual order. Takes 2-4 minutes on 8 cores (about 13 with --concurrency=1). Exit code: 0 all
+// ok, 1 something failed, 2 could not start (no dist/, no Chrome, bad option). Uses the installed Google Chrome;
+// CHROME_PATH overrides. Options (default: everything):
+//   --concurrency=N        pages checked at once (default: the CPU count)
+//   --only=WxH[,WxH...]    check only these sizes, in both the normal and the reduced-motion pass; any size works,
+//                          not only the listed ones (e.g. --only=1470x830 checks it with and without reduced motion)
+//   --lang=en|it           check one language only
 // Pinned scenes (.pin-spacer): on a normal-motion run each pinned element is checked at the start, middle and end of its
 // hold (fully inside the screen below the 64px navbar, no clipped text); on a touch run no .pin-spacer may exist.
 import { existsSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
 import { preview } from 'vite';
@@ -191,7 +198,7 @@ async function withTimeout(promise, ms) {
 }
 
 async function check(page, base, [w, h], lang, reduced) {
-  await page.bringToFront(); // background tabs get no animation frames, so GSAP would never run; hence one page at a time
+  await page.bringToFront(); // background tabs get no animation frames, so GSAP would never run; hence one page per browser
   const phone = Math.min(w, h) <= 430;
   await page.setViewport({ width: w, height: h, isMobile: phone, hasTouch: phone || w <= 1180, isLandscape: w > h });
   if (reduced) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
@@ -202,17 +209,38 @@ async function check(page, base, [w, h], lang, reduced) {
   return page.evaluate(pageChecks, { reduced, lang, w, h, touch: phone || w <= 1180, portraitPhone: w < 500 && h > w });
 }
 
+const args = process.argv.slice(2);
+const opt = Object.fromEntries(args.filter((a) => a.startsWith('--')).map((a) => a.slice(2).split('=')));
+const only = opt.only?.split(',').map((s) => s.split('x').map(Number));
+const langs = opt.lang ? [opt.lang] : LANGS;
+const concurrency = Number(opt.concurrency ?? availableParallelism());
+if (Object.entries(opt).some(([k, v]) => v === undefined || !['only', 'lang', 'concurrency'].includes(k)) || only?.some((s) => s.length !== 2 || !s.every((n) => n > 0))
+  || !langs.every((l) => LANGS.includes(l)) || !(Number.isInteger(concurrency) && concurrency > 0)) {
+  console.error('Usage: node scripts/check-layout.mjs [url] [--concurrency=N] [--only=WxH[,WxH...]] [--lang=en|it]');
+  process.exit(2);
+}
+
 const root = fileURLToPath(new URL('..', import.meta.url));
-let server, base = process.argv[2];
+let server, base = args.find((a) => !a.startsWith('--'));
 if (!base) {
   if (!existsSync(`${root}dist/index.html`)) { console.error('No dist/ folder yet. Run `npm run build` first.'); process.exit(2); }
   server = await preview({ root, logLevel: 'silent' });
   base = server.resolvedUrls.local[0];
 }
 
-let browser;
+// The output in its usual order: header lines, plus one slot (null until done) per size + language run.
+const out = [`Layout check of ${base}`];
+const jobs = [];
+for (const [title, sizes, reduced] of [['Normal motion', SIZES, false], ['Reduced motion (prefers-reduced-motion: reduce)', REDUCED_SIZES, true]]) {
+  out.push(`\n${title}`);
+  for (const size of only || sizes) for (const lang of langs) jobs.push({ at: out.push(null) - 1, size, lang, reduced });
+}
+
+// One browser per worker, one page at a time in each: that page is in front, so its animation frames keep running.
+let browsers;
 try {
-  browser = await puppeteer.launch({ headless: true, executablePath: process.env.CHROME_PATH || undefined, channel: process.env.CHROME_PATH ? undefined : 'chrome' });
+  const launch = () => puppeteer.launch({ headless: true, executablePath: process.env.CHROME_PATH || undefined, channel: process.env.CHROME_PATH ? undefined : 'chrome' });
+  browsers = await Promise.all(Array.from({ length: Math.min(concurrency, jobs.length) }, launch));
 } catch (e) {
   console.error(`Could not start Chrome (${e.message.split('\n')[0]}).\nInstall Google Chrome, or set CHROME_PATH to a Chrome binary.`);
   await server?.close();
@@ -220,24 +248,24 @@ try {
 }
 
 const t0 = Date.now();
-let ok = 0, failed = 0;
-console.log(`Layout check of ${base}`);
-for (const [title, sizes, reduced] of [['Normal motion', SIZES, false], ['Reduced motion (prefers-reduced-motion: reduce)', REDUCED_SIZES, true]]) {
-  console.log(`\n${title}`);
-  for (const size of sizes) {
-    for (const lang of LANGS) {
-      let page, problems;
-      try {
-        page = await browser.newPage();
-        problems = await withTimeout(check(page, base, size, lang, reduced), RUN_TIMEOUT);
-      } catch (e) { problems = [`could not run: ${e.message.split('\n')[0]}`]; }
-      await page?.close().catch(() => {});
-      problems.length ? failed++ : ok++;
-      console.log(`  ${size.join('x').padEnd(9)} ${lang}  ${problems.length ? `FAIL ${problems.map(say).join('; ')}` : 'ok'}`);
-    }
+let ok = 0, failed = 0, printed = 0, next = 0;
+const flush = () => { while (printed < out.length && out[printed] !== null) console.log(out[printed++]); };
+flush();
+await Promise.all(browsers.map(async (browser) => {
+  while (next < jobs.length) {
+    const { at, size, lang, reduced } = jobs[next++];
+    let page, problems;
+    try {
+      page = await browser.newPage();
+      problems = await withTimeout(check(page, base, size, lang, reduced), RUN_TIMEOUT);
+    } catch (e) { problems = [`could not run: ${e.message.split('\n')[0]}`]; }
+    await page?.close().catch(() => {});
+    problems.length ? failed++ : ok++;
+    out[at] = `  ${size.join('x').padEnd(9)} ${lang}  ${problems.length ? `FAIL ${problems.map(say).join('; ')}` : 'ok'}`;
+    flush();
   }
-}
-await browser.close().catch(() => {});
+}));
+await Promise.all(browsers.map((b) => b.close().catch(() => {})));
 await server?.close();
 console.log(`\n${ok} ok, ${failed} FAIL, of ${ok + failed} runs (${Math.round((Date.now() - t0) / 1000)}s)`);
 process.exit(failed ? 1 : 0);
