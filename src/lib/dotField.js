@@ -74,9 +74,9 @@ export default function mountDotField(section) {
     const box = section.getBoundingClientRect();
     grid.w = Math.max(1, box.width);
     grid.h = Math.max(1, box.height);
-    // The calendar's day grid gives the rhythm; once the real calendar has replaced it, the last rhythm stays
+    // Keep the last spacing when the calendar is hidden by the message form or replaced by the real calendar.
     const cal = section.querySelector('.grid-cols-7');
-    if (cal) {
+    if (cal && cal.getBoundingClientRect().width > 0) {
       const r = cal.getBoundingClientRect();
       const s = getComputedStyle(cal);
       const gapX = parseFloat(s.columnGap) || 0;
