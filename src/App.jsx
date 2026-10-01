@@ -47,7 +47,7 @@ function ScrollManager() {
 export default function App() {
   useEffect(() => {
     const stop = startSmoothScroll();
-    // Text reflows once the web fonts land: re-measure every trigger (and every useFits). Here and not at module load,
+    // Text reflows once the web fonts land: re-measure every trigger. Here and not at module load,
     // where fonts.ready resolves at once because no font has started loading yet.
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
     return stop;

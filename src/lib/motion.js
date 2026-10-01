@@ -1,4 +1,3 @@
-import { useLayoutEffect, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
@@ -14,11 +13,8 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 
 export const REDUCED = '(prefers-reduced-motion: reduce)';
 export const MOTION_OK = '(prefers-reduced-motion: no-preference)';
-// The only condition under which a scene may pin: mouse or trackpad, a wide screen, motion allowed.
-// Phones and touch tablets never pin. Pair it with fitsScreen(el) so a pinned scene is never taller than the screen below the navbar.
+// Desktop-only illustration effects. They follow normal scrolling and never pin a section.
 export const HOLD = '(prefers-reduced-motion: no-preference) and (pointer: fine) and (min-width: 1024px)';
-export const NAV_H = 64; // the fixed navbar (h-16 in Navbar.jsx)
-export const fitsScreen = (el) => el.offsetHeight + NAV_H <= window.innerHeight;
 
 // ---- Nothing measures before the first paint ----
 // Anything that reads the layout (a split heading, a ScrollTrigger, a fit check) waits until the first frame is on screen, then
@@ -63,7 +59,7 @@ export function later(context, setup, first) {
   context.add(() => cancel);
 }
 
-// Resolves once every waiting job has run: a jump to a section waits for this, as pins change positions
+// Resolves once every waiting job has run: a jump to a section waits for this, as animations measure positions
 export const scenesReady = () => (phase === 1 ? done : Promise.resolve());
 
 // A hidden state for the first frame, as plain style writes ({ opacity: '0', transform: 'scale(0)' }). A GSAP set first reads the
@@ -73,21 +69,6 @@ export function startAt(targets, styles) {
   const els = gsap.utils.toArray(targets);
   els.forEach((el) => Object.assign(el.style, styles));
   return () => els.forEach((el) => Object.keys(styles).forEach((k) => { el.style[k] = ''; }));
-}
-
-// fitsScreen as React state, checked after the first paint and again after every ScrollTrigger refresh (resize, late fonts, a pin appearing)
-export function useFits(ref, deps) {
-  const [fits, setFits] = useState(false);
-  useLayoutEffect(() => {
-    const check = () => { if (ref.current) setFits(fitsScreen(ref.current)); };
-    const cancel = afterPaint(check);
-    ScrollTrigger.addEventListener('refresh', check);
-    return () => {
-      cancel();
-      ScrollTrigger.removeEventListener('refresh', check);
-    };
-  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
-  return fits;
 }
 
 // Anything that changes the page's height after ScrollTrigger measured it moves every trigger below it: a heading re-split

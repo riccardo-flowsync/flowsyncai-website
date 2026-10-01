@@ -1,8 +1,8 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useRef } from 'react';
 import ScrollLink from './ScrollLink';
 import WorkflowTrace from './WorkflowTrace';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, SplitText, MOTION_OK, HOLD, NAV_H, RISE, useFits, later, startAt } from '../lib/motion';
+import { gsap, useGSAP, SplitText, MOTION_OK, RISE, later, startAt } from '../lib/motion';
 
 const copy = {
   en: {
@@ -50,19 +50,6 @@ export default function Hero() {
   const book = useRef(null);
   useMagnetic(book);
 
-  // Held scene: on a mouse screen where the content fits below the navbar, the hero stays put for two screens of
-  // scrolling and the scroll walks the example lead through the trace. `held` says the content fits; HOLD (media query)
-  // is checked inside the effects. The runway is the empty scroll distance that pinning adds after the section.
-  const stage = useRef(null);
-  const runway = useRef(null);
-  const scene = useRef(null);
-  const held = useFits(stage, [lang]);
-  const hold = useSyncExternalStore(
-    (notify) => { const mq = matchMedia(HOLD); mq.addEventListener('change', notify); return () => mq.removeEventListener('change', notify); },
-    () => matchMedia(HOLD).matches,
-    () => false,
-  );
-
   // The headline rises line by line through its masks. It is hidden for the first frame (opacity, which costs no layout), then split
   // and shown by the first job after the first paint (splitting measures the lines). The subtitle, the buttons and the proof line
   // rise with it by transform only: they are fully visible from the first frame, as the subtitle is the page's largest paint.
@@ -73,7 +60,6 @@ export default function Hero() {
       const rise = root.current.querySelectorAll('.hero-rise');
       // First, as later() runs at once after the first load
       const undo = [startAt(title, { opacity: '0' }), startAt(rise, { transform: 'translateY(14px)' })];
-      let splits = 0;
       later(ctx, () => {
         SplitText.create(title, {
           type: 'lines',
@@ -83,8 +69,6 @@ export default function Hero() {
           onSplit: (self) => {
             // A line never wraps inside its mask while a late font or a resize waits for the re-split (the text below would jump)
             self.lines.forEach((l) => { l.style.whiteSpace = 'nowrap'; });
-            // A re-split changes the height of the pinned stage, which the page height does not show: measure the pin again
-            if (splits++ && matchMedia(HOLD).matches) ScrollTrigger.refresh();
             return gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09 });
           },
         });
@@ -96,53 +80,9 @@ export default function Hero() {
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // The runway collapses when hold && held turns false: re-measure every trigger below it (the pin's own refresh covers the growing case).
-  // Not on mount: nothing has moved yet, and a full re-measure there would delay the first paint.
-  const holding = hold && held;
-  const wasHolding = useRef(holding);
-  useEffect(() => {
-    if (wasHolding.current && !holding) ScrollTrigger.refresh();
-    wasHolding.current = holding;
-  }, [holding]);
-
-  // After the first paint, and after the trace's own job (WorkflowTrace is a child, so it asked first)
-  useGSAP((context) => later(context, () => {
-    const mm = gsap.matchMedia(root.current);
-    mm.add(HOLD, () => {
-      const s = scene.current; // the trace's scrubbed timeline, built by WorkflowTrace under the same conditions
-      if (!held || !s) return undefined;
-      const st = stage.current;
-      const run = runway.current;
-      const title = root.current.querySelector('.hero-title');
-
-      // The headline lifts a little (never above the navbar); the subtitle and the buttons do not move.
-      const rest = () => (st.closest('.pin-spacer') || st).getBoundingClientRect().top + window.scrollY;
-      const lift = () => {
-        const inStage = title.getBoundingClientRect().top - st.getBoundingClientRect().top - gsap.getProperty(title, 'y');
-        return gsap.utils.clamp(0, 24, rest() + inStage - (NAV_H + 16));
-      };
-      s.tl.to(title, { y: () => -lift(), ease: 'none', duration: s.tl.duration() }, 0);
-
-      ScrollTrigger.create({
-        animation: s.tl,
-        trigger: st,
-        pin: st,
-        pinSpacing: false, // the runway supplies the distance, so the section's own centring does not jump
-        start: 0,
-        end: () => `+=${run.offsetHeight}`,
-        scrub: 0.4,
-        invalidateOnRefresh: true,
-      });
-      ScrollTrigger.refresh();
-      return undefined;
-    });
-    return () => mm.revert();
-  }), { scope: root, dependencies: [lang, held], revertOnUpdate: true });
-
   return (
-    <>
-      <section ref={root} className="pb-16 pt-24 sm:pt-32 lg:flex lg:min-h-[100svh] lg:items-center lg:pb-6 lg:pt-20">
-        <div ref={stage} className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+    <section ref={root} className="pb-16 pt-24 sm:pt-32 lg:flex lg:min-h-[100svh] lg:items-center lg:pb-6 lg:pt-20">
+        <div className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
             <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,min(1.2rem_+_4.6vw,8.5vh),4.6rem)]">{t.title}</h1>
             <p className="hero-rise t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
@@ -156,11 +96,9 @@ export default function Hero() {
             </p>
           </div>
           <div className="lg:col-span-5">
-            <WorkflowTrace held={held} scene={scene} />
+            <WorkflowTrace />
           </div>
         </div>
-      </section>
-      <div ref={runway} aria-hidden="true" style={holding ? { height: '200vh' } : undefined} />
-    </>
+    </section>
   );
 }

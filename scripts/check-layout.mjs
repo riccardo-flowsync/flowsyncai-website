@@ -11,8 +11,7 @@
 //   --only=WxH[,WxH...]    check only these sizes, in both the normal and the reduced-motion pass; any size works,
 //                          not only the listed ones (e.g. --only=1470x830 checks it with and without reduced motion)
 //   --lang=en|it           check one language only
-// Pinned scenes (.pin-spacer): on a normal-motion run each pinned element is checked at the start, middle and end of its
-// hold (fully inside the screen below the 64px navbar, no clipped text); on a touch run no .pin-spacer may exist.
+// No screen may have pinned scenes (.pin-spacer): animations must never hold the page in place.
 import { existsSync, readdirSync } from 'node:fs';
 import { availableParallelism, homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -154,38 +153,9 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
   if (missing.length) problems.push(['header links to sections that do not exist', missing]);
   if (under.length) problems.push(['header links land with the heading under the header', under]);
 
-  // 6. Held scenes. Touch screens never pin. Elsewhere every pinned element stays fully on screen below the navbar
-  // (and keeps its text unclipped) at the start, middle and end of its hold.
-  const spacers = [...document.querySelectorAll('.pin-spacer')];
-  if (touch) {
-    if (spacers.length) problems.push(`scroll pinning is on for a touch screen (${spacers.length} .pin-spacer)`);
-    return problems;
-  }
-  const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  const NAV = 64;
-  for (const sp of spacers) {
-    const el = sp.firstElementChild;
-    const name = label(el);
-    const top0 = sp.getBoundingClientRect().top + scrollY;
-    const from = Math.max(0, top0 - h), to = top0 + sp.offsetHeight;
-    const held = []; // scroll positions where the element is pinned (position: fixed)
-    for (let y = from; y <= to; y += 10) {
-      scrollTo({ top: y, behavior: 'instant' });
-      await frame();
-      if (getComputedStyle(el).position === 'fixed') held.push(y);
-    }
-    if (!held.length) continue; // this scene is not held at this size: nothing to hold on screen
-    for (const y of [held[0] + 2, Math.round((held[0] + held.at(-1)) / 2), held.at(-1) - 2]) {
-      scrollTo({ top: y, behavior: 'instant' });
-      await sleep(120);
-      const r = el.getBoundingClientRect();
-      if (r.top < NAV - 0.5 || r.bottom > innerHeight + 0.5 || r.left < -0.5 || r.right > innerWidth + 0.5)
-        problems.push(`held scene ${name} is not inside the screen below the header at ${px(y)} (top ${px(r.top)}, bottom ${px(r.bottom)}, screen ${innerHeight}px)`);
-      const clip = clippedText();
-      if (clip.length) problems.push([`held scene ${name} has cut-off text at ${px(y)}`, clip]);
-    }
-  }
-  scrollTo({ top: 0, behavior: 'instant' });
+  // The page must always move freely. Catch a future animation that adds a scroll hold on any screen.
+  const spacers = document.querySelectorAll('.pin-spacer');
+  if (spacers.length) problems.push(`scroll pinning blocks the page (${spacers.length} .pin-spacer)`);
   return problems;
 }
 

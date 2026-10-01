@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, NAV_H, fitsScreen, riseOnScroll, drawRule, later } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, riseOnScroll, drawRule, later } from '../lib/motion';
 
 const copy = {
   en: {
@@ -197,15 +197,7 @@ function iconScene(svg, article, chat) {
   draw();
 }
 
-// How much scroll each held stage takes, in screens (Systems total: 1.5)
-const SCENES = { outbound: { run: inboxScene, hold: 0.9 }, support: { run: chatScene, hold: 0.6 } };
-
-// The article's height if nothing were pinned: a pinned stage leaves a tall spacer behind that would inflate offsetHeight.
-// Summed from exact heights and rounded up: adding up rounded ones can come out a pixel short and let a scene pin 1px too tall.
-const natural = (article) => {
-  const h = (el) => el.getBoundingClientRect().height;
-  return { offsetHeight: Math.ceil(h(article.firstElementChild) + parseFloat(getComputedStyle(article).rowGap) + h(article.querySelector('[data-stage]'))) };
-};
+const SCENES = { outbound: inboxScene, support: chatScene };
 
 const Panel = ({ title, cls = '', children }) => (
   <div aria-hidden="true" className={`${cls} select-none overflow-hidden rounded-[10px] border border-line bg-surface`}>
@@ -273,20 +265,19 @@ export default function Systems() {
   const artifacts = { outbound: <Inbox t={t.inbox} lang={lang} />, support: <Chat t={t.chat} /> };
 
   // The sticky index follows the reader: a system is active from when its article reaches mid-screen until the next one does
-  // (the last one until the note under them), so it stays active through a hold. Read live from where things are on screen,
+  // (the last one until the note under them), so it stays active as the article scrolls by. Read live from where things are on screen,
   // so it does not depend on the order ScrollTrigger measures pins in.
   useGSAP((context) => later(context, () => {
     const articles = gsap.utils.toArray('[data-system]', root.current);
     const note = root.current.querySelector('[data-note]');
     const items = articles.map((el) => root.current.querySelector(`[data-index="${el.dataset.system}"]`));
-    const slot = (el) => el.closest('.pin-spacer') || el; // a pinned article is fixed: its spacer holds its place in the flow
     const icon = root.current.querySelector('.sys-icon');
     const hold = window.matchMedia(HOLD); // the icon only moves under HOLD (see iconScene)
     let shown = -2;
     const update = () => {
       const y = innerHeight * 0.55;
       let on = -1;
-      articles.forEach((el, i) => { if (slot(el).getBoundingClientRect().top <= y) on = i; });
+      articles.forEach((el, i) => { if (el.getBoundingClientRect().top <= y) on = i; });
       if (note.getBoundingClientRect().top <= y) on = -1;
       icon.classList.toggle('is-active', on !== -1 && hold.matches);
       if (on === shown) return;
@@ -306,63 +297,18 @@ export default function Systems() {
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // The two stages. Under HOLD each one is pinned and scrubbed: the whole article if it fits below the navbar, else only its
-  // chips + picture, else it is only scrubbed while it scrolls by. Outside HOLD (touch, narrow) it plays once.
-  // Fit is checked again after every ScrollTrigger refresh (resize, fonts loading), rebuilding the scenes if it changed.
+  // Illustrations follow the normal page scroll on desktop and play once on touch. Nothing pins the page.
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
-    mm.add({ hold: HOLD, ok: MOTION_OK }, (ctx) => {
-      const { hold } = ctx.conditions;
-      const articles = gsap.utils.toArray('[data-system]', root.current);
-      // per article: -1 nothing pins, 0 the article pins, 1 its stage pins
-      const plan = () => articles.map((a) => (!hold ? -1 : fitsScreen(natural(a)) ? 0 : fitsScreen(a.querySelector('[data-stage]')) ? 1 : -1)).join();
-      let inner;
-      let key;
-      let alive = true;
-      const build = () => {
-        inner?.revert();
-        key = plan();
-        const modes = key.split(',');
-        inner = gsap.context(() => {
-          articles.forEach((article, i) => {
-            const { run, hold: screens } = SCENES[article.dataset.system];
-            const stage = article.querySelector('[data-stage]');
-            const pinned = [article, stage][modes[i]];
-            // refreshPriority (even 0) makes ScrollTrigger refresh everything in page order, so the pin spacers add up correctly
-            // (the pin is refreshed before its scene: its trigger sits higher on the page, or is the same element created first)
-            const pin = pinned && ScrollTrigger.create({
-              trigger: pinned,
-              pin: true,
-              start: () => `top ${Math.round(NAV_H + Math.max(0, (innerHeight - NAV_H - pinned.offsetHeight) / 2))}px`,
-              end: () => `+=${Math.round(innerHeight * screens)}`,
-              invalidateOnRefresh: true,
-              refreshPriority: 0,
-            });
-            // The scene starts as the picture comes into view, so it never scrolls up empty, and ends with the hold
-            const tl = run(stage, pin
-              ? { trigger: stage, pinnedContainer: pinned, start: 'top 85%', end: () => pin.end, scrub: 0.5, invalidateOnRefresh: true, refreshPriority: 0 }
-              : hold
-                ? { trigger: stage, start: 'top 80%', end: 'bottom 40%', scrub: 0.5, refreshPriority: 0 }
-                : { trigger: stage, start: 'top 70%', once: true, refreshPriority: 0 });
-            if (hold && article.dataset.system === 'support') iconScene(root.current.querySelector('.sys-icon'), article, tl);
-          });
-        }, root.current);
-      };
-      build();
-      const recheck = () => {
-        if (plan() === key) return;
-        requestAnimationFrame(() => {
-          if (!alive) return;
-          build();
-          ScrollTrigger.refresh();
-        });
-      };
-      ScrollTrigger.addEventListener('refresh', recheck);
-      return () => {
-        alive = false;
-        ScrollTrigger.removeEventListener('refresh', recheck);
-        inner.revert();
-      };
+    mm.add({ desktop: HOLD, ok: MOTION_OK }, ({ conditions }) => {
+      if (!conditions.ok) return;
+      gsap.utils.toArray('[data-system]', root.current).forEach((article) => {
+        const stage = article.querySelector('[data-stage]');
+        const tl = SCENES[article.dataset.system](stage, conditions.desktop
+          ? { trigger: stage, start: 'top 90%', end: 'top 15%', scrub: 0.3, invalidateOnRefresh: true }
+          : { trigger: stage, start: 'top 70%', once: true });
+        if (conditions.desktop && article.dataset.system === 'support') iconScene(root.current.querySelector('.sys-icon'), article, tl);
+      });
     });
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });

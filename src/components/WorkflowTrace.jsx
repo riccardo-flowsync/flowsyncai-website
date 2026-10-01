@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
 import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, later, startAt } from '../lib/motion';
 
-// One lead moving through the outbound system. On a mouse screen where it fits, the scroll walks it (Hero holds the scene);
+// One lead moving through the outbound system. On a wide mouse screen, normal page scroll walks it;
 // elsewhere it plays once and stays on the finished run.
 // Without motion (reduced motion, no JS yet) the finished run is shown as is.
 const copy = {
@@ -36,7 +36,7 @@ const copy = {
   },
 };
 
-export default function WorkflowTrace({ held = false, scene }) {
+export default function WorkflowTrace() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
@@ -54,7 +54,7 @@ export default function WorkflowTrace({ held = false, scene }) {
       const labels = all('.trace-label');
       const steps = gsap.utils.toArray(all('.trace-step'));
       const ring = marker.current;
-      const scrubbed = ctx.conditions.hold && held && scene;
+      const scrubbed = ctx.conditions.hold;
       labels.forEach((el) => el.classList.add('text-faint'));
       const undo = [
         () => labels.forEach((el) => el.classList.remove('text-faint')),
@@ -62,10 +62,10 @@ export default function WorkflowTrace({ held = false, scene }) {
         startAt(all('.trace-seg'), { transform: 'scaleY(0)' }),
       ];
       if (scrubbed) {
-        // Held scene: opacity and a small lift only (no visibility or clip-path), so the text stays findable and readable by assistive tech.
+        // Scroll scene: opacity and a small lift only (no visibility or clip-path), so the text stays findable and readable by assistive tech.
         undo.push(startAt(all('.trace-time'), { opacity: '0' }), startAt(all('.trace-detail'), { opacity: '0', transform: 'translateY(6px)' }));
         ring.hidden = false;
-        undo.push(startAt(ring, { opacity: '0', visibility: 'hidden' }), () => { ring.hidden = true; scene.current = null; });
+        undo.push(startAt(ring, { opacity: '0', visibility: 'hidden' }), () => { ring.hidden = true; });
       } else {
         undo.push(startAt(all('.trace-time'), { opacity: '0', visibility: 'hidden' }), startAt(all('.trace-detail'), { clipPath: 'inset(0 100% 0 0)' }));
       }
@@ -77,7 +77,7 @@ export default function WorkflowTrace({ held = false, scene }) {
       return () => undo.forEach((u) => u());
 
       function scrub() {
-        // Held scene: step 1 appears by itself, the scroll then walks the lead down the line (Hero builds the pin around this timeline).
+        // Scroll scene: step 1 appears by itself, the scroll then walks the lead down the line as the page moves.
         const show = (tl, step, at) => {
           const q = gsap.utils.selector(step);
           return tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at)
@@ -99,8 +99,19 @@ export default function WorkflowTrace({ held = false, scene }) {
             show(tl, step, '>-0.05').to({}, { duration: 0.35 }); // the pause lets each step be read
           }
         });
-        tl.to({}, { duration: 0.5 }); // the finished run holds for a moment before the page moves on
-        scene.current = { tl };
+        tl.to({}, { duration: 0.5 }); // finish the example before the tag departs
+        // Finish before the tag leaves the hero. The page keeps moving throughout, with no pin or extra scroll distance.
+        ScrollTrigger.create({
+          animation: tl,
+          trigger: root.current,
+          start: 0,
+          end: () => {
+            const tag = root.current.querySelector('[data-handover="from"]');
+            return Math.max(1, tag.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.5);
+          },
+          scrub: true,
+          invalidateOnRefresh: true,
+        });
       }
 
       // Everywhere else: it plays once when it comes into view and pauses off screen.
@@ -126,7 +137,7 @@ export default function WorkflowTrace({ held = false, scene }) {
       }
     });
     return () => mm.revert();
-  }, { scope: root, dependencies: [lang, held], revertOnUpdate: true });
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
     <figure ref={root} className="rounded-[10px] border border-line bg-surface">
@@ -136,7 +147,7 @@ export default function WorkflowTrace({ held = false, scene }) {
       </div>
 
       <ol className="trace-list relative px-5 py-5">
-        {/* Rides the line in the held scene (see Hero); hidden otherwise. top and left centre it on the first dot (20px padding + 6px dot offset + 5px radius, less its own 10px). */}
+        {/* Rides the line in the scroll scene; hidden otherwise. top and left centre it on the first dot (20px padding + 6px dot offset + 5px radius, less its own 10px). */}
         <span ref={marker} hidden aria-hidden="true" className="pointer-events-none absolute left-[15px] top-[21px] h-5 w-5 rounded-full border border-accent" />
         {t.steps.map((s, i) => (
           <li key={i} className="trace-step relative grid grid-cols-[10px_1fr_auto] gap-x-3.5 pb-4 last:pb-0">

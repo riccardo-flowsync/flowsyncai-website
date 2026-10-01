@@ -1,13 +1,12 @@
 import { gsap, ScrollTrigger } from './motion';
 
 // The hero's "interested" tag travels down the empty right margin to the first reply in the Systems inbox (desktop, mouse only).
-// Path in screen space from the two live tags, so pins, Lenis and re-splits need no extra maths. Scrubbed: a pure function of scroll.
+// Path in screen space from the two live tags, so Lenis and re-splits need no extra maths. Scrubbed: a pure function of scroll.
 const A = 0.18; // end of leg 1 (out of the trace card into the lane), as a share of the window
 const B = 0.8; // end of leg 2 (down the lane); leg 3 slides into the inbox slot
 const slide = gsap.parseEase('power2.inOut');
 const sink = gsap.parseEase('sine.inOut');
 const lerp = (a, b, u) => a + (b - a) * u;
-const pinOf = (el) => ScrollTrigger.getAll().find((t) => t.pin && t.pin.contains(el));
 
 export default function mount() {
   const src = document.querySelector('[data-handover="from"]');
@@ -31,18 +30,16 @@ export default function mount() {
   let lane = 0;
   let end = 1;
   let state;
-  // Measured on every refresh, after the pins (refreshPriority -1). Any failed gate leaves today's static page.
+  // Measured on every refresh, after the illustration timelines (refreshPriority -1). Any failed gate leaves today's static page.
   const start = () => {
-    const hero = pinOf(src);
-    const out = pinOf(tgt);
     const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
     const landing = tgt.closest('section').getBoundingClientRect().top + scrollY - pad; // where a #systems jump stops
-    const s = hero ? hero.end : 0;
-    end = Math.min(landing, out ? out.start - 1 : Infinity);
+    const s = Math.max(0, src.getBoundingClientRect().top + scrollY - innerHeight * 0.5);
+    end = Math.min(landing, tgt.getBoundingClientRect().top + scrollY - innerHeight * 0.7);
     const col = Math.max(src.closest('figure').getBoundingClientRect().right, tgt.closest('.ib-panel').getBoundingClientRect().right);
     const room = document.documentElement.clientWidth - col - src.offsetWidth;
     lane = col + Math.min(24, room / 2);
-    ok = !!hero && room >= 24 && end - s >= 240 && src.textContent.trim() === tgt.textContent.trim();
+    ok = room >= 24 && end - s >= 240 && src.textContent.trim() === tgt.textContent.trim();
     if (!ok) end = s + 1;
     return s;
   };

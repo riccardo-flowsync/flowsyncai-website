@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK, HOLD, NAV_H, RISE, useFits, riseOnScroll, drawRule, later } from '../lib/motion';
+import { gsap, ScrollTrigger, useGSAP, MOTION_OK, RISE, riseOnScroll, drawRule, later } from '../lib/motion';
 
 const copy = {
   en: {
@@ -95,8 +95,8 @@ function picture(li) {
 }
 
 // One timeline for the wide layout: step 1 rises, the line draws left to right, and each step rises as the line reaches its node
-// (t runs 0 to 10). When held, the step before settles to 75% opacity: still above the faint colour, never invisible.
-function walk(list, scrollTrigger, settle) {
+// (t runs 0 to 10). Each step stays readable after appearing.
+function walk(list, scrollTrigger) {
   const steps = gsap.utils.toArray('.proc-step', list);
   const T0 = 1.5, LINE = 7.5;
   // Where each node sits along the line, 0 to 1 (the columns are not exactly thirds because of the gap). Re-read on every refresh.
@@ -112,7 +112,6 @@ function walk(list, scrollTrigger, settle) {
     const pic = picture(li); // a nested timeline, so place() moves it as one piece and its inner timing stays
     tl.add(pic, timeOf(i));
     parts[i].push(pic);
-    if (settle && i) parts[i].push(tl.to(steps[i - 1].querySelectorAll('.proc-text, .proc-pic'), { opacity: 0.75, duration: 1.4 }, timeOf(i)));
   });
   tl.set({}, {}, 10); // the walk ends with a beat of rest
   const place = () => parts.forEach((tweens, i) => tweens.forEach((tw) => tw.startTime(timeOf(i))));
@@ -124,8 +123,6 @@ export default function Process() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
-  // A pinned scene must fit the screen below the navbar. Crossing that line (resize, late fonts) rebuilds the scene; nothing else does.
-  const fits = useFits(root, [lang]);
 
   // The heading and the top rule only depend on the language, so a resize never replays them
   useGSAP((context) => later(context, () => {
@@ -140,25 +137,12 @@ export default function Process() {
 
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
-    mm.add({ hold: HOLD, wide: '(min-width: 1024px)', motion: MOTION_OK }, ({ conditions }) => {
-      const section = root.current;
+    mm.add({ wide: '(min-width: 1024px)', motion: MOTION_OK }, ({ conditions }) => {
       if (!conditions.motion) return;
-      const list = section.querySelector('.proc-list');
+      const list = root.current.querySelector('.proc-list');
 
       if (conditions.wide) {
-        // Mouse or trackpad and the section fits: pin it and let the scroll walk the three steps.
-        // The walk starts a little before the pin so step 1 is already up when the scene locks.
-        if (conditions.hold && fits) {
-          // Centred in the space under the navbar, and a hold that stops growing on tall screens
-          const pin = ScrollTrigger.create({
-            trigger: section, pin: true, invalidateOnRefresh: true,
-            start: () => `top ${Math.max(NAV_H, Math.round((window.innerHeight - section.offsetHeight + NAV_H) / 2))}px`,
-            end: () => `+=${Math.min(Math.round(window.innerHeight * 1.6), 1400)}`,
-          });
-          walk(list, { trigger: section, start: 'top 55%', end: () => pin.end }, true);
-        } else {
-          walk(list, { trigger: list, start: 'top 80%', end: 'top 35%' }, false);
-        }
+        walk(list, { trigger: list, start: 'top 85%', end: 'top 35%' });
         return;
       }
 
@@ -180,7 +164,7 @@ export default function Process() {
       });
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang, fits], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
     <section id="process" ref={root} className="rule py-24 lg:py-32">
@@ -209,7 +193,7 @@ export default function Process() {
               </li>
             ))}
           </ol>
-          {/* Absolute from lg: it sits in the section's bottom padding and costs the pinned scene no height */}
+          {/* Absolute from lg: it sits in the section's bottom padding and leaves the three steps aligned */}
           <p aria-hidden="true" className="mt-10 text-xs text-faint lg:absolute lg:top-full lg:mt-10">{t.note}</p>
         </div>
       </div>

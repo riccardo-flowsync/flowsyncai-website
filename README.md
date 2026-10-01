@@ -14,6 +14,11 @@ npm test               # lead functions, ClickUp calls stubbed
 npm run check:layout   # after a build: 16 screen sizes in EN and IT
 ```
 
+## Motion
+
+Animations follow normal scrolling. Sections never hold the page in place or add empty scroll distance.
+The layout check fails if a scroll hold is introduced, in either language or on any tested screen.
+
 ## Pages
 
 - `/`: Hero, Systems, Results, Process, FAQ, Book a call
