@@ -4,16 +4,17 @@
 // Opens the home page at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
 // one line each: "ok" or "FAIL <what is wrong>". Checks several pages at once, one Chrome per worker, and prints the
 // lines in the usual order. Takes 2-4 minutes on 8 cores (about 13 with --concurrency=1). Exit code: 0 all
-// ok, 1 something failed, 2 could not start (no dist/, no Chrome, bad option). Uses the installed Google Chrome;
-// CHROME_PATH overrides. Options (default: everything):
+// ok, 1 something failed, 2 could not start (no dist/, no Chrome, bad option). Uses Puppeteer's separate test browser
+// (chrome-headless-shell in ~/.cache/puppeteer; npx @puppeteer/browsers install chrome-headless-shell) so it never
+// opens your everyday Chrome; without it, the installed Google Chrome. CHROME_PATH overrides both. Options (default: everything):
 //   --concurrency=N        pages checked at once (default: the CPU count)
 //   --only=WxH[,WxH...]    check only these sizes, in both the normal and the reduced-motion pass; any size works,
 //                          not only the listed ones (e.g. --only=1470x830 checks it with and without reduced motion)
 //   --lang=en|it           check one language only
 // Pinned scenes (.pin-spacer): on a normal-motion run each pinned element is checked at the start, middle and end of its
 // hold (fully inside the screen below the 64px navbar, no clipped text); on a touch run no .pin-spacer may exist.
-import { existsSync } from 'node:fs';
-import { availableParallelism } from 'node:os';
+import { existsSync, readdirSync } from 'node:fs';
+import { availableParallelism, homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
 import { preview } from 'vite';
@@ -236,10 +237,20 @@ for (const [title, sizes, reduced] of [['Normal motion', SIZES, false], ['Reduce
   for (const size of only || sizes) for (const lang of langs) jobs.push({ at: out.push(null) - 1, size, lang, reduced });
 }
 
+// The newest chrome-headless-shell Puppeteer has downloaded, if any
+const testShell = () => {
+  const dir = `${homedir()}/.cache/puppeteer/chrome-headless-shell`;
+  for (const v of existsSync(dir) ? readdirSync(dir).sort().reverse() : []) {
+    for (const sub of readdirSync(`${dir}/${v}`)) if (existsSync(`${dir}/${v}/${sub}/chrome-headless-shell`)) return `${dir}/${v}/${sub}/chrome-headless-shell`;
+  }
+  return undefined;
+};
+const chrome = process.env.CHROME_PATH || testShell();
+
 // One browser per worker, one page at a time in each: that page is in front, so its animation frames keep running.
 let browsers;
 try {
-  const launch = () => puppeteer.launch({ headless: true, executablePath: process.env.CHROME_PATH || undefined, channel: process.env.CHROME_PATH ? undefined : 'chrome' });
+  const launch = () => puppeteer.launch({ headless: true, executablePath: chrome, channel: chrome ? undefined : 'chrome' });
   browsers = await Promise.all(Array.from({ length: Math.min(concurrency, jobs.length) }, launch));
 } catch (e) {
   console.error(`Could not start Chrome (${e.message.split('\n')[0]}).\nInstall Google Chrome, or set CHROME_PATH to a Chrome binary.`);
