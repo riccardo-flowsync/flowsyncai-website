@@ -64,24 +64,34 @@ export default function Hero() {
   );
 
   // The headline rises line by line through its masks. It is hidden for the first frame (opacity, which costs no layout), then split
-  // and shown right after the first paint: splitting measures the lines. The subtitle, the buttons and the proof line do not move:
-  // the subtitle is the page's largest paint and counts from the first frame.
+  // and shown by the first job after the first paint (splitting measures the lines). The subtitle, the buttons and the proof line
+  // rise with it by transform only: they are fully visible from the first frame, as the subtitle is the page's largest paint.
   useGSAP(() => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, (ctx) => {
       const title = root.current.querySelector('.hero-title');
-      const undo = startAt(title, { opacity: '0' }); // first, as later() runs at once after the first load
+      const rise = root.current.querySelectorAll('.hero-rise');
+      // First, as later() runs at once after the first load
+      const undo = [startAt(title, { opacity: '0' }), startAt(rise, { transform: 'translateY(14px)' })];
+      let splits = 0;
       later(ctx, () => {
         SplitText.create(title, {
           type: 'lines',
           mask: 'lines',
           autoSplit: true,
           reduceWhiteSpace: false,
-          onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09 }),
+          onSplit: (self) => {
+            // A line never wraps inside its mask while a late font or a resize waits for the re-split (the text below would jump)
+            self.lines.forEach((l) => { l.style.whiteSpace = 'nowrap'; });
+            // A re-split changes the height of the pinned stage, which the page height does not show: measure the pin again
+            if (splits++ && matchMedia(HOLD).matches) ScrollTrigger.refresh();
+            return gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09 });
+          },
         });
         title.style.opacity = ''; // the lines now sit below their masks
-      });
-      return undo;
+        gsap.to(rise, { y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, delay: 0.1 });
+      }, true);
+      return () => undo.forEach((u) => u());
     });
     return () => mm.revert();
   }, { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -135,12 +145,12 @@ export default function Hero() {
         <div ref={stage} className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
             <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,min(1.2rem_+_4.6vw,8.5vh),4.6rem)]">{t.title}</h1>
-            <p className="t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <p className="hero-rise t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
+            <div className="hero-rise mt-8 flex flex-wrap items-center gap-3">
               <ScrollLink ref={book} to="#book" className="btn-primary">{t.book}</ScrollLink>
               <ScrollLink to="#results" className="btn-quiet">{t.results}</ScrollLink>
             </div>
-            <p className="mt-10 max-w-[31rem] border-t border-line pt-5 text-sm text-muted">
+            <p className="hero-rise mt-10 max-w-[31rem] border-t border-line pt-5 text-sm text-muted">
               <span className="mr-1.5 text-base font-semibold text-fg tabular-nums">49</span>
               {t.proof}
             </p>

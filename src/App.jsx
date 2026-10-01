@@ -1,16 +1,14 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { LangProvider } from './lib/lang';
 import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop, scenesReady } from './lib/motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-
-// Only the home page is in the first download; the other pages load when visited
-const Contact = lazy(() => import('./pages/Contact'));
-const Privacy = lazy(() => import('./pages/Privacy'));
-const Terms = lazy(() => import('./pages/Terms'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import NotFound from './pages/NotFound';
 
 // ScrollTrigger re-measures the page when the fonts and the page finish loading and when a pinned scene is set up,
 // which cancels a scroll under way
@@ -61,15 +59,13 @@ export default function App() {
         <ScrollManager />
         <Navbar />
         <main id="main" tabIndex={-1} className="outline-none">
-          <Suspense fallback={null}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </main>
         <Footer />
         <div className="grain" aria-hidden="true" />

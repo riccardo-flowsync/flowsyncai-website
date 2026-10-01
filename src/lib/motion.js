@@ -24,7 +24,7 @@ export const fitsScreen = (el) => el.offsetHeight + NAV_H <= window.innerHeight;
 // Anything that reads the layout (a split heading, a ScrollTrigger, a fit check) waits until the first frame is on screen, then
 // runs as one job per task (no single task blocks the page for long), in the order asked, which is page order. Before that frame
 // only plain style writes happen (see startAt), so the page paints as soon as React has rendered it. After the first load,
-// jobs run at once. Returns a cancel.
+// jobs run at once. `first` puts a job ahead of the queue (the hero headline). Returns a cancel.
 const jobs = [];
 let phase = 0; // 0 nothing asked yet, 1 waiting for the first paint or running the jobs, 2 done
 let allDone;
@@ -36,15 +36,19 @@ const run = () => {
     allDone();
     return;
   }
-  job();
-  setTimeout(run);
+  try {
+    job();
+  } finally {
+    setTimeout(run); // one failing setup must not stop the others (or leave what they hid hidden)
+  }
 };
-export function afterPaint(job) {
+export function afterPaint(job, first = false) {
   if (phase === 2) {
     job();
     return () => {};
   }
-  jobs.push(job);
+  if (first) jobs.unshift(job);
+  else jobs.push(job);
   if (phase === 0) {
     phase = 1;
     requestAnimationFrame(() => setTimeout(run)); // the frame after this commit is painted first
@@ -54,8 +58,8 @@ export function afterPaint(job) {
 
 // A useGSAP setup that measures, run after the first paint inside the given context (useGSAP's, or a matchMedia's): scope and
 // revert as usual. Reverted before its turn, it is dropped.
-export function later(context, setup) {
-  const cancel = afterPaint(() => context.add(setup));
+export function later(context, setup, first) {
+  const cancel = afterPaint(() => context.add(setup), first);
   context.add(() => cancel);
 }
 
