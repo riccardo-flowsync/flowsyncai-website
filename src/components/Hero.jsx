@@ -1,148 +1,104 @@
-import React, { useRef, useLayoutEffect } from 'react';
-import gsap from 'gsap';
+import { useRef } from 'react';
+import ScrollLink from './ScrollLink';
+import WorkflowTrace from './WorkflowTrace';
+import { useCopy, useLang } from '../lib/lang';
+import { gsap, useGSAP, SplitText, MOTION_OK, RISE, later, startAt } from '../lib/motion';
 
-const HeroGraphic = () => {
-  const graphicRef = useRef();
-
-  useLayoutEffect(() => {
-    let ctx = gsap.context(() => {
-      // Floating motion
-      gsap.to(".orb-container", {
-        y: -15,
-        duration: 3,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-      });
-      // Rotations
-      gsap.to(".orb-1", { rotation: 360, duration: 25, repeat: -1, ease: "linear" });
-      gsap.to(".orb-2", { rotation: -360, duration: 20, repeat: -1, ease: "linear" });
-      gsap.to(".orb-3", { rotation: 360, duration: 30, repeat: -1, ease: "linear" });
-    }, graphicRef);
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    <div ref={graphicRef} className="relative w-full aspect-square max-w-[500px] flex items-center justify-center hero-anim opacity-0 translate-y-8 pointer-events-none">
-      {/* Deep glow backdrop */}
-      <div className="absolute inset-10 bg-accent/20 rounded-full blur-[100px]" />
-      
-      <div className="orb-container relative w-full h-full flex items-center justify-center">
-        {/* Abstract animated shapes */}
-        <div className="orb-1 absolute w-[70%] h-[70%] bg-gradient-to-tr from-accent/40 to-transparent border border-accent/20 blur-[2px]"
-             style={{ borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' }} />
-             
-        <div className="orb-2 absolute w-[65%] h-[65%] bg-gradient-to-bl from-accent/30 to-background border border-text/10 blur-[1px]"
-             style={{ borderRadius: '30% 60% 70% 40% / 50% 60% 30% 60%' }} />
-             
-        <div className="orb-3 absolute w-[50%] h-[50%] bg-accent/10 border-[0.5px] border-accent/50 backdrop-blur-xl shadow-[inset_0_0_40px_rgba(157,124,255,0.3)]"
-             style={{ borderRadius: '40% 60% 60% 40% / 60% 30% 70% 40%' }} />
-
-        {/* Crisp Data Ring */}
-        <div className="absolute w-[80%] h-[80%] rounded-full border border-text/10 border-dashed animate-[spin_40s_linear_infinite]" />
-        
-        {/* Core highlight */}
-        <div className="absolute w-3 h-3 bg-white/80 blur-[2px] rounded-full shadow-[0_0_20px_rgba(255,255,255,1)]" />
-      </div>
-
-      {/* Decorative HUD Elements */}
-      <div className="absolute top-[15%] left-[10%] font-mono text-[10px] text-text/50 tracking-widest border border-text/10 px-2 py-1 rounded backdrop-blur-sm">
-        SYS.ONLINE
-      </div>
-      <div className="absolute bottom-[20%] right-[10%] flex items-end gap-1.5 h-6">
-        <div className="w-1 h-3 bg-accent/60 animate-pulse" />
-        <div className="w-1 h-full bg-accent/80 animate-pulse delay-75" />
-        <div className="w-1 h-4 bg-accent/40 animate-pulse delay-150" />
-      </div>
-    </div>
-  );
+const copy = {
+  en: {
+    title: 'AI that books sales calls and answers your customers.',
+    sub: 'Cold email that brings buyers to your calendar. Support agents that handle questions, orders and returns. Built and run for you.',
+    book: 'Book a call',
+    results: 'See the results',
+    proof: 'meetings booked across five past B2B campaigns, on cold email and LinkedIn.',
+  },
+  it: {
+    title: 'AI che fissa call e risponde ai tuoi clienti.',
+    sub: 'Email a freddo che portano clienti nel tuo calendario. Assistenti che gestiscono domande, ordini e resi. Costruiti e gestiti per te.',
+    book: 'Prenota una call',
+    results: 'Guarda i risultati',
+    proof: 'appuntamenti fissati in cinque campagne B2B passate, via email e LinkedIn.',
+  },
 };
 
-const Hero = () => {
-  const comp = useRef();
+// Button that leans toward the pointer (mouse and trackpad only)
+function useMagnetic(ref) {
+  useGSAP((context, contextSafe) => later(context, () => {
+    const el = ref.current;
+    if (!el || !matchMedia(`(pointer: fine) and ${MOTION_OK}`).matches) return undefined;
+    const xTo = gsap.quickTo(el, 'x', { duration: 0.5, ease: 'power3' });
+    const yTo = gsap.quickTo(el, 'y', { duration: 0.5, ease: 'power3' });
+    const move = contextSafe((e) => {
+      const r = el.getBoundingClientRect();
+      xTo((e.clientX - r.left - r.width / 2) * 0.25);
+      yTo((e.clientY - r.top - r.height / 2) * 0.35);
+    });
+    const leave = contextSafe(() => { xTo(0); yTo(0); });
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerleave', leave);
+    return () => {
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerleave', leave);
+    };
+  }));
+}
 
-  useLayoutEffect(() => {
-    let ctx = gsap.context(() => {
-      gsap.to(".hero-anim", {
-        y: 0,
-        opacity: 1,
-        duration: 1.4,
-        stagger: 0.1,
-        ease: "power3.out",
-        delay: 0.1
-      });
+export default function Hero() {
+  const t = useCopy(copy);
+  const { lang } = useLang();
+  const root = useRef(null);
+  const book = useRef(null);
+  useMagnetic(book);
 
-      // Word-by-word staggered reveal for paragraph
-      gsap.to(".hero-word", {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        stagger: 0.03,
-        ease: "power2.out",
-        delay: 0.9 // After the headline resolves
-      });
-
-      // Headline Blur Reveal
-      gsap.to(".hero-drama-text", {
-        opacity: 1,
-        filter: "blur(0px)",
-        duration: 0.8,
-        ease: "power2.out",
-        delay: 0.5
-      });
-    }, comp);
-    return () => ctx.revert();
-  }, []);
+  // The headline rises line by line through its masks. It is hidden for the first frame (opacity, which costs no layout), then split
+  // and shown by the first job after the first paint (splitting measures the lines). The subtitle, the buttons and the proof line
+  // rise with it by transform only: they are fully visible from the first frame, as the subtitle is the page's largest paint.
+  useGSAP(() => {
+    const mm = gsap.matchMedia(root.current);
+    mm.add(MOTION_OK, (ctx) => {
+      const title = root.current.querySelector('.hero-title');
+      const rise = root.current.querySelectorAll('.hero-rise');
+      // First, as later() runs at once after the first load
+      const undo = [startAt(title, { opacity: '0' }), startAt(rise, { transform: 'translateY(14px)' })];
+      later(ctx, () => {
+        SplitText.create(title, {
+          type: 'lines',
+          mask: 'lines',
+          autoSplit: true,
+          reduceWhiteSpace: false,
+          onSplit: (self) => {
+            // A line never wraps inside its mask while a late font or a resize waits for the re-split (the text below would jump)
+            self.lines.forEach((l) => { l.style.whiteSpace = 'nowrap'; });
+            return gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09 });
+          },
+        });
+        title.style.opacity = ''; // the lines now sit below their masks
+        gsap.to(rise, { y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, delay: 0.1 });
+      }, true);
+      return () => undo.forEach((u) => u());
+    });
+    return () => mm.revert();
+  }, { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section ref={comp} className="relative w-full min-h-[100dvh] overflow-hidden flex flex-col justify-center pb-12 px-6 md:px-16 lg:px-24 pt-28 lg:pt-24">
-      
-      {/* Background radial glow specifically for mobile */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[150%] aspect-square bg-accent/10 blur-[120px] rounded-full sm:hidden pointer-events-none" />
-
-      {/* Content Container - Split Layout on Desktop */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-end justify-between gap-10 md:gap-12 lg:gap-8">
-        
-        {/* Left Side text */}
-        <div className="flex flex-col items-center md:items-start text-center md:text-left w-full lg:w-[65%] xl:w-[75%] z-20">
-          <h1 className="mb-6 md:mb-8 short:mb-2 w-full leading-[1.15] md:leading-[1.1]">
-            <span className="hero-anim opacity-0 translate-y-8 font-heading font-bold text-[clamp(1.75rem,5vw,3.25rem)] text-text/90 tracking-tight uppercase inline-block md:mr-5">
-              Operational scaling beyond
-            </span>
-            <br className="sm:hidden" />
-            <span className="hero-drama-text font-drama italic text-[clamp(3.5rem,min(15vw,18vh),7.5rem)] text-accent tracking-tighter inline-block relative translate-y-1 md:translate-y-2" style={{ filter: 'blur(8px)', opacity: 0 }}>
-              Human limits.
-            </span>
-          </h1>
-          
-          <div className="max-w-2xl mb-10 md:mb-12 short:mb-4 px-4 md:px-0 flex flex-wrap gap-x-[0.35em] gap-y-[0.3em]">
-             {"The definitive AI operations partner for B2B companies that want to scale without adding headcount.".split(" ").map((word, i) => (
-               <span key={i} className="hero-word opacity-0 translate-y-4 font-sans text-base md:text-xl text-text/70 leading-relaxed inline-block">
-                 {word}
-               </span>
-             ))}
-          </div>
-          
-          <div className="hero-anim opacity-0 translate-y-8 flex flex-col sm:flex-row items-center md:items-start gap-6 w-full sm:w-auto">
-            <a href="#waitlist" className="bg-accent text-[#0a0a0b] font-sans font-bold text-base px-10 py-4 rounded-full btn-magnetic whitespace-nowrap shadow-[0_0_20px_rgba(157,124,255,0.3)] hover:shadow-[0_0_30px_rgba(157,124,255,0.5)] transition-shadow">
-              Join the Waitlist
-            </a>
-            <div className="flex items-center px-2 py-2 opacity-60">
-              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse mr-3 shadow-[0_0_8px_rgba(157,124,255,1)]" />
-              <span className="font-mono text-[0.65rem] sm:text-xs uppercase tracking-wider text-text/80 text-center sm:text-left">We're selective about who we work with.</span>
+    <section ref={root} className="pb-16 pt-24 sm:pt-32 lg:flex lg:min-h-[100svh] lg:items-center lg:pb-6 lg:pt-20">
+        <div className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-7">
+            <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,min(1.2rem_+_4.6vw,8.5vh),4.6rem)]">{t.title}</h1>
+            <p className="hero-rise t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
+            <div className="hero-rise mt-8 flex flex-wrap items-center gap-3">
+              <ScrollLink ref={book} to="#book" className="btn-primary">{t.book}</ScrollLink>
+              <ScrollLink to="#results" className="btn-quiet">{t.results}</ScrollLink>
             </div>
+            <p className="hero-rise mt-10 max-w-[31rem] border-t border-line pt-5 text-sm text-muted">
+              <span className="mr-1.5 text-base font-semibold text-fg tabular-nums">49</span>
+              {t.proof}
+            </p>
+          </div>
+          <div className="lg:col-span-5">
+            <WorkflowTrace />
           </div>
         </div>
-
-        {/* Right Side - Custom GSAP Animation */}
-        <div className="w-full lg:w-[35%] xl:w-[30%] flex justify-center lg:justify-end lg:mb-12 xl:mb-16 mt-4 md:mt-0">
-          <div className="w-full max-w-[320px] md:max-w-[500px]">
-            <HeroGraphic />
-          </div>
-        </div>
-      </div>
     </section>
   );
-};
-
-export default Hero;
+}

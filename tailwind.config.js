@@ -1,3 +1,5 @@
+import plugin from 'tailwindcss/plugin';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -6,31 +8,28 @@ export default {
   ],
   theme: {
     extend: {
-      screens: {
-        short: { raw: '(max-height: 560px)' }, // landscape phones: no fixed-height or sticky cards
-      },
       colors: {
-        background: '#0a0a0b',
+        canvas: '#0a0a0b',
         surface: '#121214',
-        accent: '#9d7cff',
-        text: '#f4f3ed',
+        raised: '#17161b',
+        line: '#232227',
+        fg: '#f4f3ed',
+        muted: '#b3b1aa',
+        faint: '#82817c', // 4.6:1 on raised, lowest contrast allowed for text
+        accent: '#9d7cff', // a signal, not decoration: primary action, live state, key figures
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-        heading: ['Outfit', 'sans-serif'],
-        drama: ['"Cormorant Garamond"', 'serif'],
-        mono: ['"IBM Plex Mono"', 'monospace'],
+        sans: ['"Mona Sans Variable"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
-      keyframes: {
-        breathe: {
-          '0%, 100%': { transform: 'scale(1)', opacity: '0.15' },
-          '50%': { transform: 'scale(1.2)', opacity: '0.28' },
-        }
+      maxWidth: {
+        page: '1200px',
       },
-      animation: {
-        'breathe': 'breathe 7s ease-in-out infinite',
-      }
     },
   },
-  plugins: [],
+  plugins: [
+    // coarse: touch screens, where tap targets grow to 44px. A plugin and not a `screens` entry: any object in
+    // `screens` switches off the min-* variants (min-[360px] in the navbar would silently disappear)
+    plugin(({ addVariant }) => addVariant('coarse', '@media (pointer: coarse)')),
+  ],
 }

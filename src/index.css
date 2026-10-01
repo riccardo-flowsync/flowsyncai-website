@@ -1,50 +1,165 @@
+@import '@fontsource-variable/mona-sans/wdth.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import 'lenis/dist/lenis.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Anchor targets land below the fixed navbar */
-  [id] {
-    scroll-margin-top: 7rem;
+  html {
+    background: #0a0a0b;
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation; /* no double-tap zoom delay */
+    scroll-padding-top: 6.5rem; /* jumps and keyboard focus stop below the fixed navbar; Lenis and scrollIntoView both read it */
   }
 
   body {
-    @apply text-text font-sans selection:bg-accent/30 selection:text-text;
-    background: linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 100%);
-    background-attachment: fixed;
+    @apply bg-canvas text-fg font-sans antialiased;
+    font-size: 1rem;
+    line-height: 1.6;
+    overflow-x: clip; /* safety net: nothing may widen the page */
+  }
+
+  ::selection {
+    background: rgb(157 124 255 / 0.35);
+  }
+
+  :focus-visible {
+    outline: 2px solid #9d7cff;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  h1, h2, h3 {
+    font-stretch: 112%;
+    font-weight: 620;
+    letter-spacing: -0.02em;
+  }
+
+  /* Not h1: the hero headline is split into lines by SplitText, which measures the browser's own breaks */
+  h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* The headings that rise line by line. The h2s (riseOnScroll) keep h2's balanced wrapping: SplitText measures the same breaks
+     (checked 320 to 1920 px, EN and IT), and plain wrapping would strand "campaign." on its own line.
+     flow-root keeps each heading's own box the same height as unsplit text, despite the mask padding below. */
+  .hero-title, .sys-title, .res-title, .proc-title, .faq-title, .book-title {
+    display: flow-root;
+  }
+
+  /* The line masks clip at the line box (1.02 hero, 1.06 h2), which cuts the tails of g, p and y. Extend the clip downwards, layout unchanged. */
+  :is(.hero-title, .sys-title, .res-title, .proc-title, .faq-title, .book-title) > div {
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 }
 
 @layer components {
-  /* Liquid Glass Elements with subtle purple tint */
-  .glass-panel {
-    @apply bg-surface/60 backdrop-blur-xl border border-white/5 shadow-2xl;
-  }
-  
-  .glass-purple {
-    @apply bg-[#1a1428]/60 backdrop-blur-xl border border-accent/20 shadow-[0_0_30px_rgba(157,124,255,0.1)];
+  .page {
+    @apply mx-auto w-full max-w-page px-5 sm:px-8 lg:px-12;
   }
 
-  /* Typography utilities */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-text via-text to-text/60;
+  .t-display {
+    font-size: clamp(2.15rem, 1.2rem + 4.6vw, 4.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
   }
 
-  .text-gradient-accent {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-[#d0bfff];
+  .t-h2 {
+    font-size: clamp(1.9rem, 1.2rem + 2.6vw, 3.1rem);
+    line-height: 1.06;
   }
 
-  /* Micro-interactions */
-  .btn-magnetic {
-    @apply relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.03] active:scale-95;
+  .t-h3 {
+    font-size: 1.25rem;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
   }
-  
-  .btn-magnetic::before {
+
+  .t-lead {
+    font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.25rem);
+    line-height: 1.55;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-[0.95rem] font-semibold
+      transition-colors duration-200 whitespace-nowrap;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent text-canvas hover:bg-[#b09aff];
+  }
+
+  .btn-quiet {
+    @apply btn text-fg ring-1 ring-inset ring-line hover:bg-raised;
+  }
+
+  .link {
+    @apply underline decoration-line decoration-1 underline-offset-4 transition-colors hover:decoration-accent;
+  }
+
+  /* A section's top rule. Replaces "border-t border-line"; drawRule() in motion.js scrubs --rule from 0 to 1. Default 1 = fully drawn. */
+  .rule {
+    position: relative;
+  }
+  .rule::before {
     content: '';
-    @apply absolute inset-0 bg-white/0 transition-colors duration-300 z-[-1];
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: theme('colors.line');
+    transform: scaleX(var(--rule, 1));
+    transform-origin: left;
+    pointer-events: none;
   }
-  
-  .btn-magnetic:hover::before {
-    @apply bg-white/10;
+
+  .field {
+    @apply w-full rounded-lg border border-faint bg-canvas px-3.5 py-3 text-fg placeholder:text-faint
+      transition-colors focus:border-accent;
+  }
+}
+
+/* Static film grain over everything, very faint, never intercepts clicks */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* FAQ answers slide open where the browser supports animating details (Chrome 131+); elsewhere they just open */
+.faq details {
+  interpolate-size: allow-keywords;
+}
+.faq details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition: block-size 0.35s ease, content-visibility 0.35s allow-discrete;
+}
+.faq details[open]::details-content {
+  block-size: auto;
+}
+
+/* Last, so it wins over the rules above. `*` does not match ::details-content, so the FAQ needs its own line */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+  .faq details::details-content {
+    transition: none;
   }
 }
