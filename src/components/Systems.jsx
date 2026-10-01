@@ -239,7 +239,7 @@ export default function Systems() {
   useGSAP((context) => later(context, () => {
     const articles = gsap.utils.toArray('[data-system]', root.current);
     const note = root.current.querySelector('[data-note]');
-    const items = articles.map((el) => root.current.querySelector(`[data-index="${el.dataset.system}"]`));
+    const items = articles.map((el) => [...root.current.querySelectorAll(`[data-index="${el.dataset.system}"]`)]);
     const icon = root.current.querySelector('.sys-icon');
     const hold = window.matchMedia(HOLD); // the icon only moves under HOLD (see iconScene)
     let shown = -2;
@@ -251,7 +251,7 @@ export default function Systems() {
       icon.classList.toggle('is-active', on !== -1 && hold.matches);
       if (on === shown) return;
       shown = on;
-      items.forEach((li, i) => { li.classList.toggle('is-active', i === on); li.querySelector('a').setAttribute('aria-current', i === on ? 'true' : 'false'); });
+      items.forEach((links, i) => links.forEach((li) => { li.classList.toggle('is-active', i === on); li.querySelector('a').setAttribute('aria-current', i === on ? 'true' : 'false'); }));
       icon.querySelector('path').setAttribute('d', on === 1 ? ICON.bubble : ICON.envelope);
       icon.children[1].style.opacity = on === 1 ? '0' : '1';
     };
@@ -306,7 +306,7 @@ export default function Systems() {
           <div className="lg:sticky lg:top-28">
             <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
             <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
-            <div className="mt-8 flex items-center gap-8">
+            <div className="mt-8 hidden items-center gap-8 lg:flex">
               {/* the list is wider than its longest label in either language, so the icon does not move on a switch */}
               <ul className="grid gap-3 border-l border-line">
                 {t.systems.map((s) => (
@@ -330,9 +330,16 @@ export default function Systems() {
           </div>
         </div>
 
+        <nav aria-label={t.title} className="sticky top-16 z-20 -my-5 grid grid-cols-2 gap-2 border-y border-line bg-canvas py-3 lg:hidden">
+          {t.systems.map((s) => (
+            <div key={s.id} data-index={s.id} className="rounded-lg border border-line text-muted transition-colors [&.is-active]:border-accent [&.is-active]:text-fg">
+              <ScrollLink to={`#system-${s.id}`} className="flex min-h-12 items-center justify-center rounded-lg px-3 py-2 text-center text-sm focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
+            </div>
+          ))}
+        </nav>
         <div className="grid gap-20 lg:col-span-7 lg:gap-28">
           {t.systems.map((s) => (
-            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="grid gap-5">
+            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="grid scroll-mt-24 gap-5 lg:scroll-mt-0">
               <div>
                 <h3 className="t-h3 text-[1.5rem]">{s.name}</h3>
                 <p className="mt-3 text-muted">{s.body}</p>
