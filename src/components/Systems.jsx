@@ -63,7 +63,7 @@ const copy = {
     inbox: {
       title: 'Risposte',
       rows: [
-        ['Giulia, Studio Ferri', 'interessata', 'Mi sembra utile. Ne parliamo la prossima settimana?'],
+        ['Giulia, Studio Ferri', 'interessato', 'Mi sembra utile. Ne parliamo la prossima settimana?'],
         ['Tom, Harbour Freight', 'non ora', 'Risentiamoci dopo il primo trimestre.'],
         ['Sara, Nord Logistica', 'persona sbagliata', 'Provate con Luca, il responsabile vendite.'],
       ],
