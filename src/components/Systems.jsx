@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import ScrollLink from './ScrollLink';
 import { useCopy, useLang } from '../lib/lang';
 import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, riseOnScroll, drawRule, later } from '../lib/motion';
 
@@ -10,15 +11,15 @@ const copy = {
     systems: [
       {
         id: 'outbound',
-        name: 'Outbound on cold email',
-        body: 'We find the companies that fit, research each one and verify every address. Each lead gets a sequence written for them, sent from new domains we set up and warm up, so your main domain stays untouched. Replies are drafted by an assistant and, by default, approved by a person. Interested buyers book straight into your calendar.',
-        points: ['Companies researched one by one', 'Your main domain stays untouched', 'Calls booked into your calendar'],
+        name: 'Sales outreach',
+        body: 'For B2B businesses with a clear offer and customers worth €1,000 or more. We find buyers, send personal emails and handle replies. A person approves replies by default. Your main email domain stays untouched.',
+        points: ['Replies sorted for you', 'You approve by default', 'Calls booked into your calendar'],
       },
       {
         id: 'support',
-        name: 'Customer support on chat',
-        body: 'An agent on your website chat and Instagram messages that answers from your own information and acts in your tools: it looks up an order, logs a return, opens a ticket. What it cannot solve goes to your team as a ticket, with the conversation attached.',
-        points: ['Answers from your own information', 'Looks up orders, opens tickets', 'Hands over with the full context'],
+        name: 'Customer support assistant',
+        body: 'For teams handling customer questions on their website and Instagram. The assistant answers from your information, checks orders and starts returns. Your team gets anything it cannot solve, with the conversation attached.',
+        points: ['Answers customer questions', 'Checks orders and returns', 'Hands over with the full context'],
       },
     ],
     inbox: {
@@ -49,15 +50,15 @@ const copy = {
     systems: [
       {
         id: 'outbound',
-        name: 'Outbound via email a freddo',
-        body: 'Troviamo le aziende giuste, studiamo ognuna e verifichiamo ogni indirizzo. Ogni contatto riceve una sequenza scritta su misura, inviata da nuovi domini che configuriamo e scaldiamo noi: il tuo dominio principale resta intatto. Le risposte le prepara un assistente e, di norma, le approva una persona. Chi è interessato prenota direttamente nel tuo calendario.',
-        points: ['Aziende studiate una per una', 'Il tuo dominio principale resta intatto', 'Call prenotate nel tuo calendario'],
+        name: 'Trova nuovi clienti',
+        body: 'Per aziende B2B con un’offerta chiara e clienti da €1.000 o più. Troviamo chi compra, inviamo email personali e gestiamo le risposte. Di norma le approva una persona. Il tuo dominio principale resta intatto.',
+        points: ['Risposte ordinate per te', 'Di norma approvi tu', 'Call prenotate nel tuo calendario'],
       },
       {
         id: 'support',
-        name: 'Assistenza clienti in chat',
-        body: 'Un agente sulla chat del tuo sito e nei messaggi Instagram che risponde partendo dalle tue informazioni e agisce nei tuoi strumenti: cerca un ordine, registra un reso, apre un ticket. Quello che non può risolvere arriva al tuo team come ticket, con la conversazione allegata.',
-        points: ['Risposte dalle tue informazioni', 'Cerca ordini, apre ticket', 'Passa la mano con tutto il contesto'],
+        name: 'Assistente clienti',
+        body: 'Per team che rispondono ai clienti sul sito e su Instagram. L’assistente usa le tue informazioni, controlla ordini e avvia resi. Al tuo team arriva quello che non può risolvere, con la conversazione allegata.',
+        points: ['Risponde ai clienti', 'Controlla ordini e resi', 'Passa la mano con tutto il contesto'],
       },
     ],
     inbox: {
@@ -87,54 +88,50 @@ const copy = {
 const Words = ({ text, cls }) => text.split(' ').map((w, i) => <span key={i} className={cls}>{w}{' '}</span>);
 
 
-// ---- Scroll scenes ----
-// One timeline per system, written in seconds. Scrubbed it is spread over the scroll (and rewinds on the way back);
-// played once (touch, short or narrow screens) it runs at 1.5x from when the stage comes into view.
+// Timed examples pause off screen and keep their finished state. Scroll speed never changes their pace.
 // Only opacity and transforms move. Each chip lights (its accent ring fades in) when the matching thing happens in the picture.
 // Reduced motion and no-JS show the picture without the chips lit: the accent there would only be decoration.
-const lightChip = (tl, chip, at) => tl.to(chip, { opacity: 1, duration: 0.3 }, at);
-const finish = (tl, st) => (st.scrub ? tl.to({}, { duration: 1.2 }) : tl.timeScale(1.5)); // scrubbed: a short rest on the finished picture
+const lightChip = (tl, chip, at) => tl.fromTo(chip, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, at)
+  .to(chip.parentElement, { color: '#f4f3ed', duration: 0.5 }, at);
 
-function inboxScene(stage, st) {
+function inboxScene(stage) {
   const q = gsap.utils.selector(stage);
   const chips = q('.pt-lit');
   const words = q('.ib-w');
   gsap.set(q('.ib-row'), { autoAlpha: 0, y: -10 });
   gsap.set(q('.ib-draft, .ib-w, .ib-btns'), { autoAlpha: 0 });
-  const tl = gsap.timeline({ scrollTrigger: st });
-  // Replies arrive one company at a time. Played once, each tag scrambles onto its label; scrubbed, a scramble would freeze
-  // half-garbled whenever the reader stops scrolling, so the tag just fades in.
+  const tl = gsap.timeline({ paused: true });
+  // Replies arrive and are classified one at a time.
   q('.ib-row').forEach((row, i) => {
     const tag = row.querySelector('.ib-tag');
     tl.to(row, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' }, i * 0.9);
-    if (st.scrub) tl.fromTo(tag, { opacity: 0 }, { opacity: 1, duration: 0.4 }, i * 0.9 + 0.3);
-    else tl.to(tag, { scrambleText: { text: tag.textContent, chars: 'lowerCase', speed: 0.6 }, duration: 0.7 }, i * 0.9 + 0.2);
+    tl.fromTo(tag, { opacity: 0 }, { opacity: 1, duration: 0.4 }, i * 0.9 + 0.3);
   });
   lightChip(tl, chips[0], 0.3);
   // The draft builds word by word (sent from the outreach domain, not the main one), then the buttons appear
   tl.to(q('.ib-draft'), { autoAlpha: 1, duration: 0.4 }, 3.3)
     .to(words, { autoAlpha: 1, duration: 0.12, stagger: 0.1 }, 3.6)
     .to(q('.ib-btns'), { autoAlpha: 1, duration: 0.4 }, 3.6 + words.length * 0.1 + 0.4);
-  lightChip(tl, chips[1], 3.5);
   // Approve is pressed last: its own beat, after a rest with the buttons on screen. The draft's label turns to "approved".
-  tl.addLabel('press', st.scrub ? '+=1' : '+=0.5')
+  tl.addLabel('press', '+=0.8')
     .to(q('.ib-approve'), { scale: 0.92, duration: 0.2, ease: 'power2.in' }, 'press')
     .to(q('.ib-approve'), { scale: 1, duration: 0.3, ease: 'power2.out' })
     .to(q('.ib-edit'), { opacity: 0.4, duration: 0.3 }, 'press')
     .fromTo(q('.ib-ok'), { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: 'power2.out' }, 'press+=0.2') // the ring draws round the draft
     .to(q('.ib-wait'), { opacity: 0, duration: 0.2 }, 'press+=0.2')
     .fromTo(q('.ib-sent'), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 'press+=0.35');
-  lightChip(tl, chips[2], 'press+=0.3');
-  return finish(tl, st);
+  lightChip(tl, chips[1], 'press');
+  lightChip(tl, chips[2], 'press+=0.6');
+  return tl;
 }
 
-function chatScene(stage, st) {
+function chatScene(stage) {
   const q = gsap.utils.selector(stage);
   const chips = q('.pt-lit');
   const words = q('.ch-w');
   gsap.set(q('.ch-user, .ch-agent, .ch-w, .ch-act'), { autoAlpha: 0 });
   gsap.set(q('.ch-dot'), { scale: 0 });
-  const tl = gsap.timeline({ scrollTrigger: st });
+  const tl = gsap.timeline({ paused: true });
   tl.fromTo(q('.ch-user'), { y: 8 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: 'power3.out' })
     .to(q('.ch-agent'), { autoAlpha: 1, duration: 0.3 }, '+=0.5') // a silent beat, no typing dots
     .addLabel('reply')
@@ -149,7 +146,7 @@ function chatScene(stage, st) {
     if (i === 0) lightChip(tl, chips[1], at);
     if (i === 2) lightChip(tl, chips[2], at).addLabel('handover', at);
   });
-  return finish(tl, st);
+  return tl;
 }
 
 // The line icon beside the index (wide screens with a mouse only): an envelope while the outbound system is on screen, a chat
@@ -168,34 +165,6 @@ const outline = (t, b, notch, tail) => {
     + `L3 ${t + 2}C3 ${t + 2 - k} ${5 - k} ${t} 5 ${t}Z`;
 };
 const ICON = { envelope: outline(5, 19, 0, 0), bubble: outline(4, 17, 0, 4), ticket: outline(5, 19, 2.5, 0) };
-
-// The bubble forms while the support article's top crosses 60% to 50% of the screen: the index switches at 55%, same rule.
-// The ticket forms over the 0.4 s of the chat timeline after its hand-over line. One draw() reads both and sets the icon,
-// so the two never fight over the same attribute when the reader jumps.
-function iconScene(svg, article, chat) {
-  const [line, flap, dash, stub] = svg.children;
-  // fromTo throughout: each frame is a pure function of the time, whatever order the tweens first rendered in
-  const icon = gsap.timeline({ paused: true, defaults: { ease: 'power1.inOut', immediateRender: false } })
-    .fromTo(line, { attr: { d: ICON.envelope } }, { attr: { d: ICON.bubble }, duration: 1 }, 0)
-    .fromTo(flap, { opacity: 1 }, { opacity: 0, duration: 0.5 }, 0)
-    .fromTo(dash, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.5)
-    .fromTo(line, { attr: { d: ICON.bubble } }, { attr: { d: ICON.ticket }, duration: 1 }, 1)
-    .fromTo(dash, { opacity: 1 }, { opacity: 0, duration: 0.5 }, 1)
-    .fromTo(stub, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 1.5);
-  const bubble = { p: 0 };
-  const draw = () => {
-    const ticket = gsap.utils.clamp(0, 1, (chat.time() - chat.labels.handover) / 0.4);
-    icon.time(ticket > 0 ? 1 + ticket : bubble.p);
-  };
-  gsap.to(bubble, {
-    p: 1,
-    ease: 'none',
-    onUpdate: draw,
-    scrollTrigger: { trigger: article, start: 'top 60%', end: 'top 50%', scrub: 0.5, refreshPriority: 0 },
-  });
-  chat.eventCallback('onUpdate', draw);
-  draw();
-}
 
 const SCENES = { outbound: inboxScene, support: chatScene };
 
@@ -282,7 +251,9 @@ export default function Systems() {
       icon.classList.toggle('is-active', on !== -1 && hold.matches);
       if (on === shown) return;
       shown = on;
-      items.forEach((li, i) => li.classList.toggle('is-active', i === on));
+      items.forEach((li, i) => { li.classList.toggle('is-active', i === on); li.querySelector('a').setAttribute('aria-current', i === on ? 'true' : 'false'); });
+      icon.querySelector('path').setAttribute('d', on === 1 ? ICON.bubble : ICON.envelope);
+      icon.children[1].style.opacity = on === 1 ? '0' : '1';
     };
     ScrollTrigger.create({ trigger: root.current, start: 'top bottom', end: 'bottom top', onUpdate: update, onRefresh: update, onToggle: update });
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -297,17 +268,18 @@ export default function Systems() {
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // Illustrations follow the normal page scroll on desktop and play once on touch. Nothing pins the page.
+  // Illustrations play at the same measured pace on every screen. Nothing pins the page.
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add({ desktop: HOLD, ok: MOTION_OK }, ({ conditions }) => {
       if (!conditions.ok) return;
       gsap.utils.toArray('[data-system]', root.current).forEach((article) => {
         const stage = article.querySelector('[data-stage]');
-        const tl = SCENES[article.dataset.system](stage, conditions.desktop
-          ? { trigger: stage, start: 'top 90%', end: 'top 15%', scrub: 0.3, invalidateOnRefresh: true }
-          : { trigger: stage, start: 'top 70%', once: true });
-        if (conditions.desktop && article.dataset.system === 'support') iconScene(root.current.querySelector('.sys-icon'), article, tl);
+        const tl = SCENES[article.dataset.system](stage);
+        ScrollTrigger.create({
+          trigger: stage, start: 'top 85%', end: 'bottom top',
+          onToggle: ({ isActive }) => isActive ? tl.play() : tl.pause(),
+        });
       });
     });
     return () => mm.revert();
@@ -334,21 +306,21 @@ export default function Systems() {
           <div className="lg:sticky lg:top-28">
             <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
             <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
-            <div className="mt-10 hidden items-center gap-8 lg:flex">
+            <div className="mt-8 flex items-center gap-8">
               {/* the list is wider than its longest label in either language, so the icon does not move on a switch */}
-              <ol className="grid min-w-[15rem] gap-3 border-l border-line">
+              <ul className="grid gap-3 border-l border-line">
                 {t.systems.map((s) => (
                   <li
                     key={s.id}
                     data-index={s.id}
                     className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
                   >
-                    {s.name}
+                    <ScrollLink to={`#system-${s.id}`} className="inline-flex min-h-11 items-center rounded px-1 hover:text-fg focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
                   </li>
                 ))}
-              </ol>
+              </ul>
               {/* stroke 2/3 of a unit = 1px at 36px */}
-              <svg aria-hidden="true" data-motion-only className="sys-icon h-9 w-9 shrink-0 text-muted opacity-0 transition-opacity duration-300 [&.is-active]:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2 / 3} strokeLinecap="round" strokeLinejoin="round">
+              <svg aria-hidden="true" data-motion-only className="sys-icon hidden h-9 w-9 lg:block shrink-0 text-muted opacity-0 transition-opacity duration-300 [&.is-active]:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2 / 3} strokeLinecap="round" strokeLinejoin="round">
                 <path d={ICON.envelope} />
                 <path d="M3.5 7.5 12 13l8.5-5.5" />
                 <path d="M8 10.5h8" opacity="0" />
@@ -360,7 +332,7 @@ export default function Systems() {
 
         <div className="grid gap-20 lg:col-span-7 lg:gap-28">
           {t.systems.map((s) => (
-            <article key={s.id} data-system={s.id} className="grid gap-5">
+            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="grid gap-5">
               <div>
                 <h3 className="t-h3 text-[1.5rem]">{s.name}</h3>
                 <p className="mt-3 text-muted">{s.body}</p>

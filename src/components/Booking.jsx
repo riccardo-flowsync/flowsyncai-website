@@ -14,10 +14,10 @@ const LINKEDIN = null; // his profile URL once provided
 const copy = {
   en: {
     title: 'Book a 30\u2011minute call', // non-breaking hyphen
-    sub: 'A video call with Riccardo, who builds the systems. Here is what we cover.',
+    sub: 'Sales or support, we’ll see where a system would help.',
     role: 'Founder, FlowSync AI Solutions',
     agenda: [
-      'How you find clients and answer them today.',
+      'Your sales or customer support today.',
       'Where a system would help, and what it would do.',
       'What happens next, if it makes sense for both of us.',
     ],
@@ -29,16 +29,16 @@ const copy = {
     loading: 'Loading the calendar…',
     stuck: 'Calendar not loading?',
     stuckLink: 'Open it on Cal.com.',
-    write: 'Rather write?',
+    call: 'Book a call',
     open: 'Send a message',
     reply: 'We reply within 24\u00a0hours.',
   },
   it: {
     title: 'Prenota una call di 30\u00a0minuti',
-    sub: 'Una videochiamata con Riccardo, che costruisce i sistemi. Ecco di cosa parliamo.',
+    sub: 'Vendite o assistenza: vediamo dove un sistema ti aiuterebbe.',
     role: 'Fondatore, FlowSync AI Solutions',
     agenda: [
-      'Come trovi i clienti e come rispondi loro oggi.',
+      'Come trovi clienti o gestisci l’assistenza oggi.',
       'Dove un sistema ti aiuterebbe, e cosa farebbe.',
       'I prossimi passi, se ha senso per entrambi.',
     ],
@@ -50,7 +50,7 @@ const copy = {
     loading: 'Caricamento del calendario…',
     stuck: 'Il calendario non si carica?',
     stuckLink: 'Aprilo su Cal.com.',
-    write: 'Preferisci scrivere?',
+    call: 'Prenota una call',
     open: 'Invia un messaggio',
     reply: 'Rispondiamo entro 24\u00a0ore.',
   },
@@ -79,14 +79,14 @@ function MonthPreview({ animate }) {
   const cells = [...Array(offset).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
   const box = useRef(null);
 
-  // The grid builds itself day by day as it scrolls in, then today's ring is drawn. Scrubbed, so it rewinds on the way back.
+  // The grid builds at a steady pace when it comes into view, then today’s ring is drawn.
   // Its own scope: the preview unmounts when the real calendar opens, and its triggers go with it. On /contact it stays as drawn.
   useGSAP((context) => animate && later(context, () => {
     const mm = gsap.matchMedia(box.current);
     mm.add(MOTION_OK, () => {
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
-        scrollTrigger: { trigger: box.current, start: 'top 88%', end: 'bottom 80%', scrub: true },
+        scrollTrigger: { trigger: box.current, start: 'top 88%', once: true },
       });
       tl.from('.cal-wd', { opacity: 0, duration: 0.3, stagger: 0.03 })
         .from('.cal-day', { opacity: 0, scale: 0.8, duration: 0.5, stagger: 0.05 }, '>-0.1');
@@ -146,18 +146,17 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
     mm.add(MOTION_OK, () => {
       riseOnScroll('.book-title');
       drawRule(root.current);
-      // The agenda's own rule draws, then each mark as its own line scrolls fully into view (scrubbed, so they rewind).
-      // Each line has its own trigger and ends at the screen's bottom edge, so landing on #book shows them all drawn.
+      // The agenda and its marks draw once, independently of scroll speed.
       gsap.fromTo('.book-agenda', { '--rule': 0 }, {
         '--rule': 1,
         ease: 'none',
-        scrollTrigger: { trigger: '.book-agenda', start: 'top 100%', end: 'top 85%', scrub: true },
+        duration: 0.7, scrollTrigger: { trigger: '.book-agenda', start: 'top 90%', once: true },
       });
       gsap.utils.toArray('.book-agenda li').forEach((li) => gsap.from(li.querySelector('.book-mark'), {
         scaleX: 0,
         transformOrigin: 'left center',
         ease: 'none',
-        scrollTrigger: { trigger: li, start: 'top 100%', end: 'bottom 100%', scrub: true },
+        duration: 0.5, scrollTrigger: { trigger: li, start: 'top 95%', once: true },
       }));
     });
     return () => mm.revert();
@@ -184,8 +183,9 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   }, { scope: root });
 
   const openCalendar = () => {
+    setWriting(false);
     setCalOpen(true);
-    scrollToEl(frame.current);
+    requestAnimationFrame(() => scrollToEl(frame.current));
   };
 
   return (
@@ -219,7 +219,15 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
         </div>
 
         <div className="min-w-0 lg:col-span-7">
-          <div ref={frame} className="overflow-hidden rounded-[10px] border border-line bg-surface shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
+          <div className="mb-5 flex flex-wrap gap-3" role="group" aria-label={t.title}>
+            <button type="button" aria-pressed={!writing} onClick={() => setWriting(false)} className={!writing ? 'btn-primary' : 'btn-quiet'}>{t.call}</button>
+            <button type="button" aria-pressed={writing} onClick={() => setWriting(true)} className={writing ? 'btn-primary' : 'btn-quiet'}>{t.open}</button>
+          </div>
+          <div hidden={!writing} className="rounded-[10px] border border-line bg-surface p-6 sm:p-8">
+            <p className="mb-5 text-sm text-muted">{t.reply}</p>
+            <LeadForm onSent={setPrefill} onPickTime={openCalendar} />
+          </div>
+          <div hidden={writing} ref={frame} className="overflow-hidden rounded-[10px] border border-line bg-surface shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)]">
             {calOpen ? (
               <Suspense fallback={<p className="grid min-h-[560px] place-items-center text-sm text-faint">{t.loading}</p>}>
                 <CalendarEmbed prefill={prefill} />
@@ -236,28 +244,18 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
                     {t.note} <Link to="/privacy" className="link">{t.privacy}</Link>
                   </p>
                 </div>
-                <MonthPreview animate={heading === 'h2'} />
+                <button type="button" onClick={openCalendar} aria-label={t.see} className="rounded-lg text-left transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-accent"><MonthPreview animate={heading === 'h2'} /></button>
               </div>
             )}
           </div>
 
-          {calOpen && (
+          {calOpen && !writing && (
             <p className="mt-3 text-sm text-faint">
               {t.stuck} <a href={CAL_URL} target="_blank" rel="noreferrer" className="link text-fg decoration-faint">{t.stuckLink}</a>
             </p>
           )}
 
-          <div className="mt-8">
-            {writing ? (
-              <LeadForm onSent={setPrefill} onPickTime={openCalendar} />
-            ) : (
-              <p className="text-muted">
-                {t.write}{' '}
-                <button type="button" onClick={() => setWriting(true)} className="link font-medium text-fg">{t.open}</button>
-                . {t.reply}
-              </p>
-            )}
-          </div>
+
         </div>
       </div>
     </section>

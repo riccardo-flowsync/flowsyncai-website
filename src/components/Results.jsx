@@ -10,7 +10,6 @@ const ROWS = [
   { rate: 22, interested: null, meetings: 10 },
   { rate: 41, interested: null, meetings: 11 },
 ];
-const TOTAL_KEYS = ['meetings', 'interested']; // the ledger's Total row sums these row figures (the multiple in the big totals is not a sum)
 // A ledger row draws its own bottom rule as it crosses the screen (same length for every row: the rates are different metrics)
 const ROW_RULE = 'relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--row,1))]';
 const CHARTS = [[5.1, 3.4, 2.2, 0.45], [22, 3.5], [41, 28.5]]; // last value = market average
@@ -41,12 +40,14 @@ const copy = {
     total: 'Total',
     none: 'not reported',
     rows: [
-      ['AI automation agency', 'Done-for-you outbound, sold cold to agencies and B2B companies', 'Cold email, UK, Europe and UAE, 2026', 'reply rate'],
-      ['Tech company', 'AI automation, sold to business owners', 'Cold email, Europe, July to September 2025', 'reply rate'],
-      ['Lead gen agency', 'Done-for-you lead generation, sold cold to agencies', 'Cold email, Europe, since July 2026', 'reply rate'],
+      ['AI automation agency', 'Done-for-you outbound, sold cold to agencies and B2B companies', 'Cold email, UK, Europe and UAE, 2026', 'platform reply rate'],
+      ['Tech company', 'AI automation, sold to business owners', 'Cold email, Europe, July to September 2025', 'platform reply rate'],
+      ['Lead gen agency', 'Done-for-you lead generation, sold cold to agencies', 'Cold email, Europe, since July 2026', 'platform reply rate'],
       ['Cybersecurity consultancy', 'NIS2 compliance consulting, sent in the client’s name', 'Cold email, Europe, 3\u00a0months', 'of replies became meetings'],
       ['Contact-centre software', 'Sold to IT, operations and customer care leaders', 'LinkedIn, Europe, 6\u00a0weeks in spring 2026', 'of connection requests accepted'],
     ],
+    details: 'Campaign details',
+    method: 'How we counted',
     market: 'Against the market',
     charts: [
       {
@@ -103,12 +104,14 @@ const copy = {
     total: 'Totale',
     none: 'non rilevato',
     rows: [
-      ['Agenzia di automazione AI', 'Outbound chiavi in mano, venduto a freddo ad agenzie e aziende B2B', 'Email a freddo, Regno Unito, Europa ed Emirati, 2026', 'tasso di risposta'],
-      ['Azienda tech', 'Automazioni AI, vendute a titolari d’azienda', 'Email a freddo, Europa, da luglio a settembre 2025', 'tasso di risposta'],
-      ['Agenzia di lead generation', 'Lead generation chiavi in mano, venduta a freddo ad agenzie', 'Email a freddo, Europa, da luglio 2026', 'tasso di risposta'],
+      ['Agenzia di automazione AI', 'Outbound chiavi in mano, venduto a freddo ad agenzie e aziende B2B', 'Email a freddo, Regno Unito, Europa ed Emirati, 2026', 'risposte sulla piattaforma'],
+      ['Azienda tech', 'Automazioni AI, vendute a titolari d’azienda', 'Email a freddo, Europa, da luglio a settembre 2025', 'risposte sulla piattaforma'],
+      ['Agenzia di lead generation', 'Lead generation chiavi in mano, venduta a freddo ad agenzie', 'Email a freddo, Europa, da luglio 2026', 'risposte sulla piattaforma'],
       ['Consulenza di cybersecurity', 'Consulenza per la conformità NIS2, inviata a nome del cliente', 'Email a freddo, Europa, 3\u00a0mesi', 'delle risposte diventate appuntamenti'],
       ['Software per contact center', 'Venduto a responsabili IT, operations e customer care', 'LinkedIn, Europa, 6\u00a0settimane in primavera 2026', 'delle richieste di collegamento accettate'],
     ],
+    details: 'Dettagli delle campagne',
+    method: 'Come li abbiamo contati',
     market: 'Rispetto al mercato',
     charts: [
       {
@@ -175,67 +178,24 @@ export default function Results() {
   const pct = (v) => `${pf.format(v)}%`;
   const num = (v) => nf.format(v);
 
-  // Scroll scene, all scrubbed (it rewinds on the way back) and ending on the printed figures. Text shows its real value until this runs.
+  // Real figures stay printed. Only supporting bars and rules animate, at a fixed pace.
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
-    const show = (el, v) => {
-      const s = num(v);
-      if (el.textContent !== s) el.textContent = s;
-    };
-    const restore = (els) => () => els.forEach((el) => show(el, Number(el.dataset.value)));
-    const q = gsap.utils.selector(root);
-    // Each ledger row draws its own rule as its bottom edge rises into view, the same length for every row (the rates are different metrics).
-    // On the table, the Total row at the foot is built from the rows: each row adds only the figures it reports, exactly when its own rule
-    // draws, so the sum never runs ahead of the row that explains it. The table and the phone list are never both visible, so each has its own condition.
-    const rowRules = (sel, sum) => () => {
-      const prog = ROWS.map(() => ({ v: 0 }));
-      const spans = sum ? TOTAL_KEYS.map((k) => q(`[data-sum="${k}"]`)[0]) : [];
-      const paint = () => spans.forEach((el, i) => show(el, Math.round(ROWS.reduce((n, r, k) => n + (r[TOTAL_KEYS[i]] ?? 0) * prog[k].v, 0))));
-      paint();
-      q(sel).forEach((row, k) => {
-        const tl = gsap.timeline({
-          defaults: { ease: 'none', duration: 1 },
-          scrollTrigger: { trigger: row, start: 'bottom 98%', end: 'bottom 82%', scrub: true },
-        }).fromTo(row, { '--row': 0 }, { '--row': 1 });
-        if (sum) tl.to(prog[k], { v: 1, onUpdate: paint }, 0);
-      });
-      return restore(spans);
-    };
-    mm.add(`${MOTION_OK} and (min-width: 640px)`, rowRules('.res-tr', true));
-    mm.add(`${MOTION_OK} and (max-width: 639.98px)`, rowRules('.res-li', false));
-
     mm.add(MOTION_OK, () => {
       drawRule(root.current);
       riseOnScroll('.res-title');
-
-      // Benchmark bars: the market bar fills first, then ours grow against it. Like with like, no labels added.
       gsap.utils.toArray('.res-chart').forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
-        gsap.timeline({
-          defaults: { ease: 'none' },
-          scrollTrigger: { trigger: chart, start: 'top 90%', end: 'top 45%', scrub: true },
-        })
-          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.25 })
-          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.55, stagger: 0.1 }, 0.25);
+        gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
+          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.4, ease: 'power2.out' })
+          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' }, 0.3);
       });
-
-      // Support cards: the split bar grows and the chat count rises with the scroll (hours stay printed: an estimate is never shown half-way), then what the agent does comes in
-      const cardCounters = [];
       gsap.utils.toArray('.sup-card').forEach((card) => {
-        const c = gsap.utils.selector(card);
-        const tl = gsap.timeline({
-          defaults: { ease: 'none' },
-          scrollTrigger: { trigger: card, start: 'top 88%', end: 'top 38%', scrub: true },
-        }).from(c('.sup-bar'), { scaleX: 0, transformOrigin: 'left center', duration: 0.7 }, 0);
-        c('.res-count').forEach((el) => {
-          const n = { v: 0 };
-          cardCounters.push(el);
-          show(el, 0);
-          tl.to(n, { v: Number(el.dataset.value), duration: 0.7, onUpdate: () => show(el, Math.round(n.v)) }, 0);
+        gsap.from(card.querySelector('.sup-bar'), {
+          scaleX: 0, transformOrigin: 'left center', duration: 1, ease: 'power2.out',
+          scrollTrigger: { trigger: card, start: 'top 88%', once: true },
         });
-        tl.from(c('.sup-do'), { autoAlpha: 0, y: 6, duration: 0.3, stagger: 0.05 }, 0.5);
       });
-      return restore(cardCounters);
     });
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -258,57 +218,6 @@ export default function Results() {
             </div>
           ))}
         </dl>
-
-        {/* Ledger: a table from sm up, a list on phones (the columns do not fit at 320px) */}
-        <table className="mt-14 hidden w-full text-left sm:table">
-          <thead className="text-sm text-faint">
-            <tr className="border-b border-line">
-              <th scope="col" className="pb-3 font-normal">{t.head[0]}</th>
-              <th scope="col" className="pb-3 pl-6 font-normal">{t.head[1]}</th>
-              <th scope="col" className="pb-3 pl-6 text-right font-normal">{t.head[2]}</th>
-              <th scope="col" className="pb-3 pl-6 text-right font-normal">{t.head[3]}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {t.rows.map(([name, what, where, rateLabel], i) => (
-              <tr key={name} className={`res-tr ${ROW_RULE} align-top`}>
-                <th scope="row" className="py-5 pr-4 font-normal">
-                  <span className="font-medium">{name}</span>
-                  <span className="mt-1 block text-sm text-muted">{what}</span>
-                  <span className="block text-sm text-faint">{where}</span>
-                </th>
-                <td className="py-5 pl-6">
-                  <span className="text-lg font-semibold tabular-nums">{pct(ROWS[i].rate)}</span>
-                  <span className="block max-w-[18ch] text-sm text-muted">{rateLabel}</span>
-                </td>
-                <td className="py-5 pl-6 text-right text-lg tabular-nums"><Figure value={ROWS[i].interested} none={t.none} /></td>
-                <td className="py-5 pl-6 text-right text-lg tabular-nums"><Figure value={ROWS[i].meetings} none={t.none} /></td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row" colSpan={2} className="pt-4 text-left font-medium">{t.total}</th>
-              <td className="pt-4 text-right text-lg font-semibold tabular-nums"><span data-value="155" data-sum="interested">155</span></td>
-              <td className="pt-4 text-right text-lg font-semibold tabular-nums"><span data-value="49" data-sum="meetings">49</span></td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <ul className="mt-12 grid border-t border-line sm:hidden">
-          {t.rows.map(([name, what, where, rateLabel], i) => (
-            <li key={name} className={`res-li ${ROW_RULE} py-5`}>
-              <p className="font-medium">{name}</p>
-              <p className="mt-1 text-sm text-muted">{what}</p>
-              <p className="text-sm text-faint">{where}</p>
-              <p className="mt-3 text-sm text-muted"><span className="mr-1.5 text-base font-semibold text-fg tabular-nums">{pct(ROWS[i].rate)}</span>{rateLabel}</p>
-              <p className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
-                {ROWS[i].interested !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].interested}</span> {t.head[2].toLowerCase()}</span>}
-                {ROWS[i].meetings !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].meetings}</span> {t.head[3].toLowerCase()}</span>}
-              </p>
-            </li>
-          ))}
-        </ul>
 
         <h3 className="t-h3 mt-20">{t.market}</h3>
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
@@ -347,7 +256,61 @@ export default function Results() {
           })}
         </div>
 
-        <p className="mt-8 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
+        <details className="mt-8 rounded-lg border border-line p-5">
+          <summary className="cursor-pointer font-medium focus-visible:outline focus-visible:outline-accent">{t.details}</summary>
+        {/* Ledger: a table from sm up, a list on phones (the columns do not fit at 320px) */}
+        <table className="mt-6 hidden w-full text-left sm:table">
+          <thead className="text-sm text-faint">
+            <tr className="border-b border-line">
+              <th scope="col" className="pb-3 font-normal">{t.head[0]}</th>
+              <th scope="col" className="pb-3 pl-6 font-normal">{t.head[1]}</th>
+              <th scope="col" className="pb-3 pl-6 text-right font-normal">{t.head[2]}</th>
+              <th scope="col" className="pb-3 pl-6 text-right font-normal">{t.head[3]}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {t.rows.map(([name, what, where, rateLabel], i) => (
+              <tr key={name} className={`res-tr ${ROW_RULE} align-top`}>
+                <th scope="row" className="py-5 pr-4 font-normal">
+                  <span className="font-medium">{name}</span>
+                  <span className="mt-1 block text-sm text-muted">{what}</span>
+                  <span className="block text-sm text-faint">{where}</span>
+                </th>
+                <td className="py-5 pl-6">
+                  <span className="text-lg font-semibold tabular-nums">{pct(ROWS[i].rate)}</span>
+                  <span className="block max-w-[18ch] text-sm text-muted">{rateLabel}</span>
+                </td>
+                <td className="py-5 pl-6 text-right text-lg tabular-nums"><Figure value={ROWS[i].interested} none={t.none} /></td>
+                <td className="py-5 pl-6 text-right text-lg tabular-nums"><Figure value={ROWS[i].meetings} none={t.none} /></td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colSpan={2} className="pt-4 text-left font-medium">{t.total}</th>
+              <td className="pt-4 text-right text-lg font-semibold tabular-nums"><span data-value="155" data-sum="interested">155</span></td>
+              <td className="pt-4 text-right text-lg font-semibold tabular-nums"><span data-value="49" data-sum="meetings">49</span></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <ul className="mt-6 grid border-t border-line sm:hidden">
+          {t.rows.map(([name, what, where, rateLabel], i) => (
+            <li key={name} className={`res-li ${ROW_RULE} py-5`}>
+              <p className="font-medium">{name}</p>
+              <p className="mt-1 text-sm text-muted">{what}</p>
+              <p className="text-sm text-faint">{where}</p>
+              <p className="mt-3 text-sm text-muted"><span className="mr-1.5 text-base font-semibold text-fg tabular-nums">{pct(ROWS[i].rate)}</span>{rateLabel}</p>
+              <p className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
+                {ROWS[i].interested !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].interested}</span> {t.head[2].toLowerCase()}</span>}
+                {ROWS[i].meetings !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].meetings}</span> {t.head[3].toLowerCase()}</span>}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+          <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
+        </details>
 
         <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>
         <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
@@ -398,7 +361,7 @@ export default function Results() {
             );
           })}
         </div>
-        <p className="mt-8 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p>
+        <details className="mt-6 text-sm text-muted"><summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.method}</summary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
       </div>
     </section>
   );

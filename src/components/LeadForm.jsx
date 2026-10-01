@@ -9,7 +9,7 @@ const copy = {
   en: {
     name: 'Name',
     email: 'Work email',
-    company: 'Company',
+    company: 'Company (optional)',
     interest: 'What would you like to automate?',
     options: [['email', 'Outbound on cold email'], ['support', 'A support agent on chat'], ['unsure', 'Not sure yet']],
     message: 'Anything we should know?',
@@ -25,7 +25,7 @@ const copy = {
   it: {
     name: 'Nome',
     email: 'Email di lavoro',
-    company: 'Azienda',
+    company: 'Azienda (facoltativo)',
     interest: 'Cosa vorresti automatizzare?',
     options: [['email', 'Outbound via email a freddo'], ['support', 'Un agente per l’assistenza in chat'], ['unsure', 'Non lo so ancora']],
     message: 'Qualcosa che dovremmo sapere?',

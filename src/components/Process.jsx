@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, ScrollTrigger, useGSAP, MOTION_OK, RISE, riseOnScroll, drawRule, later } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, RISE, riseOnScroll, drawRule, later } from '../lib/motion';
 
 const copy = {
   en: {
@@ -8,19 +8,19 @@ const copy = {
     steps: [
       {
         title: 'A 30\u2011minute call', // non-breaking hyphen
-        body: 'We look at what you sell, who buys it and how you work today. Then we tell you plainly whether a system fits.',
+        body: 'We look at your sales or support work and tell you whether a system fits.',
       },
       {
         title: 'We build it around how you work',
-        body: 'We connect to the tools you already use, set everything up and write the messages. You approve the wording on one onboarding page, and nothing goes out before you do.',
+        body: 'We connect your tools and prepare the emails or support answers. You approve them before launch.',
       },
       {
         title: 'It runs every day',
-        body: 'Emails go out on weekdays, in business hours, within a daily limit. Replies are drafted and, by default, approved by a person. Interested buyers book into your calendar and you take the calls. You see every lead in a dashboard.',
+        body: 'Sales: personal emails, approved replies by default, booked calls. Support: automatic answers, order checks and returns, with unresolved questions handed to your team.',
       },
     ],
-    tools: ['Your inbox', 'Your calendar', 'Your CRM'],
-    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    tools: ['Your inbox', 'Your calendar', 'Your shop'],
+    outcomes: ['Calls booked', 'Customers answered'],
     note: 'Illustrations.',
   },
   it: {
@@ -28,25 +28,25 @@ const copy = {
     steps: [
       {
         title: 'Una call di 30\u00a0minuti',
-        body: 'Guardiamo cosa vendi, chi lo compra e come lavori oggi. Poi ti diciamo chiaramente se un sistema fa per te.',
+        body: 'Guardiamo come trovi clienti o gestisci l’assistenza e ti diciamo se un sistema fa per te.',
       },
       {
         title: 'Lo costruiamo sul tuo modo di lavorare',
-        body: 'Ci colleghiamo agli strumenti che usi già, configuriamo tutto e scriviamo i messaggi. Approvi i testi in un’unica pagina di onboarding, e prima della tua approvazione non parte nulla.',
+        body: 'Colleghiamo i tuoi strumenti e prepariamo email o risposte per l’assistenza. Approvi tutto prima del lancio.',
       },
       {
         title: 'Lavora ogni giorno',
-        body: 'Le email partono nei giorni feriali, in orario d’ufficio, entro un limite giornaliero. Le risposte vengono preparate e, di norma, approvate da una persona. Chi è interessato prenota nel tuo calendario e tu fai le call. Vedi ogni contatto in una dashboard.',
+        body: 'Vendite: email personali, risposte di norma approvate, call prenotate. Assistenza: risposte automatiche, ordini e resi, con i casi irrisolti passati al tuo team.',
       },
     ],
-    tools: ['La tua posta', 'Il tuo calendario', 'Il tuo CRM'],
-    days: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
+    tools: ['La tua posta', 'Il calendario', 'Il negozio'],
+    outcomes: ['Call prenotate', 'Clienti assistiti'],
     note: 'Illustrazioni.',
   },
 };
 
 // One small picture per step, each a row of chips: a 30-minute slot being booked, your tools joined into one system,
-// the five working days. The .pic-in parts appear, then the .pic-draw parts draw along their length.
+// the sales and support outcomes. The .pic-in parts appear, then the .pic-draw parts draw along their length.
 // Below 360 px the tools stack, so their connectors run down instead of across.
 const chip = 'pic-in relative whitespace-nowrap rounded-md px-1.5 py-1 text-xs ring-1 ring-inset ring-line';
 const SLOTS = ['10:00', '10:30', '11:00', '11:30'];
@@ -74,48 +74,23 @@ const pictures = [
   ),
   (t) => (
     <div className="flex gap-1.5">
-      {t.days.map((d, i) => (
-        <span key={d} className={`pic-in w-8 pt-1 text-center text-xs leading-4 ${i < 5 ? 'text-muted' : 'text-faint'}`}>
-          {d}
-          <span className={`mt-0.5 block h-0.5 origin-left rounded-full ${i < 5 ? 'pic-draw bg-accent' : 'bg-line'}`} />
+      {t.outcomes.map((outcome) => (
+        <span key={outcome} className={`${chip} text-muted`}>
+          <span aria-hidden="true" className="pic-draw absolute -inset-px origin-left rounded-md border border-accent bg-accent/10" />
+          <span className="relative">{outcome}</span>
         </span>
       ))}
     </div>
   ),
 ];
 
-// A step's picture as its own timeline, so it can sit inside the scrubbed walk or play on the step's trigger.
+// A step’s picture plays once, without hiding the text.
 // One tween per part, not a stagger: after invalidateOnRefresh a nested stagger re-hides only its first element.
 function picture(li) {
   const tl = gsap.timeline();
   const ins = li.querySelectorAll('.pic-in');
   ins.forEach((el, i) => tl.from(el, { opacity: 0, y: 8, duration: 0.6, ease: RISE }, i * 0.05));
   li.querySelectorAll('.pic-draw').forEach((el, i) => tl.from(el, { [el.offsetHeight > el.offsetWidth ? 'scaleY' : 'scaleX']: 0, duration: 0.4, ease: 'power2.inOut' }, ins.length * 0.05 + 0.1 + i * 0.06));
-  return tl;
-}
-
-// One timeline for the wide layout: step 1 rises, the line draws left to right, and each step rises as the line reaches its node
-// (t runs 0 to 10). Each step stays readable after appearing.
-function walk(list, scrollTrigger) {
-  const steps = gsap.utils.toArray('.proc-step', list);
-  const T0 = 1.5, LINE = 7.5;
-  // Where each node sits along the line, 0 to 1 (the columns are not exactly thirds because of the gap). Re-read on every refresh.
-  const timeOf = (i) => (i ? T0 + ((steps[i].offsetLeft + 5.5) / list.offsetWidth) * LINE : 0);
-  const parts = steps.map(() => []); // the tweens that start when the line reaches step i
-  const tl = gsap.timeline({ defaults: { ease: 'none' } });
-  tl.fromTo('.proc-fill', { scaleX: 0 }, { scaleX: 1, duration: LINE }, T0);
-  steps.forEach((li, i) => {
-    parts[i].push(
-      tl.from(li.querySelector('.proc-node'), { scale: 0, duration: 0.6, ease: 'back.out(3)' }, timeOf(i)),
-      tl.from(li.querySelector('.proc-text'), { y: 40, opacity: 0, duration: 1.4, ease: RISE }, timeOf(i)),
-    );
-    const pic = picture(li); // a nested timeline, so place() moves it as one piece and its inner timing stays
-    tl.add(pic, timeOf(i));
-    parts[i].push(pic);
-  });
-  tl.set({}, {}, 10); // the walk ends with a beat of rest
-  const place = () => parts.forEach((tweens, i) => tweens.forEach((tw) => tw.startTime(timeOf(i))));
-  ScrollTrigger.create({ ...scrollTrigger, animation: tl, scrub: true, invalidateOnRefresh: true, onRefresh: place });
   return tl;
 }
 
@@ -141,26 +116,14 @@ export default function Process() {
       if (!conditions.motion) return;
       const list = root.current.querySelector('.proc-list');
 
-      if (conditions.wide) {
-        walk(list, { trigger: list, start: 'top 85%', end: 'top 35%' });
-        return;
-      }
-
-      // Phones and narrow screens: the line runs down the page and its tip stays at 70% of the screen, each step rises as the tip reaches it.
-      // The picture sits under the step's text, so it plays on its own trigger: with the step, or later if it is not yet fully on screen
-      // (its bottom at 95%, which is 27% of the screen below the step's own 68% line).
-      gsap.fromTo('.proc-fill', { scaleY: 0 }, {
-        scaleY: 1, ease: 'none', scrollTrigger: { trigger: list, start: 'top 70%', end: 'bottom 70%', scrub: true },
+      gsap.fromTo('.proc-fill', { [conditions.wide ? 'scaleX' : 'scaleY']: 0 }, {
+        [conditions.wide ? 'scaleX' : 'scaleY']: 1, duration: 1.4, ease: 'power2.inOut',
+        scrollTrigger: { trigger: list, start: 'top 85%', once: true },
       });
       gsap.utils.toArray('.proc-step', list).forEach((li) => {
-        gsap.timeline({ scrollTrigger: { trigger: li, start: 'top 68%', toggleActions: 'play none none reverse' } })
-          .from(li.querySelector('.proc-text'), { y: 32, opacity: 0, duration: 0.8, ease: RISE })
-          .from(li.querySelector('.proc-node'), { scale: 0, duration: 0.45, ease: 'back.out(3)' }, 0);
-        const pic = li.querySelector('.proc-pic');
-        gsap.timeline({ scrollTrigger: {
-          trigger: li, toggleActions: 'play none none reverse',
-          start: () => `top+=${Math.max(0, pic.offsetTop + pic.offsetHeight - li.offsetTop - window.innerHeight * 0.27)} 68%`,
-        } }).add(picture(li));
+        gsap.timeline({ scrollTrigger: { trigger: li, start: 'top 90%', once: true } })
+          .from(li.querySelector('.proc-node'), { scale: 0, duration: 0.5, ease: 'back.out(2)' })
+          .add(picture(li), 0);
       });
     });
     return () => mm.revert();

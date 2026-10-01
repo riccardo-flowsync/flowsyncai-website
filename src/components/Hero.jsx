@@ -6,18 +6,18 @@ import { gsap, useGSAP, SplitText, MOTION_OK, RISE, later, startAt } from '../li
 
 const copy = {
   en: {
-    title: 'AI systems that find your clients, answer them and book the meeting.',
-    sub: 'We find the companies that fit, write to each one and handle the replies. Interested buyers land on your calendar, and by default a person approves every reply.',
+    title: 'AI that books sales calls and answers your customers.',
+    sub: 'Cold email that brings buyers to your calendar. Support agents that handle questions, orders and returns. Built and run for you.',
     book: 'Book a call',
     results: 'See the results',
-    proof: 'meetings booked across five B2B campaigns on cold email and LinkedIn, in the UK, Europe and the UAE.',
+    proof: 'meetings booked across five past B2B campaigns, on cold email and LinkedIn.',
   },
   it: {
-    title: 'Sistemi AI che trovano i tuoi clienti, rispondono e fissano la call.',
-    sub: 'Troviamo le aziende giuste, scriviamo a ognuna e gestiamo le risposte. Chi è interessato finisce nel tuo calendario e, di norma, ogni risposta la approva una persona.',
+    title: 'AI che fissa call e risponde ai tuoi clienti.',
+    sub: 'Email a freddo che portano clienti nel tuo calendario. Assistenti che gestiscono domande, ordini e resi. Costruiti e gestiti per te.',
     book: 'Prenota una call',
     results: 'Guarda i risultati',
-    proof: 'appuntamenti fissati in cinque campagne B2B via email e LinkedIn, tra Regno Unito, Europa ed Emirati.',
+    proof: 'appuntamenti fissati in cinque campagne B2B passate, via email e LinkedIn.',
   },
 };
 

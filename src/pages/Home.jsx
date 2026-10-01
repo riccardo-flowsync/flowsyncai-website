@@ -8,8 +8,8 @@ import ScrollProgress from '../components/ScrollProgress';
 import { useCopy } from '../lib/lang';
 
 const copy = {
-  en: { docTitle: 'FlowSync AI Solutions: AI systems that book B2B meetings' },
-  it: { docTitle: 'FlowSync AI Solutions: sistemi AI che portano appuntamenti B2B' },
+  en: { docTitle: 'FlowSync AI Solutions: AI for sales and customer support' },
+  it: { docTitle: 'FlowSync AI Solutions: AI per vendite e assistenza clienti' },
 };
 
 export default function Home() {
