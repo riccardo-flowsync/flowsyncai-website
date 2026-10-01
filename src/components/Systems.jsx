@@ -147,9 +147,32 @@ function chatScene(stage, st) {
     tl.to(act, { autoAlpha: 1, duration: 0.25 }, at)
       .to(act.querySelector('.ch-dot'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at);
     if (i === 0) lightChip(tl, chips[1], at);
-    if (i === 2) lightChip(tl, chips[2], at);
+    if (i === 2) lightChip(tl, chips[2], at).addLabel('handover', at);
   });
   return finish(tl, st);
+}
+
+// The line icon beside the index (wide screens with a mouse only): an envelope while the outbound system is on screen, a chat
+// bubble as the support scene starts (the moment the index moves to it), a ticket at the hand-over. Its tweens live inside the
+// support scene's timeline, so it scrubs and rewinds with it. Elsewhere (touch, reduced motion) it stays hidden: a still envelope
+// would be wrong half the time, and the index already says which system is on screen.
+// The plugin is fetched only under HOLD, so phones never download it. Its dist build carries its own path helpers: the module
+// build shares them with CustomEase, which would pull about 3 KB (gzip) into the main bundle.
+const ICON = {
+  envelope: 'M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3.5 7.5 12 13l8.5-5.5',
+  bubble: 'M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8 10.5h8',
+  ticket: 'M5 5h14a2 2 0 0 1 2 2v2.5a2.5 2.5 0 0 0 0 5V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.5a2.5 2.5 0 0 0 0-5V7a2 2 0 0 1 2-2zM15 8v8',
+};
+let morphReady;
+const loadMorph = () => (morphReady ??= import('gsap/dist/MorphSVGPlugin.js').then(({ MorphSVGPlugin }) => gsap.registerPlugin(MorphSVGPlugin)));
+
+function morphIcon(tl, icon) {
+  const path = icon.firstElementChild;
+  gsap.set(icon, { opacity: 1 });
+  tl.to(path, { morphSVG: ICON.bubble, duration: 0.5 }, 0.2) // mid-morph as the index moves to support
+    .to(path, { morphSVG: ICON.ticket, duration: 0.4 }, 'handover');
+  const p = tl.progress(); // added after the scene may already have scrolled: draw the icon where the scene is
+  tl.progress(0).progress(p);
 }
 
 // How much scroll each held stage takes, in screens (Systems total: 1.5)
@@ -268,10 +291,12 @@ export default function Systems() {
       const plan = () => articles.map((a) => (!hold ? -1 : fitsScreen(natural(a)) ? 0 : fitsScreen(a.querySelector('[data-stage]')) ? 1 : -1)).join();
       let inner;
       let key;
+      let alive = true;
       const build = () => {
         inner?.revert();
         key = plan();
         const modes = key.split(',');
+        let chatTl;
         inner = gsap.context(() => {
           articles.forEach((article, i) => {
             const { run, hold: screens } = SCENES[article.dataset.system];
@@ -288,16 +313,19 @@ export default function Systems() {
               refreshPriority: 0,
             });
             // The scene starts as the picture comes into view, so it never scrolls up empty, and ends with the hold
-            run(stage, pin
+            const tl = run(stage, pin
               ? { trigger: stage, pinnedContainer: pinned, start: 'top 85%', end: () => pin.end, scrub: 0.5, invalidateOnRefresh: true, refreshPriority: 0 }
               : hold
                 ? { trigger: stage, start: 'top 80%', end: 'bottom 40%', scrub: 0.5, refreshPriority: 0 }
                 : { trigger: stage, start: 'top 70%', once: true, refreshPriority: 0 });
+            if (article.dataset.system === 'support') chatTl = tl;
           });
         }, root.current);
+        if (!hold) return;
+        const ctx = inner;
+        loadMorph().then(() => { if (alive && inner === ctx) ctx.add(() => morphIcon(chatTl, root.current.querySelector('.sys-icon'))); });
       };
       build();
-      let alive = true;
       const recheck = () => {
         if (plan() === key) return;
         requestAnimationFrame(() => {
@@ -323,17 +351,22 @@ export default function Systems() {
           <div className="lg:sticky lg:top-28">
             <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
             <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
-            <ol className="mt-10 hidden gap-3 border-l border-line lg:grid">
-              {t.systems.map((s) => (
-                <li
-                  key={s.id}
-                  data-index={s.id}
-                  className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
-                >
-                  {s.name}
-                </li>
-              ))}
-            </ol>
+            <div className="mt-10 hidden items-center gap-8 lg:flex">
+              <ol className="grid gap-3 border-l border-line">
+                {t.systems.map((s) => (
+                  <li
+                    key={s.id}
+                    data-index={s.id}
+                    className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
+                  >
+                    {s.name}
+                  </li>
+                ))}
+              </ol>
+              <svg aria-hidden="true" data-motion-only className="sys-icon h-9 w-9 shrink-0 text-muted opacity-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                <path d={ICON.envelope} />
+              </svg>
+            </div>
           </div>
         </div>
 
