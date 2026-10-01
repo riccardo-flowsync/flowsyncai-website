@@ -157,7 +157,7 @@ export default function WorkflowTrace({ held = false, scene }) {
                 </p>
               )}
               {s.tag && (
-                <span className="trace-detail mt-1 inline-block rounded-md bg-accent/15 px-2 py-0.5 font-mono text-[0.78rem] text-accent">
+                <span data-handover="from" className="trace-detail mt-1 inline-block rounded-md bg-accent/15 px-2 py-0.5 font-mono text-[0.78rem] text-accent">
                   {s.tag}
                 </span>
               )}
