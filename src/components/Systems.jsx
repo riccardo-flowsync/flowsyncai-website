@@ -222,7 +222,7 @@ function Inbox({ t, lang }) {
           <li key={who} className={`ib-row rounded-lg px-3.5 py-3 ${i === 0 ? 'bg-raised' : ''}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium">{who}</span>
-              <span key={lang} className={`ib-tag rounded-md px-2 py-0.5 font-mono text-[0.72rem] ${i === 0 ? 'bg-accent/15 text-accent' : 'bg-raised text-faint'}`}>{tag}</span>
+              <span key={lang} data-handover={i === 0 ? 'to' : undefined} className={`ib-tag rounded-md px-2 py-0.5 font-mono text-[0.72rem] ${i === 0 ? 'bg-accent/15 text-accent' : 'bg-raised text-faint'}`}>{tag}</span>
             </div>
             <p className="mt-1 text-sm text-muted">{text}</p>
           </li>
@@ -263,6 +263,8 @@ function Chat({ t }) {
     </Panel>
   );
 }
+
+let handover; // lib/handover.js once fetched: a language switch then remounts it in the same frame, not a few frames later
 
 export default function Systems() {
   const t = useCopy(copy);
@@ -361,6 +363,20 @@ export default function Systems() {
         ScrollTrigger.removeEventListener('refresh', recheck);
         inner.revert();
       };
+    });
+    return () => mm.revert();
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+
+  // The "interested" tag of the hero's example run files itself on the first reply here (lib/handover.js). Mouse screens only.
+  useGSAP((context) => later(context, () => {
+    const mm = gsap.matchMedia();
+    mm.add(HOLD, () => {
+      let stop;
+      let gone = false;
+      const go = (m) => { handover = m; if (!gone) stop = m.default(); };
+      if (handover) go(handover);
+      else import('../lib/handover').then(go).catch(() => {});
+      return () => { gone = true; stop?.(); };
     });
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
