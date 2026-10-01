@@ -19,6 +19,9 @@ const copy = {
         body: 'Emails go out on weekdays, in business hours, within a daily limit. Replies are drafted and, by default, approved by a person. Interested buyers book into your calendar and you take the calls. You see every lead in a dashboard.',
       },
     ],
+    tools: ['Your inbox', 'Your calendar', 'Your CRM'],
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    note: 'Illustrations.',
   },
   it: {
     title: 'Dalla prima call a un sistema che lavora ogni giorno.',
@@ -36,8 +39,59 @@ const copy = {
         body: 'Le email partono nei giorni feriali, in orario d’ufficio, entro un limite giornaliero. Le risposte vengono preparate e, di norma, approvate da una persona. Chi è interessato prenota nel tuo calendario e tu fai le call. Vedi ogni contatto in una dashboard.',
       },
     ],
+    tools: ['La tua email', 'Il tuo calendario', 'Il tuo CRM'],
+    days: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
+    note: 'Illustrazioni.',
   },
 };
+
+// One small picture per step, each a row of chips: a 30-minute slot being booked, your tools joined into one system,
+// the five working days. The .pic-in parts appear, then the .pic-draw parts (the accent signal) draw along their length.
+// Below lg the tools stack, so their connectors run down instead of across.
+const chip = 'pic-in relative whitespace-nowrap rounded-md px-1.5 py-1 text-xs ring-1 ring-inset ring-line';
+const SLOTS = ['10:00', '10:30', '11:00', '11:30'];
+const pictures = [
+  () => (
+    <div className="flex gap-1.5">
+      {SLOTS.map((s, i) => (
+        <span key={s} className={`${chip} ${i === 1 ? 'text-accent' : 'text-faint'}`}>
+          {i === 1 && <span className="pic-draw absolute -inset-px origin-left rounded-md border border-accent bg-accent/15" />}
+          <span className="relative">{s}</span>
+        </span>
+      ))}
+    </div>
+  ),
+  (t) => (
+    <div className="flex flex-col items-start lg:flex-row lg:items-center">
+      {t.tools.map((s, i) => (
+        <span key={s} className="contents">
+          {i > 0 && <span className="pic-draw ml-3 h-2.5 w-px shrink-0 origin-top bg-accent lg:ml-0 lg:h-px lg:w-2 lg:origin-left" />}
+          <span className={`${chip} text-muted`}>{s}</span>
+        </span>
+      ))}
+    </div>
+  ),
+  (t) => (
+    <div className="flex gap-1.5">
+      {t.days.map((d, i) => (
+        <span key={d} className={`pic-in w-8 pt-1 text-center text-xs leading-4 ${i < 5 ? 'text-fg' : 'text-faint'}`}>
+          {d}
+          <span className={`mt-0.5 block h-0.5 origin-left rounded-full ${i < 5 ? 'pic-draw bg-accent' : 'bg-line'}`} />
+        </span>
+      ))}
+    </div>
+  ),
+];
+
+// A step's picture as its own timeline, so it can sit inside the scrubbed walk or play on the step's trigger.
+// One tween per part, not a stagger: after invalidateOnRefresh a nested stagger re-hides only its first element.
+function picture(li) {
+  const tl = gsap.timeline();
+  const ins = li.querySelectorAll('.pic-in');
+  ins.forEach((el, i) => tl.from(el, { opacity: 0, y: 8, duration: 0.6, ease: RISE }, i * 0.1));
+  li.querySelectorAll('.pic-draw').forEach((el, i) => tl.from(el, { [el.offsetHeight > el.offsetWidth ? 'scaleY' : 'scaleX']: 0, duration: 0.5, ease: 'power2.inOut' }, ins.length * 0.1 + 0.25 + i * 0.1));
+  return tl;
+}
 
 // One timeline for the wide layout: step 1 rises, the line draws left to right, and each step rises as the line reaches its node
 // (t runs 0 to 10). When held, the step before settles to 75% opacity: still above the faint colour, never invisible.
@@ -54,6 +108,9 @@ function walk(list, scrollTrigger, settle) {
       tl.from(li.querySelector('.proc-node'), { scale: 0, duration: 0.6, ease: 'back.out(3)' }, timeOf(i)),
       tl.from(li.querySelector('.proc-text'), { y: 40, opacity: 0, duration: 1.4, ease: RISE }, timeOf(i)),
     );
+    const pic = picture(li); // a nested timeline, so place() moves it as one piece and its inner timing stays
+    tl.add(pic, timeOf(i));
+    parts[i].push(pic);
     if (settle && i) parts[i].push(tl.to(steps[i - 1].querySelector('.proc-text'), { opacity: 0.75, duration: 1.4 }, timeOf(i)));
   });
   tl.set({}, {}, 10); // the walk ends with a beat of rest
@@ -111,7 +168,8 @@ export default function Process() {
       gsap.utils.toArray('.proc-step', list).forEach((li) => {
         gsap.timeline({ scrollTrigger: { trigger: li, start: 'top 68%', toggleActions: 'play none none reverse' } })
           .from(li.querySelector('.proc-text'), { y: 32, opacity: 0, duration: 0.8, ease: RISE })
-          .from(li.querySelector('.proc-node'), { scale: 0, duration: 0.45, ease: 'back.out(3)' }, 0);
+          .from(li.querySelector('.proc-node'), { scale: 0, duration: 0.45, ease: 'back.out(3)' }, 0)
+          .add(picture(li), 0.3);
       });
     });
     return () => mm.revert();
@@ -121,24 +179,31 @@ export default function Process() {
     <section id="process" ref={root} className="rule py-24 lg:py-32">
       <div className="page">
         <h2 key={lang} className="proc-title t-h2 max-w-[22ch]">{t.title}</h2>
-        <div className="proc-list relative mt-14 lg:mt-20">
-          {/* Vertical on phones and tablets, horizontal from lg */}
-          <div aria-hidden="true" className="absolute bottom-2 left-[5px] top-2 w-px bg-line lg:bottom-auto lg:left-0 lg:right-0 lg:top-[5px] lg:h-px lg:w-auto">
-            <div className="proc-fill h-full w-full origin-top bg-accent lg:origin-left" />
-          </div>
-          <ol className="relative grid gap-12 lg:grid-cols-3 lg:gap-12">
-            {t.steps.map((s) => (
-              <li key={s.title} className="proc-step grid grid-cols-[11px_1fr] gap-x-6 lg:block">
-                <span aria-hidden="true" className="mt-2 grid h-[11px] w-[11px] place-items-center rounded-full border border-line bg-canvas lg:mt-0">
+        <div className="proc-list relative mt-14 lg:mt-10">
+          {/* From lg the three steps share three rows (subgrid): pictures, then the line with its nodes, then the text.
+              Phones and tablets: one column per step, the picture under the text. */}
+          <ol className="relative grid gap-12 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-0">
+            {/* The line: vertical on phones and tablets, horizontal from lg in the nodes' row */}
+            <li aria-hidden="true" className="absolute bottom-2 left-[5px] top-2 w-px bg-line lg:bottom-auto lg:left-0 lg:right-0 lg:row-start-2 lg:row-end-3 lg:top-[5px] lg:h-px lg:w-auto">
+              <div className="proc-fill h-full w-full origin-top bg-accent lg:origin-left" />
+            </li>
+            {t.steps.map((s, i) => (
+              <li key={s.title} className="proc-step grid grid-cols-[11px_1fr] gap-x-6 lg:row-span-3 lg:grid-cols-1 lg:grid-rows-subgrid">
+                <span aria-hidden="true" className="relative mt-2 grid h-[11px] w-[11px] place-items-center rounded-full border border-line bg-canvas lg:row-start-2 lg:mt-0">
                   <span className="proc-node h-[5px] w-[5px] rounded-full bg-accent" />
                 </span>
-                <div className="proc-text lg:mt-9 lg:pr-4">
+                <div className="proc-text lg:row-start-3 lg:mt-9 lg:pr-4">
                   <h3 className="t-h3">{s.title}</h3>
                   <p className="mt-3 text-muted">{s.body}</p>
+                </div>
+                <div aria-hidden="true" className="col-start-2 mt-5 select-none lg:col-start-1 lg:row-start-1 lg:mb-4 lg:mt-0">
+                  {pictures[i](t)}
                 </div>
               </li>
             ))}
           </ol>
+          {/* Absolute from lg: it sits in the section's bottom padding and costs the pinned scene no height */}
+          <p className="mt-10 text-xs text-faint lg:absolute lg:top-full lg:mt-10">{t.note}</p>
         </div>
       </div>
     </section>
