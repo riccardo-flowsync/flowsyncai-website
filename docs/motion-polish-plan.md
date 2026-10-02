@@ -15,4 +15,4 @@
 - `node scripts/check-booking-dots.mjs` passed, preserving the existing calendar interaction.
 - Lighthouse mobile performance: 95/100, 2.5-second largest contentful paint, 60 ms total blocking time, no layout shift. Measured on the production build with other browser checks stopped.
 - Desktop and mobile examples, mobile navigation, and FAQ opening were also checked visually.
-- [Pull request #4](https://github.com/riccardo-flowsync/flowsyncai-website/pull/4) has a ready Vercel preview. The demo-control checks passed against the deployed preview in both normal and reduced motion.
+- [Pull request #4](https://github.com/riccardo-flowsync/flowsyncai-website/pull/4) has a ready Vercel preview. Approval was verified in the deployed preview through the browser. The isolated external test browser could not reach the app, so automated interaction checks were verified on the local production build.
