@@ -1,13 +1,19 @@
 // Record the home story in Chrome and save repeatable review captures.
 // Run after `npm run build`: node scripts/record-cinematic.mjs [preview URL]
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 import { preview } from 'vite';
 
 process.env.PATH = `/opt/homebrew/bin:${process.env.PATH || ''}`;
 const output = resolve('.impeccable/review');
 await mkdir(output, { recursive: true });
+// Puppeteer places -framerate after the input; FFmpeg then reads PNGs at its 25fps default.
+// Set the input rate too, so a captured second plays back as one second.
+const ffmpeg = resolve(output, 'ffmpeg-input-rate.sh');
+await writeFile(ffmpeg, '#!/bin/sh\nexec /opt/homebrew/bin/ffmpeg -framerate 60 "$@"\n', { mode: 0o755 });
 const server = process.argv[2] ? null : await preview({ logLevel: 'silent' });
 const base = process.argv[2] || server.resolvedUrls.local[0];
 const origin = new URL(base).origin;
@@ -47,7 +53,8 @@ async function capture(view) {
   await page.evaluate(() => document.fonts.ready);
   await roomReady(page);
   await sleep(1200);
-  const recorder = await page.screencast({ path: video, fps: 24, quality: 30, ffmpegPath: '/opt/homebrew/bin/ffmpeg' });
+  const recorder = await page.screencast({ path: video, fps: 60, quality: 30, ffmpegPath: ffmpeg });
+  const began = performance.now();
   try {
     await sleep(2500);
     await page.screenshot({ path: `${output}/${name}.png` });
@@ -56,9 +63,13 @@ async function capture(view) {
       const wide = innerWidth >= 1000 && viewport >= 700;
       return [wide ? top - 88 : top - viewport * 0.65, wide ? top + height - viewport : top + height - viewport * 0.45];
     });
+    const record = range[0] + (range[1] - range[0]) * 0.38;
+    await moveTo(page, record, 2000);
+    await sleep(900);
     const scene = range[0] + (range[1] - range[0]) * 0.62;
-    await moveTo(page, scene, 2600);
+    await moveTo(page, scene, 900);
     await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '2', { timeout: 5000 });
+    await sleep(1000);
     const complete = range[0] + (range[1] - range[0]) * 0.94;
     await moveTo(page, complete, 1800);
     await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '3', { timeout: 5000 });
@@ -85,7 +96,12 @@ async function capture(view) {
       await page.screenshot({ path: `${output}/outreach.png` });
     }
   } finally {
+    const elapsed = (performance.now() - began) / 1000;
     await recorder.stop();
+    const timestamps = execFileSync('/opt/homebrew/bin/ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'packet=pts_time', '-of', 'csv=p=0', video], { encoding: 'utf8' }).trim().split('\n');
+    const playback = Number(timestamps.at(-1));
+    assert(Math.abs(playback - elapsed) < 1, `${name}: recording time base differs from real elapsed time (${playback}s / ${elapsed}s)`);
+    console.log(`${name}: ${playback.toFixed(1)}s playback / ${elapsed.toFixed(1)}s capture`);
   }
   await page.close();
 }

@@ -82,6 +82,7 @@ try {
   await page.keyboard.press('ArrowDown');
   await page.waitForSelector('#services-menu a');
   assert.deepEqual(await page.$$eval('#services-menu a', (links) => links.map((a) => a.textContent.trim())), ['AI outreach', 'AI agents'], 'Services menu contains only the two services');
+  await page.waitForFunction(() => document.activeElement?.textContent.trim() === 'AI outreach');
   assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'AI outreach', 'ArrowDown opens and focuses the first service');
   await page.keyboard.press('Escape');
   assert.equal(await page.$('#services-menu'), null, 'Escape closes the services menu');

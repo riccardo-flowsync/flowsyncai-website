@@ -89,7 +89,7 @@ components:
 
 FlowSync is shown as a place where business work moves through real tools. Graphite architecture, sculpted work surfaces and directional white and lavender light give the pages depth; large, readable Mona Sans keeps the work in front. The existing FlowSync mark remains part of the header.
 
-Motion follows the visitor's scroll and reverses with it. Work surfaces settle into readable holds. The scenes use native HTML for their words and controls, so the experience remains useful without WebGL or when motion is reduced. English and Italian are both first-class layouts.
+Scroll selects workflow beats and reverses their order. Within each beat, a short interruptible transition reveals new work: record fields, business rules or a draft, then the completed action or review-ready reply. Step buttons offer direct control. Work surfaces settle into short readable holds. The scenes use native HTML for their words and controls, so the experience remains useful without WebGL or when motion is reduced. English and Italian are both first-class layouts.
 
 **Key Characteristics:**
 - Graphite base with lavender reserved for calls to action and meaningful states.
@@ -174,7 +174,9 @@ Controls use gently rounded corners (8px). Work surfaces use a more sculpted 12p
 
 ### Workspace scene
 - **Character:** layered request, record and action surfaces show a task moving through tools.
-- **Motion:** surfaces follow normal scroll, settle in sequence and reverse on the way back. The scroll wheel is never captured.
+- **Motion:** scroll chooses the beat; local transitions settle in 160–360ms regardless of scroll speed. Desktop uses a short 155svh track, mobile uses natural flow. Step buttons work with mouse, keyboard and touch. The scroll wheel is never captured.
+- **Causality:** record values appear after lookup, rules or draft follow the record, and the action receipt appears only at completion. Outreach clearly labels the later illustrative reply and keeps it ready for human review.
+- **Environment:** restrained camera travel, fixed roll and antialiased edges keep attention on the tool action. The opening headline stays readable during scrolling.
 - **Content:** every synthetic demonstration is labelled illustrative. HTML carries the actual text and progress state; the canvas is decorative and hidden from assistive technology.
 
 ## Do's and Don'ts

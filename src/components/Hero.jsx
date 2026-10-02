@@ -14,10 +14,9 @@ export default function Hero() {
     const mm = gsap.matchMedia();
     mm.add(MOTION_OK, (ctx) => {
       later(ctx, () => {
-      gsap.from('.hero-line', { y: 24, opacity: 0.65, duration: 0.8, stagger: 0.1, ease: 'power3.out' });
-      const tl = gsap.timeline({ scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: 0.35 } });
-      tl.to('.hero-copy', { y: -65, opacity: 0.2, ease: 'none' }, 0)
-        .fromTo('.hero-workbench', { rotateX: 35, rotateY: -12, y: 55 }, { rotateX: 0, rotateY: 0, y: -90, ease: 'none' }, 0);
+      gsap.from('.hero-line', { y: 24, opacity: 0.65, duration: 0.5, stagger: 0.055, ease: 'power3.out' });
+      gsap.from('.workbench-flow span', { y: 8, opacity: 0.35, duration: 0.28, stagger: 0.12, delay: 0.15, ease: 'power3.out' });
+      gsap.to('.hero-workbench', { y: -28, ease: 'none', scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true } });
       }, true);
     });
     return () => mm.revert();

@@ -5,18 +5,18 @@ let width = 1, height = 1, progress = 0, visible = true;
 const draw = () => {
   if (!ready || !visible) return;
   const mobile = width < 700;
-  camera.position.set(mobile ? 0.6 : -0.5 + progress * 1.6, 0.5 - progress * 0.8, (mobile ? 17 : 13) - progress * (mobile ? 2 : 6));
+  camera.position.set(mobile ? 0.6 : -0.5 + progress * 0.45, 0.5 - progress * 0.25, (mobile ? 17 : 13) - progress * (mobile ? 0.6 : 1.5));
   camera.lookAt(0, 0, -4);
-  group.rotation.y = -0.18 + progress * 0.35;
-  group.rotation.z = -0.19 + progress * 0.12;
-  surfaces.forEach((surface, i) => { surface.rotation.y = progress * (i % 2 ? -0.35 : 0.35); });
+  group.rotation.y = -0.18 + progress * 0.08;
+  group.rotation.z = -0.19;
+  surfaces.forEach((surface, i) => { surface.rotation.y = progress * (i % 2 ? -0.08 : 0.08); });
   renderer.render(scene, camera);
   postMessage({ type: 'rendered' });
 };
 self.onmessage = async ({ data }) => {
   if (data.type === 'init') {
     try {
-      renderer = new THREE.WebGLRenderer({ canvas: data.canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+      renderer = new THREE.WebGLRenderer({ canvas: data.canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
       data.canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); ready = false; postMessage({ type: 'fallback' }); });
       renderer.setPixelRatio(data.ratio);
       renderer.setClearColor(0x0a0a0b, 0);

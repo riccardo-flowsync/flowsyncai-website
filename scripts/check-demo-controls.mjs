@@ -28,7 +28,24 @@ try {
     const initialStep = reduced ? '3' : '0';
     await page.waitForFunction((step) => [...document.querySelectorAll('.tool-theatre')].every((scene) => scene.dataset.step === step), { timeout: 5000 }, initialStep);
     assert.equal(await page.$$eval('.tool-theatre', (scenes, step) => scenes.every((scene) => scene.dataset.step === step), initialStep), true, `Story starts at step ${initialStep}`);
+    // A visitor can inspect any step directly, without waiting for a scroll animation.
+    const sceneTop = await page.$eval('.story-track', (track) => track.getBoundingClientRect().top + scrollY - 88);
+    await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), sceneTop);
+    await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === (matchMedia('(prefers-reduced-motion: reduce)').matches ? '3' : '0'));
+    await page.focus('.story-steps li:last-child button');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '3');
+    assert.equal(await page.$eval('.tool-result strong', (el) => el.textContent), 'A relevant reply. Your decision.');
+    assert.equal(await page.$eval('.story-steps li:last-child button', (el) => el.getAttribute('aria-pressed')), 'true');
+    await page.evaluate(() => scrollBy({ top: 8, behavior: 'instant' }));
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.$eval('.tool-theatre', (el) => el.dataset.step), '3', 'Settling scroll or focus must not undo a chosen step');
+    await page.focus('.story-steps li:nth-child(2) button');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '1');
+    assert.equal(await page.$eval('.tool-status', (el) => el.textContent), 'Research attached');
     if (!reduced) {
+      await page.mouse.wheel({ deltaY: 1 });
       const range = await page.$eval('.story-track', (track) => {
         const top = track.getBoundingClientRect().top + scrollY;
         return [top - 88, top + track.offsetHeight - innerHeight];
@@ -37,6 +54,9 @@ try {
       for (const [index, y] of positions.entries()) {
         await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
         await page.waitForFunction((step) => Number(document.querySelector('.tool-theatre').dataset.step) === step, { timeout: 2500 }, Math.min(3, index));
+        assert.equal(await page.$eval('.tool-field-value', (el) => el.getAttribute('aria-hidden')), index === 0 ? 'true' : 'false', 'Record details appear after research');
+        assert.equal(await page.$eval('.tool-action-content', (el) => el.dataset.ready), index >= 2 ? 'true' : 'false', 'Draft appears after the record');
+        assert.equal(await page.$eval('.tool-action-reply', (el) => el.getAttribute('aria-hidden')), index === 3 ? 'false' : 'true', 'The later reply only appears in the last beat');
       }
       await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), positions[1]);
       await page.waitForFunction(() => Number(document.querySelector('.tool-theatre').dataset.step) < 3, { timeout: 2500 });
@@ -47,7 +67,7 @@ try {
       await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false });
       await page.waitForFunction(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
       await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
-      await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '3', { timeout: 2500 });
+      await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '3' && getComputedStyle(document.querySelector('.tool-result strong')).visibility === 'visible', { timeout: 2500 });
       assert.equal(await page.$eval('.tool-result strong', (el) => getComputedStyle(el).visibility === 'visible' && el.textContent.trim().length > 0), true, 'Reduced motion completes the scene mid-session');
       await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
       await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));

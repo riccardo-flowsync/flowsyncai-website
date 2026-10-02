@@ -183,7 +183,7 @@
   *,
   *::before,
   *::after {
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
   }
   .faq details::details-content {
     transition: none;
@@ -218,8 +218,11 @@
 .story-description { color: #b9b5c1; margin-top: 20px; max-width: 43ch; }
 .story-link { display: inline-flex; align-items: center; gap: 15px; margin-top: 28px; padding: 12px 0; color: #d4c3ff; font-weight: 500; }
 .story-link:hover { color: #f4f3ed; }
-.story-steps { margin-top: 35px; display: grid; gap: 13px; }
-.story-steps li { display: flex; gap: 12px; align-items: center; font-size: .83rem; color: #b3b1aa; }
+.story-steps { margin-top: 24px; display: grid; gap: 0; }
+.story-steps li { font-size: .83rem; color: #b3b1aa; }
+.story-steps button { display: flex; gap: 12px; align-items: center; text-align: left; min-height: 44px; width: 100%; border-radius: 6px; }
+.story-steps button:hover { color: #f4f3ed; }
+.story-steps button:active .step-mark { transform: scale(.94); }
 .step-mark { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid #56505f; border-radius: 50%; font-size: .7rem; }
 .story-steps [data-current=true] { color: #e6ddff; }
 .story-steps [data-current=true] .step-mark, .story-steps [data-complete=true] .step-mark { background: #9d7cff; color: #0a0a0b; border-color: #9d7cff; }
@@ -237,11 +240,36 @@
 .tool-action { margin: 20px 0 0 5%; width: 92%; z-index: 3; background: linear-gradient(145deg,#28242e,#141217); }
 .tool-status { font-size: .67rem; margin-left: auto; color: #d4c3ff; }
 .tool-action h3 { font-size: 1.08rem; padding: 18px 20px 0; }
-.tool-action > p { padding: 12px 20px 22px; color: #bcb6c5; font-size: .85rem; line-height: 1.6; }
+.tool-action-content p { padding: 12px 20px 22px; color: #bcb6c5; font-size: .85rem; line-height: 1.6; }
 .tool-result { display: flex; align-items: flex-start; gap: 12px; margin: 0 16px 16px; padding: 16px; background: #292235; border-radius: 8px; color: #d8caff; }
 .tool-result > svg { flex-shrink: 0; margin-top: 2px; }
 .tool-result strong { display: block; font-size: .83rem; font-weight: 550; }
 .tool-result span { display: block; font-size: .75rem; margin-top: 6px; color: #bdb3cf; }
+/* Each beat reveals a new fact, while the surrounding workspace stays readable. */
+.tool-surface { transition: transform 360ms cubic-bezier(.16,1,.3,1); }
+.tool-theatre[data-step="0"] .tool-record { transform: translate3d(0,16px,-25px) rotateY(-5deg); }
+.tool-theatre[data-step="0"] .tool-action,
+.tool-theatre[data-step="1"] .tool-action { transform: translate3d(0,24px,-40px) rotateX(5deg); }
+.tool-field dd { position: relative; }
+.tool-field-value { display: inline-block; transition: opacity 180ms linear, transform 280ms cubic-bezier(.16,1,.3,1); }
+.tool-field[data-ready="false"] .tool-field-value { opacity: 0; transform: translateY(8px); }
+.tool-field-placeholder { position: absolute; inset: 5px 0; background: #ffffff13; border-radius: 3px; opacity: 0; transition: opacity 140ms linear; }
+.tool-field[data-ready="false"] .tool-field-placeholder { opacity: 1; }
+.tool-action-content { display: grid; position: relative; }
+.tool-action-draft, .tool-action-reply, .tool-action-pending { grid-area: 1 / 1; transition: opacity 160ms linear, transform 320ms cubic-bezier(.16,1,.3,1), visibility 160ms; }
+.tool-action-content [data-shown="false"], .tool-action-content[data-ready="false"] > :not(.tool-action-pending) { opacity: 0; visibility: hidden; transform: translateY(12px); }
+.tool-action-content[data-ready="true"] .tool-action-pending { opacity: 0; visibility: hidden; }
+.tool-action-content .tool-action-pending { align-self: center; padding: 30px 20px; color: #bcb6c5; }
+.tool-rules { display: grid; gap: 12px; padding: 18px 20px 24px; }
+.tool-rules li { display: flex; gap: 10px; align-items: center; color: #d8caff; font-size: .83rem; transition: opacity 180ms linear, transform 280ms cubic-bezier(.16,1,.3,1); }
+.tool-rules svg { flex-shrink: 0; }
+.tool-action-content[data-ready="false"] .tool-rules li { opacity: 0; transform: translateY(8px); }
+.tool-reply-tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 18px; font-size: .72rem; color: #d8caff; }
+.tool-reply-tags span { background: #34293f; padding: 4px 8px; border-radius: 4px; }
+.tool-result { transition: transform 280ms cubic-bezier(.16,1,.3,1), opacity 180ms linear; }
+.tool-result[data-ready="false"] { transform: translateY(8px); opacity: 0; visibility: hidden; }
+.tool-result[data-ready="true"] > svg { animation: action-confirm 280ms cubic-bezier(.16,1,.3,1); }
+@keyframes action-confirm { from { transform: scale(.75); } to { transform: scale(1); } }
 .scene-notice { color: #a29ca9; font-size: .7rem; line-height: 1.5; margin: 24px 0 0; max-width: 45ch; }
 .story-interaction { position: relative; background: #0a0a0b; }
 .cinematic-process { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; padding-top: 140px; padding-bottom: 140px; }
@@ -258,7 +286,7 @@
 .cinematic-close h2 { font-size: clamp(2.5rem,4.6vw,4.4rem); line-height: 1.1; max-width: 20ch; }
 .cinematic-close p { color: #b3b1aa; margin-top: 22px; max-width: 34ch; font-size: .9rem; }
 @media (min-width:1000px) and (min-height:700px) and (prefers-reduced-motion:no-preference) {
-  .story-track { height: 200svh; padding: 0; }
+  .story-track { height: 155svh; padding: 0; }
   .story-stage { position: sticky; top: 70px; height: calc(100svh - 70px); min-height: 620px; }
 }
 @media (max-width:999px) {
@@ -286,8 +314,8 @@
   .story-service { font-size: 2.75rem; }
   .story-thesis { font-size: 1.5rem; }
   .story-description { font-size: .95rem; }
-  .story-steps { gap: 13px 7px; }
-  .story-steps li { font-size: .72rem; align-items: flex-start; }
+  .story-steps { gap: 0 7px; }
+  .story-steps li { font-size: .72rem; }
   .step-mark { flex-shrink: 0; }
   .tool-request { width: 88%; }
   .tool-record { width: 91%; margin-top: 15px; }
@@ -305,4 +333,7 @@
 @media (prefers-reduced-motion:reduce) {
   .workspace-environment { position: absolute; inset: 0; height: 100%; margin: 0; }
   .hero-workbench { transform: none; }
+  .tool-surface, .tool-result { transform: none !important; transition: none; opacity: 1 !important; }
+  .tool-field-value, .tool-action-content > *, .tool-rules li { transform: none !important; transition: none !important; }
+  .tool-result > svg { animation: none !important; }
 }

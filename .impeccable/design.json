@@ -103,7 +103,7 @@
   ],
   "narrative": {
     "northStar": "Cinematic workspace.",
-    "overview": "FlowSync is shown as a place where business work moves through real tools. Graphite architecture, sculpted work surfaces and directional white and lavender light give the pages depth; large, readable Mona Sans keeps the work in front. The existing FlowSync mark remains part of the header.\n\nMotion follows the visitor's scroll and reverses with it. Work surfaces settle into readable holds. The scenes use native HTML for their words and controls, so the experience remains useful without WebGL or when motion is reduced. English and Italian are both first-class layouts.",
+    "overview": "FlowSync is shown as a place where business work moves through real tools. Graphite architecture, sculpted work surfaces and directional white and lavender light give the pages depth; large, readable Mona Sans keeps the work in front. The existing FlowSync mark remains part of the header.\n\nScroll selects reversible workflow beats; short interruptible transitions reveal record fields, business rules or a draft, then an action receipt or review-ready reply. Step buttons provide direct control. The restrained camera supports the HTML work surfaces. The scenes use native HTML for their words and controls, so the experience remains useful without WebGL or when motion is reduced. English and Italian are both first-class layouts.",
     "keyCharacteristics": [
       "Graphite base with lavender reserved for calls to action and meaningful states.",
       "Layered architecture around readable HTML work surfaces.",

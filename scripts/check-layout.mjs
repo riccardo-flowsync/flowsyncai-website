@@ -60,7 +60,7 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
     const suspects = [main, ...main.querySelectorAll('*')].filter((e) => {
       const r = e.getBoundingClientRect(); // hidden on purpose: tiny boxes (honeypots), closed panels, fixed overlays (closed menus)
       // data-motion-only: a state that only exists inside an animation (a chip lighting up, a label that swaps), not content
-      return invisible(e) && (e === main || !invisible(e.parentElement)) && r.width > 2 && r.height > 2 && !e.closest('details:not([open])') && !e.closest('[data-motion-only]') && !fixed(e);
+      return invisible(e) && (e === main || !invisible(e.parentElement)) && r.width > 2 && r.height > 2 && !e.closest('details:not([open])') && !e.closest('[data-motion-only], [aria-hidden="true"]') && !fixed(e);
     }).slice(0, 50);
     const stuck = [];
     for (const e of suspects) {
@@ -101,7 +101,7 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
   if (w >= 1000 && h >= 700) {
     for (const track of document.querySelectorAll('.story-track')) {
       if (getComputedStyle(track.querySelector('.story-stage')).position !== 'sticky') problems.push('desktop story stage is not sticky');
-      if (track.getBoundingClientRect().height < h * 1.8) problems.push('desktop story track is too short to scrub');
+      if (track.getBoundingClientRect().height < h * 1.4 || track.getBoundingClientRect().height > h * 1.7) problems.push('desktop story must have a short readable scroll hold');
     }
   }
 
