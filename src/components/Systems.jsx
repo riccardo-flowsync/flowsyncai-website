@@ -285,7 +285,7 @@ export default function Systems() {
         </div>
         <div className="hidden lg:col-span-2 lg:block">
           <div className="sticky top-8">
-            <div className="flex flex-col items-start gap-6 bg-canvas py-2">
+            <div className="flex flex-col items-start gap-6 py-2">
               <ul className="grid gap-3 border-l border-line">
                 {t.systems.map((s) => (
                   <li
@@ -316,7 +316,7 @@ export default function Systems() {
         </nav>
         <div className="grid gap-20 lg:col-span-10 lg:gap-28">
           {t.systems.map((s) => (
-            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="scroll-mt-24 border-t border-faint/40 bg-canvas pt-12 first:border-t-0 first:pt-0 lg:scroll-mt-0">
+            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="scroll-mt-24 border-t border-faint/40 pt-12 first:border-t-0 first:pt-0 lg:scroll-mt-0">
               <div className="grid items-start gap-8 lg:grid-cols-[0.85fr_1.15fr]">
                 <div>
                   <h3 className="t-h2">{s.name}</h3>

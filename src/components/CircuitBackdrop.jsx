@@ -36,12 +36,12 @@ export default function CircuitBackdrop() {
         <defs>
           <clipPath id={id}><rect className="circuit-reveal" width="1440" height="7200" /></clipPath>
         </defs>
-        <g opacity="0.04" strokeWidth="1">
+        <g opacity="0.1" strokeWidth="1">
           {PATHS.map((d) => <path key={d} d={d} vectorEffect="non-scaling-stroke" />)}
         </g>
         <g clipPath={`url(#${id})`}>
           {[0, 1].map((layer) => (
-            <g key={layer} transform={layer ? 'translate(24 -24)' : undefined} opacity={layer ? 0.07 : 0.17} strokeWidth={layer ? 0.8 : 1.2}>
+            <g key={layer} transform={layer ? 'translate(24 -24)' : undefined} opacity={layer ? 0.14 : 0.34} strokeWidth={layer ? 0.8 : 1.3}>
               {PATHS.map((d) => <path key={d} d={d} className="circuit-active" vectorEffect="non-scaling-stroke" />)}
             </g>
           ))}

@@ -215,7 +215,7 @@ export default function Results({ service }) {
   }), { scope: root, dependencies: [lang, service], revertOnUpdate: true });
 
   return (
-    <section id={id} data-results={service} aria-labelledby={`${id}-heading`} ref={root} className="relative mt-10 scroll-mt-24 border-t border-line bg-canvas pt-8 text-fg lg:scroll-mt-0">
+    <section id={id} data-results={service} aria-labelledby={`${id}-heading`} ref={root} className="relative mt-10 scroll-mt-24 border-t border-line pt-8 text-fg lg:scroll-mt-0">
       <h4 id={`${id}-heading`} className="t-h3 font-semibold">{outbound ? t.outreach : t.support.title}</h4>
       {outbound ? <>
         <p className="mt-3 max-w-[70ch] text-sm text-muted">{t.campaigns}</p>

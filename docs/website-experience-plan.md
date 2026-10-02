@@ -151,3 +151,17 @@ phone views were inspected with computer use. No runtime dependencies were added
 
 Latest local mobile Lighthouse: performance 94, accessibility 100, best practices
 100, SEO 100. LCP 2.4 seconds, blocking time 120 milliseconds, layout shift 0.
+
+## Keep circuit routes visible between objects
+
+Owner feedback, 2026-10-03: lines should remain visible in empty areas and be
+clearer, while passing behind actual cards and other solid objects.
+
+- [x] Remove opaque fills from the service, result, and desktop-index wrappers.
+- [x] Strengthen the base and active traces; keep cards, chips, and controls opaque.
+- [x] Verify desktop and phone views, then update the review preview.
+
+Desktop and phone renders confirm continuous paths in the gaps and opaque cards.
+Build, lint, and all 42 layout configurations pass. Mobile Lighthouse remains 94
+for performance and 100 for accessibility, best practices, and SEO, with no layout
+shift. Scroll timing and interaction logic are unchanged. Production is unchanged.
