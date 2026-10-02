@@ -132,7 +132,7 @@ export default function Process() {
   return (
     <section id="process" ref={root} className="rule py-20 lg:py-24">
       <div className="page">
-        <h2 key={lang} className="proc-title t-h2 max-w-[22ch]">{t.title}</h2>
+        <h2 key={lang} className="reading-surface proc-title t-h2 max-w-[22ch]">{t.title}</h2>
         <div className="proc-list relative mt-10">
           {/* From lg the three steps share three rows (subgrid): pictures, then the line with its nodes, then the text.
               Phones and tablets: one column per step, the picture under the text. */}
@@ -146,7 +146,7 @@ export default function Process() {
                 <span aria-hidden="true" className="relative mt-2 grid h-[11px] w-[11px] place-items-center rounded-full border border-line bg-canvas lg:row-start-2 lg:mt-0">
                   <span className="proc-node h-[5px] w-[5px] rounded-full bg-accent" />
                 </span>
-                <div className="proc-text lg:row-start-3 lg:mt-6 lg:pr-4">
+                <div className="reading-surface proc-text lg:row-start-3 lg:mt-6 lg:pr-4">
                   <h3 className="t-h3">{s.title}</h3>
                   <p className="mt-3 text-muted">{s.body}</p>
                 </div>

@@ -171,7 +171,7 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   return (
     <section id="book" ref={root} className="rule isolate py-20 lg:py-24">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
-        <div className="lg:col-span-5">
+        <div className="reading-surface self-start lg:col-span-5">
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
           <p className="t-lead mt-5 text-muted">{t.sub}</p>
 

@@ -65,13 +65,13 @@ export default function FAQ() {
     <section id="faq" ref={root} className="faq rule py-20 lg:py-24">
       <div className="page grid gap-9 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-4">
-          <h2 key={lang} className="faq-title t-h2 lg:sticky lg:top-28">{t.title}</h2>
+          <h2 key={lang} className="reading-surface faq-title t-h2 lg:sticky lg:top-28">{t.title}</h2>
         </div>
         <div className="faq-list rule lg:col-span-8">
           {t.items.map(([q, a]) => (
             <details
               key={q}
-              className="faq-row group relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--d,1))]"
+              className="reading-surface faq-row group relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--d,1))]"
             >
               <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-5 text-[1.05rem] font-medium [&::-webkit-details-marker]:hidden">
                 {q}

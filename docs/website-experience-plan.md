@@ -165,3 +165,22 @@ Desktop and phone renders confirm continuous paths in the gaps and opaque cards.
 Build, lint, and all 42 layout configurations pass. Mobile Lighthouse remains 94
 for performance and 100 for accessibility, best practices, and SEO, with no layout
 shift. Scroll timing and interaction logic are unchanged. Production is unchanged.
+
+## Balance the circuits with clear reading areas
+
+Owner feedback, 2026-10-03: the stronger routes look too chaotic. Preserve depth
+in the open spaces while keeping words and figures easy to read.
+
+- [x] Remove the duplicate routes and use a single, moderately lit circuit layer.
+- [x] Add soft dark backing only to reading groups, leaving section gaps transparent.
+- [x] Check desktop and phone views, responsive layouts, and loading speed.
+- [x] Update the review preview, keeping production unchanged.
+
+The circuit now uses three routes instead of six. A soft canvas fade sits beneath
+short reading groups and individual figures; full service and result sections
+remain transparent, and cards remain opaque. Scroll behavior is unchanged.
+
+Build, lint, and all 42 layout configurations pass. Desktop and phone views confirm
+clear figures, headings, service copy, and visible routes in the gaps. Mobile
+Lighthouse: performance 94, accessibility 100, best practices 100, SEO 100,
+LCP 2.6 seconds, blocking time 50 milliseconds, layout shift 0.

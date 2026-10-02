@@ -280,13 +280,13 @@ export default function Systems() {
     <section id="systems" ref={root} className="rule py-24 lg:py-32">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-x-10 lg:gap-y-16">
         <div className="grid gap-5 lg:col-span-12 lg:grid-cols-2 lg:items-end lg:gap-16">
-          <h2 key={lang} className="sys-title t-h2 max-w-[18ch]">{t.title}</h2>
-          <p className="t-lead max-w-[34rem] text-muted">{t.intro}</p>
+          <h2 key={lang} className="reading-surface sys-title t-h2 max-w-[18ch]">{t.title}</h2>
+          <p className="reading-surface t-lead max-w-[34rem] text-muted">{t.intro}</p>
         </div>
         <div className="hidden lg:col-span-2 lg:block">
           <div className="sticky top-8">
             <div className="flex flex-col items-start gap-6 py-2">
-              <ul className="grid gap-3 border-l border-line">
+              <ul className="reading-surface grid gap-3 border-l border-line">
                 {t.systems.map((s) => (
                   <li
                     key={s.id}
@@ -318,7 +318,7 @@ export default function Systems() {
           {t.systems.map((s) => (
             <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="scroll-mt-24 border-t border-faint/40 pt-12 first:border-t-0 first:pt-0 lg:scroll-mt-0">
               <div className="grid items-start gap-8 lg:grid-cols-[0.85fr_1.15fr]">
-                <div>
+                <div className="reading-surface">
                   <h3 className="t-h2">{s.name}</h3>
                   <p className="mt-3 text-lg font-medium leading-snug text-fg">{s.outcome}</p>
                   <p className="mt-3 text-muted">{s.body}</p>
@@ -339,7 +339,7 @@ export default function Systems() {
               <Results service={s.id} />
             </article>
           ))}
-          <p data-note className="-mt-10 text-xs text-faint lg:-mt-16">{t.note}</p>
+          <p data-note className="reading-surface -mt-10 text-xs text-faint lg:-mt-16">{t.note}</p>
         </div>
       </div>
     </section>

@@ -66,6 +66,22 @@
     @apply mx-auto w-full max-w-page px-5 sm:px-8 lg:px-12;
   }
 
+  /* Soften the circuit only beneath reading groups, leaving the gaps open. */
+  .reading-surface {
+    position: relative;
+    isolation: isolate;
+  }
+  .reading-surface::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgb(10 10 11 / .8) 12px,
+      rgb(10 10 11 / .8) calc(100% - 12px), transparent);
+    mask-image: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  }
+
   .t-display {
     font-size: clamp(2.15rem, 1.2rem + 4.6vw, 4.6rem);
     line-height: 1.02;

@@ -216,12 +216,12 @@ export default function Results({ service }) {
 
   return (
     <section id={id} data-results={service} aria-labelledby={`${id}-heading`} ref={root} className="relative mt-10 scroll-mt-24 border-t border-line pt-8 text-fg lg:scroll-mt-0">
-      <h4 id={`${id}-heading`} className="t-h3 font-semibold">{outbound ? t.outreach : t.support.title}</h4>
+      <h4 id={`${id}-heading`} className="reading-surface t-h3 w-fit font-semibold">{outbound ? t.outreach : t.support.title}</h4>
       {outbound ? <>
-        <p className="mt-3 max-w-[70ch] text-sm text-muted">{t.campaigns}</p>
+        <p className="reading-surface mt-3 max-w-[70ch] text-sm text-muted">{t.campaigns}</p>
         <dl className="res-totals mt-6 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
           {t.totals.map(([n, unit, label]) => (
-            <div key={label} className="flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
+            <div key={label} className="reading-surface flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
               <dt className="max-w-[24ch] text-sm text-muted">{label}</dt>
               <dd className="text-[clamp(2.75rem,2rem+2.6vw,4.25rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums [font-stretch:112%]">
                 {n}{unit}
@@ -230,7 +230,7 @@ export default function Results({ service }) {
           ))}
         </dl>
 
-        <h5 className="mt-8 text-lg font-medium">{t.market}</h5>
+        <h5 className="reading-surface mt-8 w-fit text-lg font-medium">{t.market}</h5>
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           {t.charts.map((c, ci) => {
             const values = CHARTS[ci];
@@ -324,7 +324,7 @@ export default function Results({ service }) {
         </details>
 
       </> : <>
-        <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
+        <p className="reading-surface mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2 lg:gap-y-0">
           {t.support.cases.map((c, ci) => {
             const s = SUPPORT[ci];
@@ -373,7 +373,7 @@ export default function Results({ service }) {
             );
           })}
         </div>
-        <details className="group mt-6 text-sm text-muted"><DisclosureSummary>{t.method}</DisclosureSummary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-muted">{t.support.note}</p></details>
+        <details className="reading-surface group mt-6 text-sm text-muted"><DisclosureSummary>{t.method}</DisclosureSummary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-muted">{t.support.note}</p></details>
       </>}
     </section>
   );

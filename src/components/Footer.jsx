@@ -33,7 +33,7 @@ export default function Footer() {
     <footer className="border-t border-line">
       <div className="page py-14 sm:py-16">
         <div className="grid gap-12 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-x-12 lg:gap-x-20">
-          <div>
+          <div className="reading-surface w-fit self-start">
             <div className="flex items-center gap-2.5 text-[1.05rem] font-semibold tracking-tight [font-stretch:115%]">
               <Logo className="h-7 w-7" />
               <span translate="no">FlowSync AI Solutions</span>
@@ -41,7 +41,7 @@ export default function Footer() {
             <p className="mt-4 max-w-[34ch] text-muted">{t.tagline}</p>
           </div>
 
-          <nav aria-label={t.site}>
+          <nav aria-label={t.site} className="reading-surface w-fit self-start">
             <p className="text-sm text-faint">{t.site}</p>
             <ul className="mt-3 space-y-1 text-[0.94rem] text-muted">
               {t.sections.map(([to, label]) => (
@@ -52,7 +52,7 @@ export default function Footer() {
             </ul>
           </nav>
 
-          <nav aria-label={t.legal}>
+          <nav aria-label={t.legal} className="reading-surface w-fit self-start">
             <p className="text-sm text-faint">{t.legal}</p>
             <ul className="mt-3 space-y-1 text-[0.94rem] text-muted">
               {t.pages.map(([to, label]) => (
@@ -68,7 +68,7 @@ export default function Footer() {
         </div>
 
         {/* Legal identity: required by Italian law on every page, keep it visible and readable */}
-        <div className="mt-14 flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-6 text-sm text-faint">
+        <div className="reading-surface mt-14 flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-6 text-sm text-faint">
           <span>FlowSync AI Solutions di Riccardo Casale</span>
           <span>P.IVA 18068831009</span>
           <span>{t.city}</span>
