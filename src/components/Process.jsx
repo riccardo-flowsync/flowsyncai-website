@@ -89,8 +89,8 @@ const pictures = [
 function picture(li) {
   const tl = gsap.timeline();
   const ins = li.querySelectorAll('.pic-in');
-  ins.forEach((el, i) => tl.from(el, { opacity: 0, y: 8, duration: 0.6, ease: RISE }, i * 0.05));
-  li.querySelectorAll('.pic-draw').forEach((el, i) => tl.from(el, { [el.offsetHeight > el.offsetWidth ? 'scaleY' : 'scaleX']: 0, duration: 0.4, ease: 'power2.inOut' }, ins.length * 0.05 + 0.1 + i * 0.06));
+  ins.forEach((el, i) => tl.from(el, { opacity: 0, y: 6, duration: 0.3, ease: RISE }, i * 0.035));
+  li.querySelectorAll('.pic-draw').forEach((el, i) => tl.from(el, { [el.offsetHeight > el.offsetWidth ? 'scaleY' : 'scaleX']: 0, duration: 0.25, ease: 'power2.inOut' }, ins.length * 0.035 + 0.08 + i * 0.04));
   return tl;
 }
 
@@ -117,7 +117,7 @@ export default function Process() {
       const list = root.current.querySelector('.proc-list');
 
       gsap.fromTo('.proc-fill', { [conditions.wide ? 'scaleX' : 'scaleY']: 0 }, {
-        [conditions.wide ? 'scaleX' : 'scaleY']: 1, duration: 1.4, ease: 'power2.inOut',
+        [conditions.wide ? 'scaleX' : 'scaleY']: 1, duration: 0.65, ease: 'power2.inOut',
         scrollTrigger: { trigger: list, start: 'top 85%', once: true },
       });
       gsap.utils.toArray('.proc-step', list).forEach((li) => {
@@ -130,7 +130,7 @@ export default function Process() {
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="process" ref={root} className="rule py-24 lg:py-32">
+    <section id="process" ref={root} className="rule py-20 lg:py-24">
       <div className="page">
         <h2 key={lang} className="proc-title t-h2 max-w-[22ch]">{t.title}</h2>
         <div className="proc-list relative mt-14 lg:mt-10">

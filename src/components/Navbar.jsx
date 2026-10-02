@@ -113,7 +113,7 @@ export default function Navbar() {
         <ul className="hidden items-center gap-7 text-[0.94rem] text-muted xl:flex">
           {t.links.map(([to, label]) => (
             <li key={to}>
-              <ScrollLink to={to} className="transition-colors hover:text-fg coarse:inline-flex coarse:min-h-11 coarse:items-center">{label}</ScrollLink>
+              <ScrollLink to={to} className="nav-link transition-colors hover:text-fg">{label}</ScrollLink>
             </li>
           ))}
         </ul>

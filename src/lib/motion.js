@@ -91,7 +91,7 @@ let lenis = null;
 // Smooth scrolling for mouse and trackpad only. Touch keeps native scrolling, reduced motion gets none.
 export function startSmoothScroll() {
   if (lenis || matchMedia(`${REDUCED}, (pointer: coarse)`).matches) return undefined;
-  lenis = new Lenis();
+  lenis = new Lenis({ lerp: 0.22 });
   lenis.on('scroll', ScrollTrigger.update);
   const tick = (time) => lenis.raf(time * 1000);
   gsap.ticker.add(tick);
@@ -108,7 +108,7 @@ export function scrollToEl(el) {
   if (!el) return;
   if (lenis) {
     lenis.resize(); // after a route change Lenis still has the previous page's height as its scroll limit
-    lenis.scrollTo(el);
+    lenis.scrollTo(el, { duration: 0.65, easing: (t) => 1 - (1 - t) ** 3, immediate: matchMedia(REDUCED).matches });
   } else el.scrollIntoView({ behavior: matchMedia(REDUCED).matches ? 'auto' : 'smooth' });
 }
 
@@ -133,9 +133,9 @@ export function riseOnScroll(target) {
     reduceWhiteSpace: false, // the default turns the non-breaking space in "30 minuti" into a breakable one
     onSplit: (self) => gsap.from(self.lines, {
       yPercent: 110,
-      duration: 1.1,
+      duration: 0.55,
       ease: RISE,
-      stagger: 0.09,
+      stagger: 0.055,
       scrollTrigger: { trigger: target, start: 'top 85%', once: true },
     }),
   });

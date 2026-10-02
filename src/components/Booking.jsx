@@ -88,12 +88,12 @@ function MonthPreview({ animate }) {
         defaults: { ease: 'none' },
         scrollTrigger: { trigger: box.current, start: 'top 88%', once: true },
       });
-      tl.from('.cal-wd', { opacity: 0, duration: 0.3, stagger: 0.03 })
-        .from('.cal-day', { opacity: 0, scale: 0.8, duration: 0.5, stagger: 0.05 }, '>-0.1');
+      tl.from('.cal-wd', { opacity: 0, duration: 0.2, stagger: 0.015 })
+        .from('.cal-day', { opacity: 0, scale: 0.95, duration: 0.25, stagger: 0.015 }, '>-0.1');
       // A dashed copy draws the ring; once it is done a plain copy takes over, so the finished ring has no seam at the start point.
       // (Two layers instead of an onUpdate that clears the dash: ScrollTrigger refreshes render without callbacks.)
       if (box.current.querySelector('.cal-ring')) {
-        tl.fromTo('.cal-ring-draw', { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2 }, '>-0.2')
+        tl.fromTo('.cal-ring-draw', { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35 }, '>-0.1')
           .fromTo('.cal-ring-done', { opacity: 0 }, { opacity: 1, duration: 0.05 }, '>');
       }
     });
@@ -189,7 +189,7 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   };
 
   return (
-    <section id="book" ref={root} className="rule isolate py-24 lg:py-32">
+    <section id="book" ref={root} className="rule isolate py-20 lg:py-24">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>

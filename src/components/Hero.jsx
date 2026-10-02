@@ -25,21 +25,25 @@ const copy = {
 function useMagnetic(ref) {
   useGSAP((context, contextSafe) => later(context, () => {
     const el = ref.current;
-    if (!el || !matchMedia(`(pointer: fine) and ${MOTION_OK}`).matches) return undefined;
-    const xTo = gsap.quickTo(el, 'x', { duration: 0.5, ease: 'power3' });
-    const yTo = gsap.quickTo(el, 'y', { duration: 0.5, ease: 'power3' });
-    const move = contextSafe((e) => {
-      const r = el.getBoundingClientRect();
-      xTo((e.clientX - r.left - r.width / 2) * 0.25);
-      yTo((e.clientY - r.top - r.height / 2) * 0.35);
+    if (!el) return undefined;
+    const mm = gsap.matchMedia();
+    mm.add(`(pointer: fine) and ${MOTION_OK}`, () => {
+      const xTo = gsap.quickTo(el, 'x', { duration: 0.18, ease: 'power3' });
+      const yTo = gsap.quickTo(el, 'y', { duration: 0.18, ease: 'power3' });
+      const move = contextSafe((e) => {
+        const r = el.getBoundingClientRect();
+        xTo((e.clientX - r.left + gsap.getProperty(el, 'x') - r.width / 2) * 0.12);
+        yTo((e.clientY - r.top + gsap.getProperty(el, 'y') - r.height / 2) * 0.18);
+      });
+      const leave = contextSafe(() => { xTo(0); yTo(0); });
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerleave', leave);
+      return () => {
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerleave', leave);
+      };
     });
-    const leave = contextSafe(() => { xTo(0); yTo(0); });
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerleave', leave);
-    return () => {
-      el.removeEventListener('pointermove', move);
-      el.removeEventListener('pointerleave', leave);
-    };
+    return () => mm.revert();
   }));
 }
 
@@ -69,11 +73,11 @@ export default function Hero() {
           onSplit: (self) => {
             // A line never wraps inside its mask while a late font or a resize waits for the re-split (the text below would jump)
             self.lines.forEach((l) => { l.style.whiteSpace = 'nowrap'; });
-            return gsap.from(self.lines, { yPercent: 110, duration: 1.1, ease: RISE, stagger: 0.09 });
+            return gsap.from(self.lines, { yPercent: 110, duration: 0.6, ease: RISE, stagger: 0.055 });
           },
         });
         title.style.opacity = ''; // the lines now sit below their masks
-        gsap.to(rise, { y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.08, delay: 0.1 });
+        gsap.to(rise, { y: 0, duration: 0.45, ease: 'power3.out', stagger: 0.045 });
       }, true);
       return () => undo.forEach((u) => u());
     });

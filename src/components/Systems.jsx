@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import ScrollLink from './ScrollLink';
 import { useCopy, useLang } from '../lib/lang';
 import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, riseOnScroll, drawRule, later } from '../lib/motion';
@@ -8,6 +8,8 @@ const copy = {
     title: 'Built and run for you, every day.',
     intro: 'Each one takes a job your team does by hand, runs it every day and hands over to a person when it should.',
     note: 'Illustrations. Names and messages are invented.',
+    example: 'Interactive example',
+    replay: 'Replay example',
     systems: [
       {
         id: 'outbound',
@@ -34,7 +36,7 @@ const copy = {
       from: 'From anna@yourbrand-mail.com',
       draftText: 'Great to hear, Giulia. Here is my calendar: pick any time that suits you.',
       approve: 'Approve and send',
-      edit: 'Edit',
+      approved: 'Example approved',
     },
     chat: {
       title: 'Website chat',
@@ -47,6 +49,8 @@ const copy = {
     title: 'Costruiti e gestiti per te, ogni giorno.',
     intro: 'Ognuno prende un lavoro che il tuo team fa a mano, lo porta avanti ogni giorno e passa la mano a una persona quando serve.',
     note: 'Illustrazioni. Nomi e messaggi sono inventati.',
+    example: 'Esempio interattivo',
+    replay: 'Rivedi l’esempio',
     systems: [
       {
         id: 'outbound',
@@ -73,7 +77,7 @@ const copy = {
       from: 'Da anna@tuobrand-mail.com',
       draftText: 'Ottimo, Giulia. Ecco il mio calendario: scegli l’orario che preferisci.',
       approve: 'Approva e invia',
-      edit: 'Modifica',
+      approved: 'Esempio approvato',
     },
     chat: {
       title: 'Chat del sito',
@@ -91,37 +95,26 @@ const Words = ({ text, cls }) => text.split(' ').map((w, i) => <span key={i} cla
 // Timed examples pause off screen and keep their finished state. Scroll speed never changes their pace.
 // Only opacity and transforms move. Each chip lights (its accent ring fades in) when the matching thing happens in the picture.
 // Reduced motion and no-JS show the picture without the chips lit: the accent there would only be decoration.
-const lightChip = (tl, chip, at) => tl.fromTo(chip, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, at)
-  .to(chip.parentElement, { color: '#f4f3ed', duration: 0.5 }, at);
+const lightChip = (tl, chip, at) => tl.fromTo(chip, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' }, at)
+  .to(chip.parentElement, { color: '#f4f3ed', duration: 0.25 }, at);
 
 function inboxScene(stage) {
   const q = gsap.utils.selector(stage);
   const chips = q('.pt-lit');
   const words = q('.ib-w');
   gsap.set(q('.ib-row'), { autoAlpha: 0, y: -10 });
-  gsap.set(q('.ib-draft, .ib-w, .ib-btns'), { autoAlpha: 0 });
+  gsap.set(q('.ib-draft, .ib-w'), { autoAlpha: 0 });
   const tl = gsap.timeline({ paused: true });
   // Replies arrive and are classified one at a time.
   q('.ib-row').forEach((row, i) => {
     const tag = row.querySelector('.ib-tag');
-    tl.to(row, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' }, i * 0.9);
-    tl.fromTo(tag, { opacity: 0 }, { opacity: 1, duration: 0.4 }, i * 0.9 + 0.3);
+    tl.to(row, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power3.out' }, i * 0.32);
+    tl.fromTo(tag, { opacity: 0 }, { opacity: 1, duration: 0.2 }, i * 0.32 + 0.12);
   });
   lightChip(tl, chips[0], 0.3);
-  // The draft builds word by word (sent from the outreach domain, not the main one), then the buttons appear
-  tl.to(q('.ib-draft'), { autoAlpha: 1, duration: 0.4 }, 3.3)
-    .to(words, { autoAlpha: 1, duration: 0.12, stagger: 0.1 }, 3.6)
-    .to(q('.ib-btns'), { autoAlpha: 1, duration: 0.4 }, 3.6 + words.length * 0.1 + 0.4);
-  // Approve is pressed last: its own beat, after a rest with the buttons on screen. The draft's label turns to "approved".
-  tl.addLabel('press', '+=0.8')
-    .to(q('.ib-approve'), { scale: 0.92, duration: 0.2, ease: 'power2.in' }, 'press')
-    .to(q('.ib-approve'), { scale: 1, duration: 0.3, ease: 'power2.out' })
-    .to(q('.ib-edit'), { opacity: 0.4, duration: 0.3 }, 'press')
-    .fromTo(q('.ib-ok'), { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: 'power2.out' }, 'press+=0.2') // the ring draws round the draft
-    .to(q('.ib-wait'), { opacity: 0, duration: 0.2 }, 'press+=0.2')
-    .fromTo(q('.ib-sent'), { opacity: 0 }, { opacity: 1, duration: 0.3 }, 'press+=0.35');
-  lightChip(tl, chips[1], 'press');
-  lightChip(tl, chips[2], 'press+=0.6');
+  // Stop at the human decision. Approval is a real example control, never an automatic click.
+  tl.to(q('.ib-draft'), { autoAlpha: 1, duration: 0.25 }, 0.95)
+    .to(words, { autoAlpha: 1, duration: 0.08, stagger: 0.025 }, 1.1);
   return tl;
 }
 
@@ -132,13 +125,13 @@ function chatScene(stage) {
   gsap.set(q('.ch-user, .ch-agent, .ch-w, .ch-act'), { autoAlpha: 0 });
   gsap.set(q('.ch-dot'), { scale: 0 });
   const tl = gsap.timeline({ paused: true });
-  tl.fromTo(q('.ch-user'), { y: 8 }, { y: 0, autoAlpha: 1, duration: 0.5, ease: 'power3.out' })
-    .to(q('.ch-agent'), { autoAlpha: 1, duration: 0.3 }, '+=0.5') // a silent beat, no typing dots
+  tl.fromTo(q('.ch-user'), { y: 8 }, { y: 0, autoAlpha: 1, duration: 0.25, ease: 'power3.out' })
+    .to(q('.ch-agent'), { autoAlpha: 1, duration: 0.2 }, '+=0.15')
     .addLabel('reply')
-    .to(words, { autoAlpha: 1, duration: 0.12, stagger: 0.09 }, 'reply');
+    .to(words, { autoAlpha: 1, duration: 0.08, stagger: 0.025 }, 'reply');
   lightChip(tl, chips[0], 'reply');
   // Each action lands as the reply reaches its clause; the last one is the hand-over
-  const span = words.length * 0.09;
+  const span = words.length * 0.025;
   q('.ch-act').forEach((act, i) => {
     const at = `reply+=${span * (0.2 + i * 0.3)}`;
     tl.to(act, { autoAlpha: 1, duration: 0.25 }, at)
@@ -168,16 +161,30 @@ const ICON = { envelope: outline(5, 19, 0, 0), bubble: outline(4, 17, 0, 4), tic
 
 const SCENES = { outbound: inboxScene, support: chatScene };
 
-const Panel = ({ title, cls = '', children }) => (
-  <div aria-hidden="true" className={`${cls} select-none overflow-hidden rounded-[10px] border border-line bg-surface`}>
-    <p className="border-b border-line px-5 py-3 text-sm font-semibold [font-stretch:110%]">{title}</p>
+const Panel = ({ title, cls = '', children, example, replay, onReplay, controls }) => (
+  <div role="group" aria-label={`${title}: ${example}`} className={`${cls} overflow-hidden rounded-[10px] border border-line bg-surface`}>
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
+      <p className="text-sm font-semibold [font-stretch:110%]">{title}</p>
+      <span className="text-xs text-faint">{example}</span>
+    </div>
     <div className="p-5">{children}</div>
+    <div className={`flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 ${controls ? '' : 'motion-reduce:hidden'}`}>
+      {controls}
+      <button type="button" onClick={onReplay} className="demo-replay link min-h-11 text-sm text-muted hover:text-fg">{replay}</button>
+    </div>
   </div>
 );
 
-function Inbox({ t, lang }) {
+function Inbox({ t, lang, approved, onApprove, ...panel }) {
   return (
-    <Panel title={t.title} cls="ib-panel">
+    <Panel title={t.title} cls="ib-panel" {...panel} controls={
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={onApprove} disabled={approved} className="ib-approve btn-primary min-h-11 px-3 py-2 text-sm disabled:bg-raised disabled:text-fg disabled:cursor-default">
+          {approved ? t.approved : t.approve}
+        </button>
+        <span role="status" className="sr-only">{approved ? t.sent : ''}</span>
+      </div>
+    }>
       <ul className="grid gap-3">
         {t.rows.map(([who, tag, text], i) => (
           <li key={who} className={`ib-row rounded-lg px-3.5 py-3 ${i === 0 ? 'bg-raised' : ''}`}>
@@ -189,28 +196,20 @@ function Inbox({ t, lang }) {
           </li>
         ))}
       </ul>
-      <div className="ib-draft relative mt-4 rounded-lg border border-line p-4">
-        <span className="ib-ok pointer-events-none absolute -inset-px origin-left scale-x-0 rounded-lg border border-accent" />
+      <div className={`ib-draft relative mt-4 rounded-lg border p-4 transition-colors ${approved ? 'border-accent' : 'border-line'}`}>
         <div className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 text-xs text-faint">
-          <p className="grid">
-            <span className="ib-wait [grid-area:1/1]">{t.draft}</span>
-            <span data-motion-only className="ib-sent text-muted opacity-0 [grid-area:1/1]">{t.sent}</span>
-          </p>
+          <p>{approved ? t.sent : t.draft}</p>
           <p>{t.from}</p>
         </div>
         <p className="mt-1.5 text-sm"><Words cls="ib-w" text={t.draftText} /></p>
-        <div className="ib-btns mt-3 flex flex-wrap gap-2">
-          <span className="ib-approve rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-canvas">{t.approve}</span>
-          <span className="ib-edit rounded-md px-3 py-1.5 text-xs font-semibold text-muted ring-1 ring-inset ring-line">{t.edit}</span>
-        </div>
       </div>
     </Panel>
   );
 }
 
-function Chat({ t }) {
+function Chat({ t, ...panel }) {
   return (
-    <Panel title={t.title} cls="ch-panel">
+    <Panel title={t.title} cls="ch-panel" {...panel}>
       <p className="ch-user ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-raised px-3.5 py-2.5 text-sm text-muted">{t.user}</p>
       <p className="ch-agent mt-3 max-w-[85%] rounded-lg rounded-bl-sm border border-line px-3.5 py-2.5 text-sm"><Words cls="ch-w" text={t.agent} /></p>
       <ul className="mt-4 grid gap-1.5 border-t border-line pt-4">
@@ -231,7 +230,21 @@ export default function Systems() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
-  const artifacts = { outbound: <Inbox t={t.inbox} lang={lang} />, support: <Chat t={t.chat} /> };
+  const scenes = useRef({});
+  const [approved, setApproved] = useState(false);
+  const replay = (id) => {
+    if (id === 'outbound') setApproved(false);
+    scenes.current[id]?.restart();
+  };
+  const approve = () => {
+    scenes.current.outbound?.progress(1).pause();
+    setApproved(true);
+  };
+  const panel = { example: t.example, replay: t.replay };
+  const artifacts = {
+    outbound: <Inbox t={t.inbox} lang={lang} approved={approved} onApprove={approve} {...panel} onReplay={() => replay('outbound')} />,
+    support: <Chat t={t.chat} {...panel} onReplay={() => replay('support')} />,
+  };
 
   // The sticky index follows the reader: a system is active from when its article reaches mid-screen until the next one does
   // (the last one until the note under them), so it stays active as the article scrolls by. Read live from where things are on screen,
@@ -271,16 +284,18 @@ export default function Systems() {
   // Illustrations play at the same measured pace on every screen. Nothing pins the page.
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
-    mm.add({ desktop: HOLD, ok: MOTION_OK }, ({ conditions }) => {
-      if (!conditions.ok) return;
+    mm.add(MOTION_OK, () => {
       gsap.utils.toArray('[data-system]', root.current).forEach((article) => {
         const stage = article.querySelector('[data-stage]');
         const tl = SCENES[article.dataset.system](stage);
+        scenes.current[article.dataset.system] = tl;
+        if (article.dataset.system === 'outbound' && approved) tl.progress(1).pause();
         ScrollTrigger.create({
           trigger: stage, start: 'top 85%', end: 'bottom top',
           onToggle: ({ isActive }) => isActive ? tl.play() : tl.pause(),
         });
       });
+      return () => { scenes.current = {}; };
     });
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
@@ -300,7 +315,7 @@ export default function Systems() {
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="systems" ref={root} className="rule py-24 lg:py-32">
+    <section id="systems" ref={root} className="rule py-20 lg:py-24">
       <div className="page grid gap-14 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <div className="lg:sticky lg:top-28">
@@ -313,7 +328,7 @@ export default function Systems() {
                   <li
                     key={s.id}
                     data-index={s.id}
-                    className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
+                    className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-150 [&.is-active]:border-accent [&.is-active]:text-fg"
                   >
                     <ScrollLink to={`#system-${s.id}`} className="inline-flex min-h-11 items-center rounded px-1 hover:text-fg focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
                   </li>
@@ -337,7 +352,7 @@ export default function Systems() {
             </div>
           ))}
         </nav>
-        <div className="grid gap-20 lg:col-span-7 lg:gap-28">
+        <div className="grid gap-16 lg:col-span-7 lg:gap-20">
           {t.systems.map((s) => (
             <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="grid scroll-mt-24 gap-5 lg:scroll-mt-0">
               <div>
@@ -347,7 +362,7 @@ export default function Systems() {
               <div data-stage className="grid gap-7">
                 <ul className="flex flex-wrap gap-2">
                   {s.points.map((p) => (
-                    <li key={p} className="relative rounded-lg border border-line px-3 py-1.5 text-sm text-muted">
+                    <li key={p} className={`relative rounded-lg border border-line px-3 py-1.5 text-sm text-muted ${s.id === 'outbound' && approved ? '[&:nth-child(n+2)]:border-accent [&:nth-child(n+2)]:text-fg' : ''}`}>
                       {p}
                       <span aria-hidden="true" data-motion-only className="pt-lit pointer-events-none absolute -inset-px rounded-lg border border-accent bg-accent/10 opacity-0" />
                     </li>

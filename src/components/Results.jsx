@@ -187,12 +187,12 @@ export default function Results() {
       gsap.utils.toArray('.res-chart').forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
         gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
-          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.4, ease: 'power2.out' })
-          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' }, 0.3);
+          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.25, ease: 'power2.out' })
+          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.45, stagger: 0.08, ease: 'power2.out' }, 0.15);
       });
       gsap.utils.toArray('.sup-card').forEach((card) => {
         gsap.from(card.querySelector('.sup-bar'), {
-          scaleX: 0, transformOrigin: 'left center', duration: 1, ease: 'power2.out',
+          scaleX: 0, transformOrigin: 'left center', duration: 0.5, ease: 'power2.out',
           scrollTrigger: { trigger: card, start: 'top 88%', once: true },
         });
       });
@@ -201,7 +201,7 @@ export default function Results() {
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="rule py-24 lg:py-32">
+    <section id="results" ref={root} className="rule py-20 lg:py-24">
       <div className="page">
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
           <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>

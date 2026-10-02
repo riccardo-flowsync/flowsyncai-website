@@ -60,7 +60,7 @@ export default function FAQ() {
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="faq" ref={root} className="faq rule py-24 lg:py-32">
+    <section id="faq" ref={root} className="faq rule py-20 lg:py-24">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-4">
           <h2 key={lang} className="faq-title t-h2 lg:sticky lg:top-28">{t.title}</h2>
@@ -73,7 +73,7 @@ export default function FAQ() {
             >
               <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-5 text-[1.05rem] font-medium [&::-webkit-details-marker]:hidden">
                 {q}
-                <span aria-hidden="true" className="relative mt-[0.4em] h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-open:rotate-45">
+                <span aria-hidden="true" className="relative mt-[0.4em] h-3.5 w-3.5 shrink-0 transition-transform duration-150 group-open:rotate-45">
                   <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-muted transition-colors group-hover:bg-accent" />
                   <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-muted transition-colors group-hover:bg-accent" />
                 </span>
