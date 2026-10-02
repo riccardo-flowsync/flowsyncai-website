@@ -47,3 +47,27 @@ The owner selected cinematic workspace and approved the implementation plan. The
 
 - Final complete layout matrix: 168/168 passed, including cinematic intermediate states, both languages, short screens and reduced motion. Final lint and production build pass.
 - Deployed preview verified for implementation commit 304f741: Vercel success; matching production asset hash; WebGL rendering; desktop/mobile Services and Escape; full mobile opening; connected order/return/ticket demo; Italian legacy Results redirect to agent evidence. PR 4 remains draft. Production awaits owner approval.
+
+## Motion refinement after owner review
+- 2026-10-02: Owner likes the visual design and requests better animation. Preserve the four-page design; replace slow surface scrubbing with prompt, interruptible step changes, shorter scroll holds, direct step controls and calmer architectural movement.
+- [x] Implement responsive workflow steps, quicker opening and steadier backdrop.
+- [x] Verify motion recordings, controls, reduced motion and responsive layout.
+- [x] Update the draft preview and inspect the deployed revision.
+
+### Revised motion plan
+The existing graphite, purple, typography, four-page structure and agency positioning remain the visual authority. The owner rejected the delivered motion even though technical checks passed.
+
+- Focal moment: one business request becomes visible work. Request arrives, matching record fields populate, rules or a personal draft appear, then a return receipt or classified reply gives the sequence a consequence.
+- Continuity: keep the request and matched record in place as context. Give the active tool a short forward movement; show later outreach replies explicitly as a later illustrative event.
+- Feedback: step buttons select any beat immediately with keyboard/touch. Further scrolling resumes the reversible sequence. Changes settle in 160–360ms, independent of scroll speed.
+- Budget: shorten desktop holds to 155svh, retain natural portrait flow, reduce camera travel and enable edge antialiasing. No new dependencies or permanent render loop.
+- Review: judge the complete request-to-result sequence in desktop/mobile recordings and live browser use, then check reduced motion, resizing, performance and deployment. Technical passing scores are supporting evidence, not the design verdict.
+
+### Refinement evidence
+- Full layout matrix passed 168/168, followed by 64/64 confirmation checks after the content/visibility adjustments. Journey checks pass, including navigation, booking recovery and language/legacy routes.
+- Workflow controls reveal research, then draft/rules, then outcome. Direct choices take priority over residual scrolling; a new wheel, touch or keyboard scroll resumes the timeline. Reduced motion uses immediate state changes, including mid-session preference changes.
+- Independent review confirmed the cause-and-effect sequence, and identified incoming-reply header/status ambiguity. Both labels now explicitly describe a received reply awaiting review. This is a scoped review, not a substitute for owner taste approval.
+- Desktop and phone recordings cover individual beats, holds, rewind and service exit. Recorder input rate is explicitly set to its capture rate; checked playback against elapsed time: desktop 19.6s/19.4s, phone 18.9s/19.0s.
+- Repeated local production mobile Lighthouse: Home 96/96, outreach 95/95, agents 95/95. No blocking time reported in those six runs. Contact assets and lead endpoints are unchanged.
+- Detector reports only advisory design-token differences in the existing compact machine interfaces and their new matching states; no non-advisory findings. Preserved the owner-approved visual treatment.
+- Deployed refinement verified at commit ee9f2b0: Vercel success and matching built asset. Live preview step controls show the agent checking store rules and registering a return; Home outreach reveals an incoming reply awaiting review. Draft PR 4 updated. Production remains owner-gated.
