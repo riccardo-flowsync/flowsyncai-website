@@ -36,6 +36,16 @@ async function clickVisible(page, selector) {
   throw new Error(`No visible control: ${selector}`);
 }
 
+async function scrollPage(page, bottom) {
+  // Wheel input cooperates with desktop smooth scrolling; touch/reduced motion uses native scrolling.
+  const distance = await page.evaluate(() => document.documentElement.scrollHeight);
+  if (await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce), (pointer: coarse)').matches)) {
+    await page.evaluate((end) => scrollTo({ top: end ? document.documentElement.scrollHeight : 0, behavior: 'instant' }), bottom);
+  } else await page.mouse.wheel({ deltaY: bottom ? distance : -distance });
+  await page.waitForFunction((end) => Math.abs(scrollY - (end
+    ? document.documentElement.scrollHeight - innerHeight : 0)) < 2, { timeout: 6000 }, bottom);
+}
+
 async function checkIndex(page, checkpoint) {
   // Native instant scrolling changes geometry before ScrollTrigger's next animation frame.
   await page.waitForFunction(() => {
@@ -70,26 +80,33 @@ async function checkLanding(page, id, source = 'service link') {
     return heading.top < Math.max(...overlays.map((rect) => rect.bottom)) - 1;
   }, id);
   assert.equal(covered, false, `${id} heading is covered by navigation`);
+  assert(await page.$eval('header', (el) => el.getBoundingClientRect().bottom <= 0),
+    'the page header must scroll away before the service sections');
   await checkIndex(page, `${source} to ${id}`);
 }
 
-async function checkCircuit(page, reduced) {
-  // The illuminated edge must stay in view, not simply animate somewhere off-screen.
-  await page.waitForFunction((reducedMotion) => [...document.querySelectorAll('.circuit-reveal')].every((rect) => {
+async function checkCircuit(page, reduced, checkpoint) {
+  // The illuminated edge stays visible and reaches the footer at the page's end.
+  await page.waitForFunction((reducedMotion) => {
+    const rect = document.querySelector('.circuit-reveal');
+    if (!rect) return false;
     const height = Number(rect.getAttribute('height'));
-    if (reducedMotion) return height === 1440;
-    const rail = rect.ownerSVGElement.getBoundingClientRect();
-    return Math.abs(rail.top + height / 1440 * rail.height - innerHeight * 0.65) < 20;
-  }), { timeout: 1500 }, reduced);
-  const guttersClear = await page.evaluate(() => {
-    const page = document.querySelector('.hero-section .page');
-    const box = page.getBoundingClientRect();
-    const style = getComputedStyle(page);
-    const rails = [...document.querySelectorAll('.circuit-rail')].map((el) => el.getBoundingClientRect());
-    return rails.length === 2 && rails[0].right <= box.left + parseFloat(style.paddingLeft) - 7
-      && rails[1].left >= box.right - parseFloat(style.paddingRight) + 7;
+    const fullHeight = rect.ownerSVGElement.viewBox.baseVal.height;
+    if (reducedMotion) return height === fullHeight;
+    const field = rect.ownerSVGElement.getBoundingClientRect();
+    const lightFront = field.top + height / fullHeight * field.height;
+    return lightFront >= innerHeight * 0.6 && lightFront <= innerHeight + 2;
+  }, { timeout: 1500 }, reduced).catch(() => {
+    throw new Error(`circuit illumination is outside the viewport or has no static fallback (${checkpoint})`);
   });
-  assert(guttersClear, 'circuit traces cross the reading area');
+  const coversPage = await page.evaluate(() => {
+    const field = document.querySelector('.circuit-field').getBoundingClientRect();
+    const main = document.querySelector('main').getBoundingClientRect();
+    const footer = document.querySelector('footer').getBoundingClientRect();
+    return Math.abs(field.left) < 2 && Math.abs(field.right - innerWidth) < 2
+      && field.top <= main.top + 2 && field.bottom >= footer.bottom - 2;
+  });
+  assert(coversPage, 'circuit background must span the full width from the opening through the footer');
   return page.$eval('.circuit-reveal', (rect) => Number(rect.getAttribute('height')));
 }
 
@@ -102,8 +119,8 @@ async function check(page, base, width, lang, reduced) {
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(() => document.fonts.ready);
   await sleep(1500);
-  assert.equal(await page.$$eval('.circuit-active', (paths) => paths.length), 4, 'circuit traces are missing');
-  await checkCircuit(page, reduced);
+  assert(await page.$$eval('.circuit-active', (paths) => paths.length > 0), 'circuit traces are missing');
+  await checkCircuit(page, reduced, 'opening');
 
   const opening = await page.$eval('h1', (el) => el.closest('section').textContent);
   assert.match(opening, lang === 'en' ? /automation agency/i : /agenzia.*automaz/is, 'opening must identify the AI automation agency');
@@ -130,12 +147,25 @@ async function check(page, base, width, lang, reduced) {
     await clickVisible(page, `[data-index="${id}"] a`);
     await checkLanding(page, id);
     assert.equal(new URL(page.url()).hash, `#system-${id}`);
-    illumination.push(await checkCircuit(page, reduced));
+    illumination.push(await checkCircuit(page, reduced, `service ${id}`));
   }
   if (!reduced) assert(illumination[1] > illumination[0] && illumination[2] < illumination[1],
     'circuit illumination must advance down the page and rewind on upward scroll');
 
-  // Switch while midway down the page, where stale ScrollTrigger callbacks used to be easy to miss.
+  await scrollPage(page, true);
+  await page.waitForFunction(() => {
+    const rect = document.querySelector('.circuit-reveal');
+    const svg = rect.ownerSVGElement;
+    // Phone scroll limits round fractional layout pixels. Measure the undrawn part in rendered pixels.
+    const remaining = 1 - Number(rect.getAttribute('height')) / svg.viewBox.baseVal.height;
+    return remaining * svg.getBoundingClientRect().height <= 2;
+  }, { timeout: 1500 }).catch(() => {
+    throw new Error('circuit traces do not finish illuminating at the footer');
+  });
+  await checkCircuit(page, reduced, 'footer');
+
+  // The header belongs to the page: return to the top to switch language, then revisit a service.
+  await scrollPage(page, false);
   const next = lang === 'en' ? 'it' : 'en';
   if (width < 1280) await clickVisible(page, 'button[aria-controls="mobile-menu"]');
   await clickVisible(page, `button[lang="${next}"]`);
@@ -146,12 +176,20 @@ async function check(page, base, width, lang, reduced) {
   await checkIndex(page, `language switched to ${next}`);
   await clickVisible(page, '[data-index="outbound"] a');
   await checkLanding(page, 'outbound', 'link after language switch');
-  await checkCircuit(page, reduced);
+  await checkCircuit(page, reduced, 'language change');
 
   // A shared link must also work when opened directly, without clicking through the home page first.
   await page.goto(new URL('#system-support', base).href, { waitUntil: 'load' });
   await checkLanding(page, 'support', 'direct URL');
   assert.equal(await page.$$eval('.pin-spacer', (els) => els.length), 0, 'an animation pins the page');
+
+  // Route changes remove the home backdrop and restore it without leaking an old animation.
+  await clickVisible(page, 'footer a[href="/privacy"]');
+  await page.waitForFunction(() => location.pathname === '/privacy' && !document.querySelector('.circuit-field'));
+  assert.equal(await page.$$eval('.circuit-field', (els) => els.length), 0, 'home backdrop remains on the privacy page');
+  await clickVisible(page, 'header a[href="/"]');
+  await page.waitForFunction(() => location.pathname === '/' && document.querySelector('.circuit-field'));
+  await checkCircuit(page, reduced, 'return from privacy page');
   assert.deepEqual(errors, [], 'uncaught browser errors');
 }
 

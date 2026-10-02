@@ -12,7 +12,7 @@
     color-scheme: dark;
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation; /* no double-tap zoom delay */
-    scroll-padding-top: 6.5rem; /* jumps and keyboard focus stop below the fixed navbar; Lenis and scrollIntoView both read it */
+    scroll-padding-top: 1.5rem; /* breathing room for anchor links; the navigation scrolls away */
   }
 
   body {
@@ -142,22 +142,12 @@
   z-index: -1;
   overflow: clip;
   pointer-events: none;
-  color: rgb(157 124 255 / 0.85);
+  color: #9d7cff;
 }
 
-/* Match .page gutters, leaving at least 8px between the traces and the text. */
-.circuit-rail {
-  position: absolute;
-  top: 0;
-  width: 12px;
-  height: 100%;
-}
-@media (min-width: 640px) {
-  .circuit-rail { width: 24px; }
-}
-@media (min-width: 1024px) {
-  .circuit-rail { width: max(40px, calc((100% - 1200px) / 2 + 40px)); }
-}
+/* One continuous home canvas. Separators inside the content keep their meaning. */
+.circuit-backdrop ~ main > section.rule::before { display: none; }
+.circuit-backdrop ~ footer { border-color: transparent; }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .btn-primary:active, .btn-quiet:active { scale: 0.98; }

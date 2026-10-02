@@ -4,8 +4,6 @@ import Results from '../components/Results';
 import Process from '../components/Process';
 import FAQ from '../components/FAQ';
 import Booking from '../components/Booking';
-import ScrollProgress from '../components/ScrollProgress';
-import CircuitBackdrop from '../components/CircuitBackdrop';
 import { useCopy } from '../lib/lang';
 
 const copy = {
@@ -18,12 +16,8 @@ export default function Home() {
   return (
     <>
       <title>{t.docTitle}</title>
-      <ScrollProgress />
-      <div className="relative isolate">
-        <CircuitBackdrop />
-        <Hero />
-        <Systems />
-      </div>
+      <Hero />
+      <Systems />
       <Results />
       <Process />
       <FAQ />

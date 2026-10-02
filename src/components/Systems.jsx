@@ -320,7 +320,7 @@ export default function Systems() {
           </div>
         </div>
 
-        <nav aria-label={t.title} className="sticky top-16 z-20 -my-5 grid grid-cols-2 gap-2 border-y border-line bg-canvas py-3 lg:hidden">
+        <nav aria-label={t.title} className="sticky top-0 z-20 -my-5 grid grid-cols-2 gap-2 border-y border-line bg-canvas py-3 lg:hidden">
           {t.systems.map((s) => (
             <div key={s.id} data-index={s.id} className="rounded-lg border border-line text-muted transition-colors [&.is-active]:border-accent [&.is-active]:text-fg">
               <ScrollLink to={`#system-${s.id}`} className="flex min-h-12 items-center justify-center rounded-lg px-3 py-2 text-center text-sm focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>

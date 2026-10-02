@@ -60,16 +60,8 @@ export function LangSwitch({ className = '' }) {
 
 export default function Navbar() {
   const t = useCopy(copy);
-  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const toggle = useRef(null);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -97,9 +89,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-[100] border-b transition-colors duration-300 ${
-        scrolled || open ? 'border-line bg-canvas' : 'border-transparent'
-      }`}
+      className={`absolute inset-x-0 top-0 z-[100] ${open ? 'bg-canvas' : ''}`}
     >
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[120] focus:px-5 focus:py-3 btn-quiet bg-canvas">
         {t.skip}

@@ -13,7 +13,9 @@ the demonstrations understandable within a few seconds.
 Preserve the dark palette, Mona Sans, violet signals, normal scrolling, and
 the existing service navigation. Fluid movement represents flow; precise
 circuit paths represent sync. Use the existing GSAP and CSS, with no new
-website dependencies, looping effects, scroll holds, or 3D rendering.
+website dependencies, looping effects, scroll holds, or 3D rendering. The latest
+owner refinement extends the circuit field behind the whole home page through
+the footer and lets the top navigation scroll away naturally.
 
 The current implementation and the 2026-10-02 brief take precedence over the
 older description of pinned scenes in CLAUDE.md. Preserve both instruction files.
@@ -45,8 +47,8 @@ Keep legal/contact routes and the existing booking and lead behavior.
 
 - Focal sequence: a compact two-service illustration, understandable at rest.
 - Continuity: keep the service index and animate the shift between its two symbols.
-- Background: a small set of SVG circuit paths behind the opening and services.
-  Draw with scrolling; never add extra scrolling distance.
+- Background: a small set of SVG circuit paths across the full home page and footer.
+  Light up with scrolling; never add extra scrolling distance.
 - Feedback: short button responses and native expandable FAQ answers.
 - Accessibility: readable final states without motion, no focus traps, native touch scrolling.
 - Budget: no new runtime packages; mobile Lighthouse performance at least 90.
@@ -97,3 +99,25 @@ computer use, including service navigation and opening the result details.
 
 Latest local mobile Lighthouse: performance 95, accessibility 100, best practices
 100, SEO 100. LCP 2.4 seconds, blocking time 50 milliseconds, layout shift 0.
+
+## Continuous background refinement
+
+Owner feedback, 2026-10-02: use the whole background, not narrow edge rails; carry
+it from the opening through the footer and remove the frozen top boundary.
+
+- [x] Replace narrow rails with broad, low-contrast circuit routes at two depths.
+- [x] Extend the background through all home sections and the footer.
+- [x] Let the top navigation scroll away; remove the fixed progress rail and full-width section rules.
+- [x] Adjust the mobile service navigation and link offsets for the scrolling header.
+- [x] Verify desktop/phone renders, footer illumination, navigation, reduced motion, layouts, and mobile performance.
+- [x] Update the existing preview pull request, keeping production unchanged.
+
+Refinement verification: production build and lint pass. All 42 layout
+configurations pass. All 8 interaction configurations pass, including the two
+phone cases rerun after accounting for fractional scroll rounding in the check.
+The checks cover full-page background coverage, illumination in both directions
+and at the footer, the scrolling header, both languages, service links, route
+cleanup, and reduced motion. Desktop and phone renders confirmed with computer use.
+
+Current local mobile Lighthouse: performance 94, accessibility 100, best practices
+100, SEO 100. LCP 2.6 seconds, blocking time 60 milliseconds, layout shift 0.
