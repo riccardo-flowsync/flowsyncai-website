@@ -1,6 +1,6 @@
 # Full website upgrade plan
 
-Research checked: 2026-10-02. Status: six-page build and final design review complete; deployed preview verification in progress.
+Research checked: 2026-10-02. Status: six-page build, final review and deployed preview verification complete; owner approval required for production merge.
 
 The next upgrade should turn the long homepage into a small, complete website. Keep the existing dark canvas, typography and purple accent. Give sales and support visitors separate explanations, demonstrations and evidence, with a clear route to booking.
 
@@ -163,7 +163,7 @@ No page count or search checklist guarantees traffic or bookings. A later conver
 - [x] Review and adopt the selected skill bundles; preserve the approved structure and use /en and /it routes.
 - [x] Implement the complete page structure and both languages.
 - [x] Verify journeys, metadata, responsiveness, accessibility and performance.
-- [ ] Publish a draft PR and inspect the deployed preview.
+- [x] Publish a draft PR and inspect the deployed preview.
 - [ ] Obtain the owner’s OK before merging to production.
 
 The upgrade builds on the pending motion improvements. Production merge still requires the owner’s OK.
@@ -211,3 +211,11 @@ A fresh Impeccable reviewer completed the full five-section finish contract and 
 The review used desktop 1440×900 and phone 390×844 CSS viewports for all six page openings, with additional content and interaction views. Native screenshots crop the browser content area to 1425×891 and 375×812; they do not rescale the layout. The reviewer preserved the incumbent design rules, labeled illustrations, dated figures and calendar privacy boundary.
 
 A fresh documentation handoff reconciled the built pages against the project palette, type, layout, components and product facts. It confirmed an ordinary extension of the existing system and made no design-system changes. The pre-existing absence of DESIGN.md, language abbreviations and older conflicting motion instructions were recorded without unsolicited repair.
+
+### Deployed preview
+
+[Draft PR 4](https://github.com/riccardo-flowsync/flowsyncai-website/pull/4) contains the six-page build. Vercel reported a successful deployment for source commit `2e3fce0c570e8172a1eef545e1c57fe34353153c`. The [branch preview](https://flowsyncai-website-git-codex-res-d8f705-riccardo-2769s-projects.vercel.app/en) was inspected in the owner's authenticated in-app browser.
+
+Verified in that deployed browser: the six English page openings, a direct Italian support URL, legacy sales URL, missing-page content and noindex metadata, sales navigation and content focus, distinct page titles and canonicals, support handover selection, Results filters and preserved language/filter URLs, Italian phone menu closure, booking content and the message alternative. No calendar iframe appeared before a click. No deployed form was submitted and no real booking was created. Form retry/success and calendar fallback remain covered by the isolated local stub checks. The protected preview was not treated as an unauthenticated HTTP audit.
+
+Production remains unchanged. The remaining checklist item is the owner's approval to merge.
