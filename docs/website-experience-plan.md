@@ -28,7 +28,7 @@ older description of pinned scenes in CLAUDE.md. Preserve both instruction files
 - [x] Tighten results, process, navigation, and FAQ copy in English and Italian.
 - [x] Verify build, lint, lead tests, responsive layouts, motion preferences, and mobile performance.
 - [x] Review desktop and mobile renders and fix any concrete defects in one batch.
-- [ ] Open a reviewable preview and pull request. Production merge requires owner approval.
+- [x] Prepare a reviewable preview and pull request. Production merge requires owner approval.
 
 ## Content boundaries
 
@@ -68,3 +68,12 @@ Keep legal/contact routes and the existing booking and lead behavior.
 - No new runtime dependencies. Removed the old booking WebGL dot effect and its
   dedicated check; the restrained SVG circuit paths provide the background motion.
 - Production remains unchanged until the owner approves the pull request merge.
+
+## Review
+
+- Pull request: https://github.com/riccardo-flowsync/flowsyncai-website/pull/5
+- Vercel preview: https://flowsyncai-website-git-codex-flo-bf39a2-riccardo-2769s-projects.vercel.app
+  (requires the project's existing Vercel sign-in).
+- Local production-build preview: http://127.0.0.1:4177/ while this session's server runs.
+- Vercel reports a successful preview deployment. Its served page references the
+  same production JavaScript bundle as the locally tested build.
