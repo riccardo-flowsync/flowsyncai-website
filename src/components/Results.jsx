@@ -168,7 +168,7 @@ function Figure({ value, none }) {
   );
 }
 
-export default function Results() {
+export default function Results({ view = 'all' }) {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
@@ -183,7 +183,7 @@ export default function Results() {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       drawRule(root.current);
-      riseOnScroll('.res-title');
+      if (view !== 'support') riseOnScroll('.res-title');
       gsap.utils.toArray('.res-chart').forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
         gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
@@ -198,11 +198,12 @@ export default function Results() {
       });
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, view], revertOnUpdate: true });
 
   return (
     <section id="results" ref={root} className="rule py-20 lg:py-24">
       <div className="page">
+        {view !== 'support' && <>
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
           <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
           <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
@@ -302,8 +303,8 @@ export default function Results() {
               <p className="text-sm text-faint">{where}</p>
               <p className="mt-3 text-sm text-muted"><span className="mr-1.5 text-base font-semibold text-fg tabular-nums">{pct(ROWS[i].rate)}</span>{rateLabel}</p>
               <p className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
-                {ROWS[i].interested !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].interested}</span> {t.head[2].toLowerCase()}</span>}
-                {ROWS[i].meetings !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].meetings}</span> {t.head[3].toLowerCase()}</span>}
+                <span>{t.head[2]}: <span className="font-semibold text-fg tabular-nums">{ROWS[i].interested ?? t.none}</span></span>
+                <span>{t.head[3]}: <span className="font-semibold text-fg tabular-nums">{ROWS[i].meetings ?? t.none}</span></span>
               </p>
             </li>
           ))}
@@ -312,7 +313,9 @@ export default function Results() {
           <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
         </details>
 
-        <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>
+        </>}
+        {view !== 'outbound' && <>
+        <h3 className={`t-h3 ${view === 'support' ? 'mt-0' : 'mt-24'} text-[1.5rem]`}>{t.support.title}</h3>
         <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {t.support.cases.map((c, ci) => {
@@ -362,6 +365,7 @@ export default function Results() {
           })}
         </div>
         <details className="mt-6 text-sm text-muted"><summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.method}</summary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
+        </>}
       </div>
     </section>
   );

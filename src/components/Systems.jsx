@@ -10,6 +10,14 @@ const copy = {
     note: 'Illustrations. Names and messages are invented.',
     example: 'Interactive example',
     replay: 'Replay example',
+    try: 'Choose a customer question',
+    show: 'See it in action',
+    serviceIntro: 'Try the example. See where the system acts and where a person takes over.',
+    scenarios: {
+      order: { label: 'Order and return' },
+      question: { label: 'A routine question', user: 'Where can I find your returns policy?', agent: 'You can find the returns policy in the help section. I can also help you check the steps for your order.', actions: ['help information found', 'answer prepared from that information', 'no ticket needed'] },
+      handover: { label: 'A case for the team', user: 'Can you change the address after my order has shipped?', agent: 'I cannot change an order that has already shipped. I have opened a ticket for the team with your question and this conversation.', actions: ['request reviewed', 'ticket opened for the team', 'conversation attached'] },
+    },
     systems: [
       {
         id: 'outbound',
@@ -51,6 +59,14 @@ const copy = {
     note: 'Illustrazioni. Nomi e messaggi sono inventati.',
     example: 'Esempio interattivo',
     replay: 'Rivedi l’esempio',
+    try: 'Scegli una domanda del cliente',
+    show: 'Provalo con un esempio.',
+    serviceIntro: 'Prova l’esempio. Guarda cosa fa il sistema e quando passa la mano a una persona.',
+    scenarios: {
+      order: { label: 'Ordine e reso' },
+      question: { label: 'Una domanda comune', user: 'Dove trovo le condizioni per i resi?', agent: 'Trovi le condizioni per i resi nella sezione assistenza. Posso anche aiutarti a controllare i passaggi per il tuo ordine.', actions: ['informazioni trovate', 'risposta preparata da quelle informazioni', 'nessun ticket necessario'] },
+      handover: { label: 'Un caso per il team', user: 'Puoi cambiare l’indirizzo se l’ordine è già partito?', agent: 'Non posso cambiare un ordine già spedito. Ho aperto un ticket per il team con la tua domanda e questa conversazione.', actions: ['richiesta verificata', 'ticket aperto per il team', 'conversazione allegata'] },
+    },
     systems: [
       {
         id: 'outbound',
@@ -136,8 +152,8 @@ function chatScene(stage) {
     const at = `reply+=${span * (0.2 + i * 0.3)}`;
     tl.to(act, { autoAlpha: 1, duration: 0.25 }, at)
       .to(act.querySelector('.ch-dot'), { scale: 1, duration: 0.3, ease: 'back.out(3)' }, at);
-    if (i === 0) lightChip(tl, chips[1], at);
-    if (i === 2) lightChip(tl, chips[2], at).addLabel('handover', at);
+    if (i === 0 && stage.dataset.scenario === 'order') lightChip(tl, chips[1], at);
+    if (i === 2 && stage.dataset.scenario !== 'question') lightChip(tl, chips[2], at).addLabel('handover', at);
   });
   return tl;
 }
@@ -226,12 +242,14 @@ function Chat({ t, ...panel }) {
 
 let handover; // lib/handover.js once fetched: a language switch then remounts it in the same frame, not a few frames later
 
-export default function Systems() {
+export default function Systems({ service }) {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
   const scenes = useRef({});
   const [approved, setApproved] = useState(false);
+  const [scenario, setScenario] = useState('order');
+  const systems = service ? t.systems.filter((s) => s.id === service) : t.systems;
   const replay = (id) => {
     if (id === 'outbound') setApproved(false);
     scenes.current[id]?.restart();
@@ -243,13 +261,14 @@ export default function Systems() {
   const panel = { example: t.example, replay: t.replay };
   const artifacts = {
     outbound: <Inbox t={t.inbox} lang={lang} approved={approved} onApprove={approve} {...panel} onReplay={() => replay('outbound')} />,
-    support: <Chat t={t.chat} {...panel} onReplay={() => replay('support')} />,
+    support: <Chat t={{ ...t.chat, ...t.scenarios[scenario] }} {...panel} onReplay={() => replay('support')} />,
   };
 
   // The sticky index follows the reader: a system is active from when its article reaches mid-screen until the next one does
   // (the last one until the note under them), so it stays active as the article scrolls by. Read live from where things are on screen,
   // so it does not depend on the order ScrollTrigger measures pins in.
   useGSAP((context) => later(context, () => {
+    if (service) return;
     const articles = gsap.utils.toArray('[data-system]', root.current);
     const note = root.current.querySelector('[data-note]');
     const items = articles.map((el) => [...root.current.querySelectorAll(`[data-index="${el.dataset.system}"]`)]);
@@ -269,7 +288,7 @@ export default function Systems() {
       icon.children[1].style.opacity = on === 1 ? '0' : '1';
     };
     ScrollTrigger.create({ trigger: root.current, start: 'top bottom', end: 'bottom top', onUpdate: update, onRefresh: update, onToggle: update });
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, service], revertOnUpdate: true });
 
   // The section's top rule draws in and the heading rises (motion allowed only)
   useGSAP((context) => later(context, () => {
@@ -279,7 +298,7 @@ export default function Systems() {
       riseOnScroll(root.current.querySelector('.sys-title'));
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, service], revertOnUpdate: true });
 
   // Illustrations play at the same measured pace on every screen. Nothing pins the page.
   useGSAP((context) => later(context, () => {
@@ -298,10 +317,11 @@ export default function Systems() {
       return () => { scenes.current = {}; };
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, service, scenario], revertOnUpdate: true });
 
   // The "interested" tag of the hero's example run files itself on the first reply here (lib/handover.js). Mouse screens only.
   useGSAP((context) => later(context, () => {
+    if (service) return;
     const mm = gsap.matchMedia();
     mm.add(HOLD, () => {
       let stop;
@@ -312,25 +332,25 @@ export default function Systems() {
       return () => { gone = true; stop?.(); };
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, service], revertOnUpdate: true });
 
   return (
-    <section id="systems" ref={root} className="rule py-20 lg:py-24">
+    <section id="systems" ref={root} className="rule py-16 lg:py-20">
       <div className="page grid gap-14 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
           <div className="lg:sticky lg:top-28">
-            <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
-            <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
-            <div className="mt-8 hidden items-center gap-8 lg:flex">
+            <h2 key={lang} className="sys-title t-h2">{service ? t.show : t.title}</h2>
+            <p className="t-lead mt-5 max-w-[34rem] text-muted">{service ? t.serviceIntro : t.intro}</p>
+            {!service && <div className="mt-8 hidden items-center gap-8 lg:flex">
               {/* the list is wider than its longest label in either language, so the icon does not move on a switch */}
               <ul className="grid gap-3 border-l border-line">
-                {t.systems.map((s) => (
+                {systems.map((s) => (
                   <li
                     key={s.id}
                     data-index={s.id}
                     className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-150 [&.is-active]:border-accent [&.is-active]:text-fg"
                   >
-                    <ScrollLink to={`#system-${s.id}`} className="inline-flex min-h-11 items-center rounded px-1 hover:text-fg focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
+                    <ScrollLink local to={`#system-${s.id}`} className="inline-flex min-h-11 items-center rounded px-1 hover:text-fg focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
                   </li>
                 ))}
               </ul>
@@ -341,25 +361,26 @@ export default function Systems() {
                 <path d="M8 10.5h8" opacity="0" />
                 <path d="M15 8v8" opacity="0" strokeDasharray="1.5 2" />
               </svg>
-            </div>
+            </div>}
           </div>
         </div>
 
-        <nav aria-label={t.title} className="sticky top-16 z-20 -my-5 grid grid-cols-2 gap-2 border-y border-line bg-canvas py-3 lg:hidden">
-          {t.systems.map((s) => (
+        {!service && <nav aria-label={t.title} className="sticky top-16 z-20 -my-5 grid grid-cols-2 gap-2 border-y border-line bg-canvas py-3 lg:hidden">
+          {systems.map((s) => (
             <div key={s.id} data-index={s.id} className="rounded-lg border border-line text-muted transition-colors [&.is-active]:border-accent [&.is-active]:text-fg">
-              <ScrollLink to={`#system-${s.id}`} className="flex min-h-12 items-center justify-center rounded-lg px-3 py-2 text-center text-sm focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
+              <ScrollLink local to={`#system-${s.id}`} className="flex min-h-12 items-center justify-center rounded-lg px-3 py-2 text-center text-sm focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
             </div>
           ))}
-        </nav>
+        </nav>}
         <div className="grid gap-16 lg:col-span-7 lg:gap-20">
-          {t.systems.map((s) => (
+          {systems.map((s) => (
             <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="grid scroll-mt-24 gap-5 lg:scroll-mt-0">
               <div>
                 <h3 className="t-h3 text-[1.5rem]">{s.name}</h3>
                 <p className="mt-3 text-muted">{s.body}</p>
               </div>
-              <div data-stage className="grid gap-7">
+              <div data-stage data-scenario={scenario} className="grid gap-7">
+                {s.id === 'support' && <div role="group" aria-label={t.try} className="flex flex-wrap gap-2">{Object.entries(t.scenarios).map(([id, item]) => <button key={id} type="button" aria-pressed={scenario === id} onClick={() => setScenario(id)} className={`example-choice min-h-11 rounded-lg border px-3 py-2 text-sm transition-colors ${scenario === id ? 'border-fg bg-raised text-fg' : 'border-line text-muted hover:border-faint hover:text-fg'}`}>{item.label}</button>)}</div>}
                 <ul className="flex flex-wrap gap-2">
                   {s.points.map((p) => (
                     <li key={p} className={`relative rounded-lg border border-line px-3 py-1.5 text-sm text-muted ${s.id === 'outbound' && approved ? '[&:nth-child(n+2)]:border-accent [&:nth-child(n+2)]:text-fg' : ''}`}>

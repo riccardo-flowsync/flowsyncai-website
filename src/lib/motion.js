@@ -76,11 +76,13 @@ export function startAt(targets, styles) {
 // A height that a refresh has already measured (late fonts: their own refresh in App.jsx ran first) needs no second one.
 let settling;
 let measured = -1;
+if (typeof document !== 'undefined') {
 ScrollTrigger.addEventListener('refresh', () => { measured = document.body.offsetHeight; });
 new ResizeObserver(() => {
   clearTimeout(settling);
   settling = setTimeout(() => document.body.offsetHeight !== measured && ScrollTrigger.refresh(), 300);
 }).observe(document.body);
+}
 
 // The signature ease of the site: every heading rise uses it (a fast start that settles softly)
 export const RISE = 'rise';

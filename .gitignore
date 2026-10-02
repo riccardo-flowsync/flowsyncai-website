@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.*
 .vercel
+
+# Temporary server bundle used only to render static pages
+.prerender-*/

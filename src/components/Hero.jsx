@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import ScrollLink from './ScrollLink';
+import Link from './SiteLink';
 import WorkflowTrace from './WorkflowTrace';
 import { useCopy, useLang } from '../lib/lang';
 import { gsap, useGSAP, SplitText, MOTION_OK, RISE, later, startAt } from '../lib/motion';
@@ -65,6 +65,10 @@ export default function Hero() {
       // First, as later() runs at once after the first load
       const undo = [startAt(title, { opacity: '0' }), startAt(rise, { transform: 'translateY(14px)' })];
       later(ctx, () => {
+        let live = true;
+        document.fonts.ready.then(() => {
+          if (!live) return;
+          ctx.add(() => {
         SplitText.create(title, {
           type: 'lines',
           mask: 'lines',
@@ -78,6 +82,9 @@ export default function Hero() {
         });
         title.style.opacity = ''; // the lines now sit below their masks
         gsap.to(rise, { y: 0, duration: 0.45, ease: 'power3.out', stagger: 0.045 });
+          });
+        });
+        return () => { live = false; };
       }, true);
       return () => undo.forEach((u) => u());
     });
@@ -88,11 +95,11 @@ export default function Hero() {
     <section ref={root} className="pb-16 pt-24 sm:pt-32 lg:flex lg:min-h-[100svh] lg:items-center lg:pb-6 lg:pt-20">
         <div className="page grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-7">
-            <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,min(1.2rem_+_4.6vw,8.5vh),4.6rem)]">{t.title}</h1>
+            <h1 key={lang} className="hero-title t-display max-w-[17ch] lg:[font-size:clamp(2.75rem,1.2rem_+_4.6vw,4.6rem)]">{t.title}</h1>
             <p className="hero-rise t-lead mt-6 max-w-[36rem] text-muted">{t.sub}</p>
             <div className="hero-rise mt-8 flex flex-wrap items-center gap-3">
-              <ScrollLink ref={book} to="#book" className="btn-primary">{t.book}</ScrollLink>
-              <ScrollLink to="#results" className="btn-quiet">{t.results}</ScrollLink>
+              <Link ref={book} to="/contact" className="btn-primary">{t.book}</Link>
+              <Link to="/results" className="btn-quiet">{t.results}</Link>
             </div>
             <p className="hero-rise mt-10 max-w-[31rem] border-t border-line pt-5 text-sm text-muted">
               <span className="mr-1.5 text-base font-semibold text-fg tabular-nums">49</span>

@@ -1,5 +1,8 @@
 {
+  "trailingSlash": false,
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/:lang(en|it)", "destination": "/:lang/index.html" },
+    { "source": "/:lang(en|it)/:page(sales-outreach|customer-support|results|how-we-work|contact|privacy|terms)", "destination": "/:lang/:page/index.html" },
+    { "source": "/:page(sales-outreach|customer-support|results|how-we-work|contact|privacy|terms)", "destination": "/:page/index.html" }
   ]
 }

@@ -1,13 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { LangProvider } from './lib/lang';
+import { LangProvider, useCopy } from './lib/lang';
+import Metadata from './components/Metadata';
+import { pagePath } from './lib/routes';
 import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop, scenesReady } from './lib/motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import Contact from './pages/Contact';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
+import { loaders } from './lib/pages';
+const Contact = lazy(loaders['/contact']);
+const Privacy = lazy(loaders['/privacy']);
+const Terms = lazy(loaders['/terms']);
+const ServicePage = lazy(loaders['/sales-outreach']);
+const ResultsPage = lazy(loaders['/results']);
+const HowWeWork = lazy(loaders['/how-we-work']);
 import NotFound from './pages/NotFound';
 
 // ScrollTrigger re-measures the page when the fonts and the page finish loading and when a pinned scene is set up,
@@ -24,10 +30,10 @@ function ScrollManager() {
   const { pathname, hash } = useLocation();
   const shown = useRef(pathname);
   useEffect(() => {
-    const newPage = shown.current !== pathname;
+    const newPage = pagePath(shown.current) !== pagePath(pathname);
     shown.current = pathname;
     if (!hash) {
-      scrollToTop();
+      if (newPage) scrollToTop();
       if (newPage) document.getElementById('main')?.focus({ preventScroll: true });
       return undefined;
     }
@@ -44,7 +50,44 @@ function ScrollManager() {
   return null;
 }
 
-export default function App() {
+const loadingCopy = { en: { loading: 'Loading the page…' }, it: { loading: 'Caricamento della pagina…' } };
+function Loading() {
+  const t = useCopy(loadingCopy);
+  return <p role="status" className="page min-h-[50svh] py-32 text-muted">{t.loading}</p>;
+}
+
+export function Site({ page, initialPage, initialPath }) {
+  const { pathname } = useLocation();
+  const ready = page || (pagePath(pathname) === initialPath ? initialPage : null);
+  return (
+      <LangProvider>
+        <Metadata />
+        <ScrollManager />
+        <Navbar />
+        <main id="main" tabIndex={-1} className="outline-none">
+          {ready || <Suspense fallback={<Loading />}>
+            <Routes>
+              {['', '/en', '/it'].map((prefix) => [
+                <Route key={`${prefix}/`} path={prefix || '/'} element={<Home />} />,
+                <Route key={`${prefix}/sales-outreach`} path={`${prefix}/sales-outreach`} element={<ServicePage key="outbound" service="outbound" />} />,
+                <Route key={`${prefix}/customer-support`} path={`${prefix}/customer-support`} element={<ServicePage key="support" service="support" />} />,
+                <Route key={`${prefix}/results`} path={`${prefix}/results`} element={<ResultsPage />} />,
+                <Route key={`${prefix}/how-we-work`} path={`${prefix}/how-we-work`} element={<HowWeWork />} />,
+                <Route key={`${prefix}/contact`} path={`${prefix}/contact`} element={<Contact />} />,
+                <Route key={`${prefix}/privacy`} path={`${prefix}/privacy`} element={<Privacy />} />,
+                <Route key={`${prefix}/terms`} path={`${prefix}/terms`} element={<Terms />} />,
+              ])}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>}
+        </main>
+        <Footer />
+        <div className="grain" aria-hidden="true" />
+      </LangProvider>
+  );
+}
+
+export default function App({ initialPage, initialPath }) {
   useEffect(() => {
     const stop = startSmoothScroll();
     // Text reflows once the web fonts land: re-measure every trigger. Here and not at module load,
@@ -53,23 +96,5 @@ export default function App() {
     return stop;
   }, []);
 
-  return (
-    <LangProvider>
-      <BrowserRouter>
-        <ScrollManager />
-        <Navbar />
-        <main id="main" tabIndex={-1} className="outline-none">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
-        <div className="grain" aria-hidden="true" />
-      </BrowserRouter>
-    </LangProvider>
-  );
+  return <BrowserRouter><Site initialPage={initialPage} initialPath={initialPath} /></BrowserRouter>;
 }

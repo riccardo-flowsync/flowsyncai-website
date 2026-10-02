@@ -112,8 +112,11 @@
     transform-origin: left;
     transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .nav-link:is(:hover, :focus-visible)::after {
+  .nav-link:is(:hover, :focus-visible, [aria-current="page"])::after {
     transform: scaleX(1);
+  }
+  .nav-link[aria-current="page"] {
+    color: theme('colors.fg');
   }
 
   .btn-primary {

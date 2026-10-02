@@ -1,5 +1,4 @@
-import { Link } from 'react-router-dom';
-import ScrollLink from './ScrollLink';
+import Link from './SiteLink';
 import { Logo } from './Navbar';
 import { useCopy } from '../lib/lang';
 
@@ -9,7 +8,7 @@ const copy = {
   en: {
     tagline: 'AI systems for B2B outbound and customer support.',
     site: 'Site',
-    sections: [['#systems', 'Systems'], ['#results', 'Results'], ['#process', 'Process'], ['#faq', 'FAQ'], ['#book', 'Book a call']],
+    sections: [['/sales-outreach', 'Sales outreach'], ['/customer-support', 'Customer support'], ['/results', 'Results'], ['/how-we-work', 'How we work'], ['/contact', 'Book a call']],
     legal: 'Legal',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Terms'], ['/contact', 'Contact']],
     city: 'Rome, Italy',
@@ -17,7 +16,7 @@ const copy = {
   it: {
     tagline: 'Sistemi AI per l’outbound B2B e l’assistenza clienti.',
     site: 'Sito',
-    sections: [['#systems', 'Sistemi'], ['#results', 'Risultati'], ['#process', 'Metodo'], ['#faq', 'FAQ'], ['#book', 'Prenota una call']],
+    sections: [['/sales-outreach', 'Nuovi clienti'], ['/customer-support', 'Assistenza clienti'], ['/results', 'Risultati'], ['/how-we-work', 'Come lavoriamo'], ['/contact', 'Prenota una call']],
     legal: 'Legale',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Termini di servizio'], ['/contact', 'Contatti']],
     city: 'Roma, Italia',
@@ -46,7 +45,7 @@ export default function Footer() {
             <ul className="mt-3 space-y-1 text-[0.94rem] text-muted">
               {t.sections.map(([to, label]) => (
                 <li key={to}>
-                  <ScrollLink to={to} className={link}>{label}</ScrollLink>
+                  <Link to={to} className={link}>{label}</Link>
                 </li>
               ))}
             </ul>

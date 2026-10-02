@@ -34,10 +34,12 @@ const copy = {
   },
 };
 
-export default function FAQ() {
+export default function FAQ({ kind = 'all' }) {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
+  const indexes = { home: [5, 6, 8], outbound: [0, 1, 4, 5, 7], support: [6, 2, 8] }[kind];
+  const items = indexes ? indexes.map((i) => t.items[i]) : t.items;
 
   // Scrubbed, so the lines rewind on the way back: the section rule, the list's top line, then each row's divider in a short wave.
   // The wave is one timeline on the list's top edge (not one trigger per row), so opening an answer cannot undraw a divider.
@@ -66,7 +68,7 @@ export default function FAQ() {
           <h2 key={lang} className="faq-title t-h2 lg:sticky lg:top-28">{t.title}</h2>
         </div>
         <div className="faq-list rule lg:col-span-8">
-          {t.items.map(([q, a]) => (
+          {items.map(([q, a]) => (
             <details
               key={q}
               className="faq-row group relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-line after:[transform:scaleX(var(--d,1))]"

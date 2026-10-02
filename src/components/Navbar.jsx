@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from './SiteLink';
 import { Menu, X } from 'lucide-react';
-import ScrollLink from './ScrollLink';
 import { useCopy, useLang } from '../lib/lang';
 import { lockScroll } from '../lib/motion';
 import logoMask from '../assets/logo-mask.webp'; // 1.4 KB, so the build inlines it: the first paint waits for no image request
@@ -9,7 +8,7 @@ import logoMask from '../assets/logo-mask.webp'; // 1.4 KB, so the build inlines
 const copy = {
   en: {
     nav: 'Main',
-    links: [['#systems', 'Systems'], ['#results', 'Results'], ['#process', 'Process'], ['#faq', 'FAQ']],
+    links: [['/sales-outreach', 'Sales outreach'], ['/customer-support', 'Customer support'], ['/results', 'Results'], ['/how-we-work', 'How we work']],
     book: 'Book a call',
     menu: 'Menu',
     skip: 'Skip to content',
@@ -18,7 +17,7 @@ const copy = {
   },
   it: {
     nav: 'Principale',
-    links: [['#systems', 'Sistemi'], ['#results', 'Risultati'], ['#process', 'Metodo'], ['#faq', 'FAQ']],
+    links: [['/sales-outreach', 'Nuovi clienti'], ['/customer-support', 'Assistenza'], ['/results', 'Risultati'], ['/how-we-work', 'Come lavoriamo']],
     book: 'Prenota una call',
     menu: 'Menu',
     skip: 'Vai al contenuto',
@@ -93,11 +92,11 @@ export default function Navbar() {
     };
   }, [open]);
 
-  const close = () => setOpen(false);
+  const close = () => { setOpen(false); toggle.current?.focus(); };
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-[100] border-b transition-colors duration-300 ${
+      className={`fixed inset-x-0 top-0 z-[100] border-b transition-colors duration-150 ${
         scrolled || open ? 'border-line bg-canvas/95' : 'border-transparent'
       }`}
     >
@@ -110,19 +109,19 @@ export default function Navbar() {
           <span translate="no" className="max-w-[150px] leading-tight sm:max-w-none">FlowSync AI Solutions</span>
         </Link>
 
-        <ul className="hidden items-center gap-7 text-[0.94rem] text-muted xl:flex">
+        <ul className="hidden items-center gap-5 text-[0.88rem] text-muted xl:flex">
           {t.links.map(([to, label]) => (
             <li key={to}>
-              <ScrollLink to={to} className="nav-link transition-colors hover:text-fg">{label}</ScrollLink>
+              <Link to={to} className="nav-link transition-colors hover:text-fg">{label}</Link>
             </li>
           ))}
         </ul>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <LangSwitch className="hidden xl:flex" />
-          <ScrollLink to="#book" onClick={close} className="btn-primary hidden px-3.5 py-2 text-sm sm:inline-flex sm:px-4 coarse:min-h-11">
+          <Link to="/contact" onClick={close} className="btn-primary hidden px-3.5 py-2 text-sm sm:inline-flex sm:px-4 coarse:min-h-11">
             {t.book}
-          </ScrollLink>
+          </Link>
           <button
             ref={toggle}
             type="button"
@@ -143,15 +142,15 @@ export default function Navbar() {
             <ul className="flex flex-col gap-5">
               {t.links.map(([to, label]) => (
                 <li key={to}>
-                  <ScrollLink to={to} onClick={close} className="text-3xl font-semibold tracking-tight [font-stretch:112%]">
+                  <Link to={to} onClick={close} className="text-3xl font-semibold tracking-tight [font-stretch:112%]">
                     {label}
-                  </ScrollLink>
+                  </Link>
                 </li>
               ))}
             </ul>
             <div className="mt-auto flex flex-col gap-4">
               <LangSwitch className="self-start" />
-              <ScrollLink to="#book" onClick={close} className="btn-primary w-full">{t.book}</ScrollLink>
+              <Link to="/contact" onClick={close} className="btn-primary w-full">{t.book}</Link>
             </div>
           </div>
         </div>

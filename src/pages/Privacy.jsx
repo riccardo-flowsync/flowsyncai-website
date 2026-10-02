@@ -222,7 +222,6 @@ export default function Privacy() {
   const t = useCopy(copy);
   return (
     <PageLayout title={t.title} updated={t.updated}>
-      <title>{t.docTitle}</title>
       {t.sections.map((s) => (
         <PageSection key={s.title} title={s.title}>{s.body}</PageSection>
       ))}
