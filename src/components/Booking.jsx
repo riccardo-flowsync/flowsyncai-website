@@ -14,6 +14,7 @@ const copy = {
     title: 'Book a 30\u2011minute call', // non-breaking hyphen
     sub: 'Sales or support, we’ll see where a system would help.',
     role: 'Founder, FlowSync AI Solutions',
+    location: 'Rome and Dubai',
     agenda: [
       'Your sales or customer support today.',
       'Where a system would help, and what it would do.',
@@ -35,6 +36,7 @@ const copy = {
     title: 'Prenota una call di 30\u00a0minuti',
     sub: 'Vendite o assistenza: vediamo dove un sistema ti aiuterebbe.',
     role: 'Fondatore, FlowSync AI Solutions',
+    location: 'Roma e Dubai',
     agenda: [
       'Come trovi clienti o gestisci l’assistenza oggi.',
       'Dove un sistema ti aiuterebbe, e cosa farebbe.',
@@ -173,13 +175,11 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
           <p className="t-lead mt-5 text-muted">{t.sub}</p>
 
-          {heading === 'h1' && <div className="mt-8 flex items-center gap-4">
-            <img src="/riccardo-casale.webp" alt="" width="56" height="56" className="h-14 w-14 rounded-full object-cover" />
-            <div>
-              <p className="font-semibold">Riccardo Casale</p>
-              <p className="text-sm text-muted">{t.role}</p>
-            </div>
-          </div>}
+          <div className="mt-8">
+            <p className="font-semibold">Riccardo Casale</p>
+            <p className="text-sm text-muted">{t.role}</p>
+            <p className="text-sm text-muted">{t.location}</p>
+          </div>
 
           <ul className="book-agenda rule mt-8 grid gap-3 pt-6 text-muted">
             {t.agenda.map((item) => (

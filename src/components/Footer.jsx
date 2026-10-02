@@ -9,7 +9,7 @@ const copy = {
   en: {
     tagline: 'Your AI automation agency. New customers, better customer care.',
     site: 'Site',
-    sections: [['#systems', 'Services'], ['#results', 'Results'], ['#about', 'About'], ['#faq', 'FAQ'], ['#book', 'Book a call']],
+    sections: [['#systems', 'Services'], ['#results', 'Results'], ['#faq', 'FAQ'], ['#book', 'Book a call']],
     legal: 'Legal',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Terms'], ['/contact', 'Contact']],
     city: 'Rome, Italy',
@@ -17,7 +17,7 @@ const copy = {
   it: {
     tagline: 'La tua agenzia di automazione AI. Nuovi clienti, più cura per quelli che hai.',
     site: 'Sito',
-    sections: [['#systems', 'Servizi'], ['#results', 'Risultati'], ['#about', 'Chi siamo'], ['#faq', 'FAQ'], ['#book', 'Prenota una call']],
+    sections: [['#systems', 'Servizi'], ['#results', 'Risultati'], ['#faq', 'FAQ'], ['#book', 'Prenota una call']],
     legal: 'Legale',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Termini di servizio'], ['/contact', 'Contatti']],
     city: 'Roma, Italia',

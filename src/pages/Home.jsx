@@ -1,6 +1,5 @@
 import Hero from '../components/Hero';
 import Systems from '../components/Systems';
-import About from '../components/About';
 import FAQ from '../components/FAQ';
 import Booking from '../components/Booking';
 import { useCopy } from '../lib/lang';
@@ -17,7 +16,6 @@ export default function Home() {
       <title>{t.docTitle}</title>
       <Hero />
       <Systems />
-      <About />
       <FAQ />
       <Booking />
     </>

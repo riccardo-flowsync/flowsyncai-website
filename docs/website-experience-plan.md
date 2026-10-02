@@ -210,3 +210,24 @@ Desktop and phone visual review passed, with both language menus and the booking
 CTA checked through computer use. The design detector reported no findings.
 Mobile Lighthouse: performance 94, accessibility 100, best practices 100,
 SEO 100; LCP 2.6 seconds, blocking time 60 milliseconds, layout shift 0.
+
+## Shorten the page and keep a compact founder signature
+
+Owner decision, 2026-10-03: remove the large founder section and keep a small
+founder signature beside booking. Include Rome and Dubai in both languages.
+
+- [x] Remove the founder section, portrait asset, and About navigation links.
+- [x] Show the founder name, role, and Rome and Dubai beside booking in EN/IT.
+- [x] Verify desktop/phone layouts, booking navigation, and page performance.
+- [x] Update the review preview, keeping production unchanged.
+
+The homepage now moves directly from the service results to FAQ and booking.
+The founder signature is plain text on home and contact, with no portrait or
+separate personal CTA. The original and edited portrait files remain outside the
+website repository. Legal footer details are unchanged.
+
+Build, lint, and all 42 responsive configurations pass. Desktop and phone visual
+review found no material issues; English/Italian signatures and removed About
+links were checked through computer use. The design detector reported no findings.
+Mobile Lighthouse: performance 94, accessibility 100, best practices 100,
+SEO 100; LCP 2.6 seconds, blocking time 50 milliseconds, layout shift 0.

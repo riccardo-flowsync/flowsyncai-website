@@ -9,7 +9,7 @@ import logoMask from '../assets/logo-mask.webp'; // 1.4 KB, so the build inlines
 const copy = {
   en: {
     nav: 'Main',
-    links: [['#systems', 'Services'], ['#results', 'Results'], ['#about', 'About'], ['#faq', 'FAQ']],
+    links: [['#systems', 'Services'], ['#results', 'Results'], ['#faq', 'FAQ']],
     book: 'Book a call',
     menu: 'Menu',
     skip: 'Skip to content',
@@ -18,7 +18,7 @@ const copy = {
   },
   it: {
     nav: 'Principale',
-    links: [['#systems', 'Servizi'], ['#results', 'Risultati'], ['#about', 'Chi siamo'], ['#faq', 'FAQ']],
+    links: [['#systems', 'Servizi'], ['#results', 'Risultati'], ['#faq', 'FAQ']],
     book: 'Prenota una call',
     menu: 'Menu',
     skip: 'Vai al contenuto',
