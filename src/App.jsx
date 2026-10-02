@@ -4,6 +4,7 @@ import { LangProvider } from './lib/lang';
 import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop, scenesReady } from './lib/motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import CircuitBackdrop from './components/CircuitBackdrop';
 import Home from './pages/Home';
 import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
@@ -57,17 +58,20 @@ export default function App() {
     <LangProvider>
       <BrowserRouter>
         <ScrollManager />
-        <Navbar />
-        <main id="main" tabIndex={-1} className="outline-none">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
+        <div className="relative isolate">
+          <CircuitBackdrop />
+          <Navbar />
+          <main id="main" tabIndex={-1} className="outline-none">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
         <div className="grain" aria-hidden="true" />
       </BrowserRouter>
     </LangProvider>

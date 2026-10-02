@@ -12,7 +12,7 @@
     color-scheme: dark;
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation; /* no double-tap zoom delay */
-    scroll-padding-top: 6.5rem; /* jumps and keyboard focus stop below the fixed navbar; Lenis and scrollIntoView both read it */
+    scroll-padding-top: 1.5rem; /* breathing room for anchor links; the navigation scrolls away */
   }
 
   body {
@@ -46,12 +46,12 @@
   /* The headings that rise line by line. The h2s (riseOnScroll) keep h2's balanced wrapping: SplitText measures the same breaks
      (checked 320 to 1920 px, EN and IT), and plain wrapping would strand "campaign." on its own line.
      flow-root keeps each heading's own box the same height as unsplit text, despite the mask padding below. */
-  .hero-title, .sys-title, .res-title, .proc-title, .faq-title, .book-title {
+  .hero-title, .sys-title, .res-title, .faq-title, .book-title {
     display: flow-root;
   }
 
   /* The line masks clip at the line box (1.02 hero, 1.06 h2), which cuts the tails of g, p and y. Extend the clip downwards, layout unchanged. */
-  :is(.hero-title, .sys-title, .res-title, .proc-title, .faq-title, .book-title) > div {
+  :is(.hero-title, .sys-title, .res-title, .faq-title, .book-title) > div {
     padding-bottom: 0.08em;
     margin-bottom: -0.08em;
   }
@@ -64,6 +64,22 @@
 @layer components {
   .page {
     @apply mx-auto w-full max-w-page px-5 sm:px-8 lg:px-12;
+  }
+
+  /* Soften the circuit only beneath reading groups, leaving the gaps open. */
+  .reading-surface {
+    position: relative;
+    isolation: isolate;
+  }
+  .reading-surface::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgb(10 10 11 / .8) 12px,
+      rgb(10 10 11 / .8) calc(100% - 12px), transparent);
+    mask-image: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent);
   }
 
   .t-display {
@@ -98,7 +114,7 @@
   }
 
   .btn-quiet {
-    @apply btn text-fg ring-1 ring-inset ring-line hover:bg-raised;
+    @apply btn bg-canvas text-fg ring-1 ring-inset ring-line hover:bg-raised;
   }
 
   .link {
@@ -136,6 +152,23 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+.circuit-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+  color: #9d7cff;
+}
+
+/* One continuous home canvas. Separators inside the content keep their meaning. */
+.circuit-backdrop ~ main > section.rule::before { display: none; }
+.circuit-backdrop ~ footer { border-color: transparent; }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .btn-primary:active, .btn-quiet:active { scale: 0.98; }
+}
+
 /* FAQ answers slide open where the browser supports animating details (Chrome 131+); elsewhere they just open */
 .faq details {
   interpolate-size: allow-keywords;
@@ -143,7 +176,7 @@
 .faq details::details-content {
   block-size: 0;
   overflow-y: clip;
-  transition: block-size 0.35s ease, content-visibility 0.35s allow-discrete;
+  transition: block-size 0.25s cubic-bezier(0.16, 1, 0.3, 1), content-visibility 0.25s allow-discrete;
 }
 .faq details[open]::details-content {
   block-size: auto;

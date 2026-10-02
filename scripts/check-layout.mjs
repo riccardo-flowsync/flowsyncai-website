@@ -91,11 +91,11 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
     return cut;
   };
 
-  // Top bar: the fixed <header> (the old design only has a <nav>)
+  // Top navigation: it starts above the headline and scrolls away with the page.
   const bar = document.querySelector('header, nav');
   const barBottom = () => bar.getBoundingClientRect().bottom;
 
-  // 2. The headline starts below the fixed header
+  // 2. The headline starts below the opening header
   const h1 = document.querySelector('h1');
   if (!bar || !h1) problems.push(`no ${bar ? '<h1>' : '<header>'} found`);
   else if (h1.getBoundingClientRect().top < barBottom()) problems.push(`headline sits under the header (starts ${px(h1.getBoundingClientRect().top)}, header ends ${px(barBottom())})`);

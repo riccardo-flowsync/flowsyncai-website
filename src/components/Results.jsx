@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, later } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, later } from '../lib/motion';
 
 // Source: the outbound case studies, updated 2026-09-23. Interested and meetings add up to the totals.
 const ROWS = [
@@ -29,8 +29,8 @@ const SPLIT_COLORS = ['bg-accent', 'bg-accent/50', 'bg-faint/60'];
 
 const copy = {
   en: {
-    title: 'The results, campaign by campaign.',
-    intro: 'Five real B2B campaigns on cold email and LinkedIn, in the UK, Europe and the UAE. Names withheld.',
+    outreach: 'AI outreach results',
+    campaigns: 'Five past B2B campaigns on cold email and LinkedIn, in the UK, Europe and the UAE. Names withheld.',
     totals: [
       [49, '', 'meetings booked'],
       [155, '', 'interested prospects'],
@@ -71,8 +71,9 @@ const copy = {
     ],
     note: 'Past results: yours depend on your offer and your market. Reply rates as reported by the sending platform for each campaign’s period. Interested means the person replied asking for details, a price or a call. Updated 23 September 2026.',
     support: {
-      title: 'Support agents in two online shops',
-      intro: 'Each one answers customers on its own and passes what it cannot solve to the team as a ticket. Names withheld.',
+      title: 'AI agent results',
+      intro: 'Two online shops. Each agent answers on its own and passes unresolved cases to the team as a ticket. Names withheld.',
+      capabilities: 'What the agent handles',
       chats: 'customer chats',
       upTo: 'up to',
       hours: 'hours of staff time saved a month (estimate)',
@@ -93,8 +94,8 @@ const copy = {
     },
   },
   it: {
-    title: 'I risultati, campagna per campagna.',
-    intro: 'Cinque campagne B2B reali, via email a freddo e LinkedIn, tra Regno Unito, Europa ed Emirati. Nomi riservati.',
+    outreach: 'Risultati di AI outreach',
+    campaigns: 'Cinque campagne B2B passate, via email a freddo e LinkedIn, tra Regno Unito, Europa ed Emirati. Nomi riservati.',
     totals: [
       [49, '', 'appuntamenti fissati'],
       [155, '', 'contatti interessati'],
@@ -135,8 +136,9 @@ const copy = {
     ],
     note: 'Risultati passati: i tuoi dipendono dalla tua offerta e dal tuo mercato. Tassi di risposta come riportati dalla piattaforma di invio per il periodo di ciascuna campagna. Interessato significa che la persona ha risposto chiedendo dettagli, un prezzo o una call. Aggiornato il 23 settembre 2026.',
     support: {
-      title: 'Agenti di assistenza in due negozi online',
-      intro: 'Ognuno risponde ai clienti da solo e passa al team, con un ticket, quello che non può risolvere. Nomi riservati.',
+      title: 'Risultati di AI agent',
+      intro: 'Due negozi online. Ogni agente risponde da solo e passa i casi irrisolti al team con un ticket. Nomi riservati.',
+      capabilities: 'Di cosa si occupa l’agente',
       chats: 'chat dei clienti',
       upTo: 'fino a',
       hours: 'ore di lavoro risparmiate al mese (stima)',
@@ -162,35 +164,47 @@ function Figure({ value, none }) {
   if (value !== null) return value;
   return (
     <>
-      <span aria-hidden="true" className="text-faint">–</span>
+      <span aria-hidden="true" className="text-muted">–</span>
       <span className="sr-only">{none}</span>
     </>
   );
 }
 
-export default function Results() {
+function DisclosureSummary({ children }) {
+  return (
+    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-6 py-2 focus-visible:outline focus-visible:outline-accent focus-visible:outline-offset-4 [&::-webkit-details-marker]:hidden">
+      {children}
+      <span aria-hidden="true" className="relative h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-open:rotate-45">
+        <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-muted transition-colors group-hover:bg-accent" />
+        <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-muted transition-colors group-hover:bg-accent" />
+      </span>
+    </summary>
+  );
+}
+
+export default function Results({ service }) {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
+  const outbound = service === 'outbound';
+  const id = outbound ? 'results' : 'results-support';
   const locale = lang === 'it' ? 'it-IT' : 'en-GB';
   const pf = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   const nf = new Intl.NumberFormat(locale, { useGrouping: 'always' }); // Italian leaves 4-digit numbers ungrouped by default
   const pct = (v) => `${pf.format(v)}%`;
   const num = (v) => nf.format(v);
 
-  // Real figures stay printed. Only supporting bars and rules animate, at a fixed pace.
+  // Real figures stay printed. Only supporting bars animate, at a fixed pace.
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
-      drawRule(root.current);
-      riseOnScroll('.res-title');
-      gsap.utils.toArray('.res-chart').forEach((chart) => {
+      gsap.utils.toArray('.res-chart', root.current).forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
         gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
           .from(bars[bars.length - 1], { scaleX: 0, duration: 0.4, ease: 'power2.out' })
           .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' }, 0.3);
       });
-      gsap.utils.toArray('.sup-card').forEach((card) => {
+      gsap.utils.toArray('.sup-card', root.current).forEach((card) => {
         gsap.from(card.querySelector('.sup-bar'), {
           scaleX: 0, transformOrigin: 'left center', duration: 1, ease: 'power2.out',
           scrollTrigger: { trigger: card, start: 'top 88%', once: true },
@@ -198,19 +212,16 @@ export default function Results() {
       });
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, service], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="rule py-24 lg:py-32">
-      <div className="page">
-        <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
-          <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
-          <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
-        </div>
-
-        <dl className="res-totals mt-14 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
+    <section id={id} data-results={service} aria-labelledby={`${id}-heading`} ref={root} className="relative mt-10 scroll-mt-24 border-t border-line pt-8 text-fg lg:scroll-mt-0">
+      <h4 id={`${id}-heading`} className="reading-surface t-h3 w-fit font-semibold">{outbound ? t.outreach : t.support.title}</h4>
+      {outbound ? <>
+        <p className="reading-surface mt-3 max-w-[70ch] text-sm text-muted">{t.campaigns}</p>
+        <dl className="res-totals mt-6 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
           {t.totals.map(([n, unit, label]) => (
-            <div key={label} className="flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
+            <div key={label} className="reading-surface flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
               <dt className="max-w-[24ch] text-sm text-muted">{label}</dt>
               <dd className="text-[clamp(2.75rem,2rem+2.6vw,4.25rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums [font-stretch:112%]">
                 {n}{unit}
@@ -219,7 +230,7 @@ export default function Results() {
           ))}
         </dl>
 
-        <h3 className="t-h3 mt-20">{t.market}</h3>
+        <h5 className="reading-surface mt-8 w-fit text-lg font-medium">{t.market}</h5>
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           {t.charts.map((c, ci) => {
             const values = CHARTS[ci];
@@ -237,8 +248,8 @@ export default function Results() {
                     return (
                       <li key={c.bars[i]}>
                         <div className="flex items-baseline justify-between gap-3 text-sm">
-                          <span className={isMarket ? 'text-faint' : 'text-muted'}>{c.bars[i]}</span>
-                          <span className={`tabular-nums ${isMarket ? 'text-faint' : 'font-medium'}`}>{pct(v)}</span>
+                          <span className="text-muted">{c.bars[i]}</span>
+                          <span className={`tabular-nums ${isMarket ? 'text-muted' : 'font-medium'}`}>{pct(v)}</span>
                         </div>
                         <div aria-hidden="true" className="mt-1.5 h-1.5 rounded-full bg-raised">
                           <div
@@ -250,17 +261,17 @@ export default function Results() {
                     );
                   })}
                 </ul>
-                <p className="mt-auto border-t border-line pt-4 text-xs leading-relaxed text-faint">{c.source}</p>
+                <p className="mt-auto border-t border-line pt-4 text-xs leading-relaxed text-muted">{c.source}</p>
               </figure>
             );
           })}
         </div>
 
-        <details className="mt-8 rounded-lg border border-line p-5">
-          <summary className="cursor-pointer font-medium focus-visible:outline focus-visible:outline-accent">{t.details}</summary>
+        <details className="group mt-8 rounded-lg border border-line bg-surface px-5 py-3">
+          <DisclosureSummary><span className="font-medium">{t.details}</span></DisclosureSummary>
         {/* Ledger: a table from sm up, a list on phones (the columns do not fit at 320px) */}
         <table className="mt-6 hidden w-full text-left sm:table">
-          <thead className="text-sm text-faint">
+          <thead className="text-sm text-muted">
             <tr className="border-b border-line">
               <th scope="col" className="pb-3 font-normal">{t.head[0]}</th>
               <th scope="col" className="pb-3 pl-6 font-normal">{t.head[1]}</th>
@@ -274,7 +285,7 @@ export default function Results() {
                 <th scope="row" className="py-5 pr-4 font-normal">
                   <span className="font-medium">{name}</span>
                   <span className="mt-1 block text-sm text-muted">{what}</span>
-                  <span className="block text-sm text-faint">{where}</span>
+                  <span className="block text-sm text-muted">{where}</span>
                 </th>
                 <td className="py-5 pl-6">
                   <span className="text-lg font-semibold tabular-nums">{pct(ROWS[i].rate)}</span>
@@ -299,7 +310,7 @@ export default function Results() {
             <li key={name} className={`res-li ${ROW_RULE} py-5`}>
               <p className="font-medium">{name}</p>
               <p className="mt-1 text-sm text-muted">{what}</p>
-              <p className="text-sm text-faint">{where}</p>
+              <p className="text-sm text-muted">{where}</p>
               <p className="mt-3 text-sm text-muted"><span className="mr-1.5 text-base font-semibold text-fg tabular-nums">{pct(ROWS[i].rate)}</span>{rateLabel}</p>
               <p className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
                 {ROWS[i].interested !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].interested}</span> {t.head[2].toLowerCase()}</span>}
@@ -309,18 +320,18 @@ export default function Results() {
           ))}
         </ul>
 
-          <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
+          <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-muted">{t.note}</p>
         </details>
 
-        <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>
-        <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+      </> : <>
+        <p className="reading-surface mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
+        <div className="mt-8 grid gap-4 lg:grid-cols-2 lg:gap-y-0">
           {t.support.cases.map((c, ci) => {
             const s = SUPPORT[ci];
             return (
-              <article key={c.name} className="sup-card flex flex-col rounded-[10px] border border-line bg-surface p-6">
-                <h4 className="font-medium">{c.name}</h4>
-                <p className="mt-1 text-sm text-faint">{c.scope}</p>
+              <article key={c.name} className="sup-card flex flex-col rounded-[10px] border border-line bg-surface p-6 lg:row-span-6 lg:grid lg:grid-rows-subgrid">
+                <h5 className="font-medium">{c.name}</h5>
+                <p className="mt-1 text-sm text-muted">{c.scope}</p>
                 <dl className="mt-6 grid grid-cols-2 gap-6">
                   <div className="flex flex-col-reverse justify-end gap-2">
                     <dt className="text-sm text-muted">{t.support.chats}</dt>
@@ -352,17 +363,18 @@ export default function Results() {
                     </li>
                   ))}
                 </ul>
-                <ul className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
-                  {c.does.map((d) => (
-                    <li key={d} className="sup-do rounded-lg border border-line px-3 py-1.5 text-sm text-muted">{d}</li>
-                  ))}
-                </ul>
+                <details className="group mt-6 border-t border-line pt-2 text-sm text-muted">
+                  <DisclosureSummary>{t.support.capabilities}</DisclosureSummary>
+                  <ul className="mt-3 grid list-disc gap-1.5 pl-4">
+                    {c.does.map((d) => <li key={d}>{d}</li>)}
+                  </ul>
+                </details>
               </article>
             );
           })}
         </div>
-        <details className="mt-6 text-sm text-muted"><summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.method}</summary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
-      </div>
+        <details className="reading-surface group mt-6 text-sm text-muted"><DisclosureSummary>{t.method}</DisclosureSummary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-muted">{t.support.note}</p></details>
+      </>}
     </section>
   );
 }

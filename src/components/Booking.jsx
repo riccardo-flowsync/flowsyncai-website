@@ -2,20 +2,19 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LeadForm from './LeadForm';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, HOLD, riseOnScroll, drawRule, scrollToEl, later } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, scrollToEl, later } from '../lib/motion';
 import { CAL_LINK } from '../lib/cal';
 
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
 const CalendarEmbed = lazy(() => import('./CalendarEmbed').catch(() => ({ default: CalendarLink })));
 const CAL_URL = `https://cal.com/${CAL_LINK}`;
-const PHOTO = null; // '/founder.jpg' once Riccardo sends it
-const LINKEDIN = null; // his profile URL once provided
 
 const copy = {
   en: {
     title: 'Book a 30\u2011minute call', // non-breaking hyphen
     sub: 'Sales or support, we’ll see where a system would help.',
     role: 'Founder, FlowSync AI Solutions',
+    location: 'Rome and Dubai',
     agenda: [
       'Your sales or customer support today.',
       'Where a system would help, and what it would do.',
@@ -37,6 +36,7 @@ const copy = {
     title: 'Prenota una call di 30\u00a0minuti',
     sub: 'Vendite o assistenza: vediamo dove un sistema ti aiuterebbe.',
     role: 'Fondatore, FlowSync AI Solutions',
+    location: 'Roma e Dubai',
     agenda: [
       'Come trovi clienti o gestisci l’assistenza oggi.',
       'Dove un sistema ti aiuterebbe, e cosa farebbe.',
@@ -88,12 +88,12 @@ function MonthPreview({ animate }) {
         defaults: { ease: 'none' },
         scrollTrigger: { trigger: box.current, start: 'top 88%', once: true },
       });
-      tl.from('.cal-wd', { opacity: 0, duration: 0.3, stagger: 0.03 })
-        .from('.cal-day', { opacity: 0, scale: 0.8, duration: 0.5, stagger: 0.05 }, '>-0.1');
+      tl.from('.cal-wd', { opacity: 0, duration: 0.2, stagger: 0.015 })
+        .from('.cal-day', { opacity: 0, scale: 0.95, duration: 0.3, stagger: 0.015 }, '>-0.1');
       // A dashed copy draws the ring; once it is done a plain copy takes over, so the finished ring has no seam at the start point.
       // (Two layers instead of an onUpdate that clears the dash: ScrollTrigger refreshes render without callbacks.)
       if (box.current.querySelector('.cal-ring')) {
-        tl.fromTo('.cal-ring-draw', { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2 }, '>-0.2')
+        tl.fromTo('.cal-ring-draw', { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4 }, '>-0.2')
           .fromTo('.cal-ring-done', { opacity: 0 }, { opacity: 1, duration: 0.05 }, '>');
       }
     });
@@ -162,26 +162,6 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // The page's one WebGL moment (a dot field settling into the calendar's grid, see lib/dotField.js). Desktop with a mouse
-  // and motion allowed only, fetched when the section is a screen away. Phones, touch and reduced motion get nothing:
-  // the settled grid is quiet by design, and a static copy could not keep clear of the text without the same measuring.
-  useGSAP(() => {
-    if (heading !== 'h2') return undefined;
-    const mm = gsap.matchMedia();
-    mm.add(HOLD, () => {
-      let stop;
-      let gone = false;
-      const io = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting) return;
-        io.disconnect();
-        import('../lib/dotField').then(({ default: mount }) => { if (!gone) stop = mount(root.current); }).catch(() => {});
-      }, { rootMargin: '100% 0px' });
-      io.observe(root.current);
-      return () => { gone = true; io.disconnect(); stop?.(); };
-    });
-    return () => mm.revert();
-  }, { scope: root });
-
   const openCalendar = () => {
     setWriting(false);
     setCalOpen(true);
@@ -189,23 +169,16 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
   };
 
   return (
-    <section id="book" ref={root} className="rule isolate py-24 lg:py-32">
+    <section id="book" ref={root} className="rule isolate py-20 lg:py-24">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
-        <div className="lg:col-span-5">
+        <div className="reading-surface self-start lg:col-span-5">
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
           <p className="t-lead mt-5 text-muted">{t.sub}</p>
 
-          <div className="mt-8 flex items-center gap-4">
-            {PHOTO ? (
-              <img src={PHOTO} alt="" width="56" height="56" className="h-14 w-14 rounded-full object-cover" />
-            ) : (
-              <span aria-hidden="true" className="grid h-14 w-14 place-items-center rounded-full border border-line bg-raised font-semibold text-muted">RC</span>
-            )}
-            <div>
-              <p className="font-semibold">Riccardo Casale</p>
-              <p className="text-sm text-muted">{t.role}</p>
-              {LINKEDIN && <a href={LINKEDIN} target="_blank" rel="noreferrer" className="link text-sm">LinkedIn</a>}
-            </div>
+          <div className="mt-8">
+            <p className="font-semibold">Riccardo Casale</p>
+            <p className="text-sm text-muted">{t.role}</p>
+            <p className="text-sm text-muted">{t.location}</p>
           </div>
 
           <ul className="book-agenda rule mt-8 grid gap-3 pt-6 text-muted">
