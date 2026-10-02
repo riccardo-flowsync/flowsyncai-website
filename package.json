@@ -5,12 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --test test/*.test.mjs",
-    "check:layout": "node scripts/check-layout.mjs",
-    "check:journeys": "node scripts/check-journeys.mjs"
+    "check:layout": "node scripts/check-layout.mjs"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
@@ -22,8 +21,7 @@
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.18.1",
-    "three": "0.186.1"
+    "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

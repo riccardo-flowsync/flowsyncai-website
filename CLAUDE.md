@@ -1,69 +1,99 @@
 # FlowSync AI Solutions website
 
-Marketing site for FlowSync AI Solutions, an AI automation agency in Rome. Its job is to help the right B2B visitor understand the work, review evidence and book a call. The approved 2026-10-02 redesign has four core pages: home, AI outreach, AI agents and contact. Privacy and terms remain separate legal pages.
-
-The site is live at https://flowsyncaisolutions.com on Vercel. This repository is public: never commit secrets, personal data or internal tooling names.
+Marketing site for FlowSync AI Solutions (Rome). Its one job: get the right B2B visitor to book a call.
+Live at https://flowsyncaisolutions.com (Vercel). This repository is public: never commit secrets,
+personal data, or internal tooling names.
 
 ## Stack and commands
 
-React 19, Vite 7, Tailwind 3.4, GSAP 3.14 (ScrollTrigger, SplitText, `@gsap/react`), Lenis, Three.js and `@calcom/embed-react`. Two serverless functions in `api/` (Vercel, Node).
+React 19, Vite 7, Tailwind 3.4, GSAP 3.14 (ScrollTrigger, SplitText, `@gsap/react`), Lenis, `@calcom/embed-react`.
+Two serverless functions in `api/` (Vercel, Node).
 
 ```
 npm run dev            # site only; the form needs `vercel dev` to reach api/
 npm run build
 npm run lint
 npm test               # api/ logic with fetch stubbed, no network
-npm run check:layout   # after build: 19 screen sizes x EN/IT, fails on overflow or clipped text
+npm run check:layout   # after build: 16 screen sizes x EN/IT, fails on overflow or clipped text
 ```
 
-Vercel builds every branch as a preview and `main` as production. Work on a branch, open a PR, inspect the preview and merge only with the owner's approval. Production changes require the owner's OK.
+Deploy: Vercel builds every branch as a preview and `main` as production. Work on a branch, open a PR,
+check the preview, merge only with the owner's OK.
 
-## The experience
+## Design system (keep it; the old site was a viral AI template and looked like one)
 
-- Home introduces the agency, then shows AI outreach and AI agents as separate services, explains the setup process and leads to booking.
-- `/sales-outreach` explains cold-email outreach and contains its campaign evidence.
-- `/customer-support` explains AI agents and contains the support examples and records. The role can cover customer support or agreed repeatable office work, within the tools and permissions configured for it.
-- `/contact` keeps the existing call booking and message form. The calendar loads only after the visitor asks to see available times.
-- The header groups the two services under Services. It retains the logo, language switch and booking action. On mobile, Services expands into a grouped menu.
-- `/privacy` and `/terms` remain available in English and Italian. The old `/results` and `/how-we-work` pages are no longer in the page or sitemap inventory. Legacy links redirect: `/results?view=support` to `/customer-support#results`, `/results?view=outbound` to `/sales-outreach#results`, bare `/results` to `/#systems`, and `/how-we-work` to `/#process`. The same paths retain `/en` and `/it` when present. Client routing also handles legacy links in local previews.
+- Colors (`tailwind.config.js`): canvas `#0a0a0b`, surface `#121214`, raised `#17161b`, line `#232227`,
+  fg `#f4f3ed`, muted `#b3b1aa`, faint `#82817c` (lowest contrast allowed for text), accent `#9d7cff`.
+  Accent is a signal (primary button, live state, key figures), never decoration.
+- Type: Mona Sans Variable for everything, headings at `font-stretch: 112%`. IBM Plex Mono only for machine
+  output inside illustrations. Fonts are self-hosted (Fontsource).
+- Classes in `src/index.css`: `.page`, `.t-display`, `.t-h2`, `.t-h3`, `.t-lead`, `.btn-primary`, `.btn-quiet`,
+  `.link`, `.field`.
+- Never: glass/backdrop blur, glows, gradient text, pulsing status dots, fake "system online" labels,
+  all-caps or monospace labels, eyebrow labels above headings, one accented word in a headline, arrows
+  appended to links, metadata joined with middle dots, numbered markers on things that are not a sequence,
+  fade-up on every section, invented metrics, horizontal-scroll galleries, stacked-card piles, mesh gradients or
+  WebGL colour washes, scrolling marquees, looping "live" ticks.
+- Proof beats adjectives: figures come from the dated case studies; illustrations say they are illustrations.
 
-## Visual system
+## Motion
 
-- Keep the FlowSync identity and Mona Sans. The visual world is a graphite workspace with sculpted tool surfaces, directional white and lavender light, and readable type. Existing logo stays.
-- Colors (`tailwind.config.js`): canvas `#0a0a0b`, surface `#121214`, raised `#17161b`, line `#232227`, fg `#f4f3ed`, muted `#b3b1aa`, faint `#82817c`, accent `#9d7cff`.
-- Accent is a signal for actions and key figures, not decoration. IBM Plex Mono is for machine output inside illustrations. Fonts are self-hosted.
-- Reuse `.page`, `.t-display`, `.t-h2`, `.t-h3`, `.t-lead`, `.btn-primary`, `.btn-quiet`, `.link` and `.field` from `src/index.css` where they fit.
-- Keep text plain and sentence case. Avoid fake system-status labels, glows, gradient text, glass blur, decorative all-caps labels, invented metrics, looping marquees and motion that does not explain the work.
-- Label synthetic demonstrations as illustrative. Keep real evidence distinct from invented example names, messages and records.
+Every scroll shows something new: the moving parts follow the scroll (scrub, and rewind on the way back), they do not
+just play once. Owner's decision 2026-09-30; built in levels, each only if Lighthouse stays >= 90: A scroll story with
+GSAP, then B illustrated extras (SVG morphs, a picture per Process step), then C one light WebGL moment.
 
-## Motion and fallback
+- Three held scenes, pinned and scrubbed: the hero trace walks one lead through the workflow step by step (a ring rides
+  the line, the primary button stays on screen; where it cannot be held it plays once); the Systems stage (the picture
+  starts filling in as it scrolls up, the inbox sorts, a reply drafts, "Approve" is pressed last, then the chat reply
+  types); the Process walk (the line draws, each step rises as the line reaches it).
+- Every other section gets one scroll moment of its own: Results bars grow against the market bar and the totals build
+  from the campaign rows; section rules and FAQ dividers draw in; the booking calendar builds; a thin progress line runs
+  down the page edge. Headings rise through a line mask with one signature ease. The form draws a tick when sent.
+- Pin only with a mouse or trackpad (`(pointer: fine)`) and only when the section fits the screen below the navbar.
+  Phones, touch tablets and short screens get a simple scrub or the finished state. Never capture the wheel page-wide.
+  Held distance in total stays around 6 screens.
+- Scrubbed numbers end exactly on the printed figures. Unlike metrics never count up in one comparable column.
+- Use `useGSAP` with a scope; set hidden states inside `gsap.matchMedia('(prefers-reduced-motion: no-preference)')`
+  so reduced motion and no-JS show finished content. Never hide content with CSS classes. A state that only exists
+  inside an animation (a chip lighting up, a label that swaps) is not content: mark it `data-motion-only`.
+- Late height changes (a heading re-split after a resize, an FAQ answer opening) re-measure every trigger through the
+  body ResizeObserver in `src/lib/motion.js`: no per-component `ScrollTrigger.refresh()` for that.
+- SplitText headings get `key={lang}` and `revertOnUpdate: true` so the language switch re-splits them.
+- Lenis runs on mouse/trackpad only; scroll via `scrollToEl` / `lockScroll` in `src/lib/motion.js`.
+- After every motion change: Lighthouse mobile home >= 90, and `npm run check:layout` including the held states.
 
-- Three.js runs in an OffscreenCanvas worker; keep shader preparation off the main thread. Drawing is on demand and stops while the workspace or document is hidden. Browsers without worker canvas support use the readable HTML composition.
+## Responsive rules
 
-- `WorkspaceEnvironment` dynamically loads one Three.js scene when its workspace approaches the viewport. Its camera and architectural surfaces follow normal page scroll through a scheduled animation frame. It does not run an endless animation or capture the wheel.
-- Readable work surfaces, examples, headings and controls are HTML. CSS provides the workspace backdrop if WebGL is unavailable or loses its context. Reduced motion skips WebGL and GSAP motion; the content and actions remain available.
-- ScrollTrigger chooses the workflow beat; CSS transitions reveal record fields, rules or drafts, then completed actions in 160–360ms independently of wheel speed. Step buttons select any beat directly, and further scrolling resumes the sequence. Desktop uses a short 155svh hold; phones use natural flow. Keep background camera movement restrained and never fade the headline away on scroll. Never pin the whole page or intercept scrolling.
-- Lenis runs only for mouse and trackpad input, and is disabled for reduced motion and touch. Use `scrollToEl` and `lockScroll` from `src/lib/motion.js` for section navigation and overlays.
-- Use `useGSAP` with a scope. Put motion inside `gsap.matchMedia('(prefers-reduced-motion: no-preference)')`; no-JS, reduced motion and failed WebGL must show useful finished content.
-- Keep the existing keyboard, touch and focus behavior for navigation, forms, FAQ and booking. New dropdown behavior must open by hover, click or keyboard, and close on Escape or outside interaction.
-- No fixed-height content boxes, horizontal offsets outside the viewport or clipped text. `npm run check:layout` covers 320x568 through 2560x1440 in EN and IT.
+No fixed-height content boxes, no horizontal offsets that start outside the screen, text must never be clipped.
+`npm run check:layout` covers 320x568 up to 2560x1440, including landscape phones, in both languages.
 
-## Copy and evidence
+## Copy and languages
 
-Every component keeps its copy at the top as `{ en: {...}, it: {...} }` and reads it with `useCopy`. Language is the URL prefix when present, otherwise the saved choice, browser language, then English (`src/lib/lang.js`). Use Italian with "tu".
+Every component keeps its copy at the top as `{ en: {...}, it: {...} }` and reads it with `useCopy`.
+Language = saved choice, else the browser language, else English (`src/lib/lang.js`). Sentence case, plain
+words, short sentences, numbers as digits, Italian with "tu".
 
 What the site may claim:
-
-- Current services include cold-email outbound and AI agents. LinkedIn is a source for finding buyers, not a channel FlowSync runs for clients.
-- Outbound replies are prepared for human review by default, never claim they are always approved. Support agents can act within agreed tool access and pass unresolved cases to the team.
-- Campaign figures must match the dated evidence in `src/components/Results.jsx`, remain anonymized, and describe real campaigns rather than "clients". Compare like with like; do not place a headline reply rate beside an unlike market benchmark.
-- Support figures come from each agent's dated chat records, anonymized by trade and country. Time saved is an estimate, not a measurement: call it "up to" and keep its method and source with it.
+- Only services that run for clients today: outbound on cold email, and support agents on website chat and
+  Instagram. LinkedIn is where buyers are found, not a channel we run.
+- Human approval of outbound replies is "by default", never "always". Chat agents answer on their own and hand
+  over through a ticket.
+- Case-study figures exactly as the dated case-study pack prints them, anonymised, framed as real campaigns
+  (never "clients"). Never put a headline reply rate next to the market benchmark: the bars compare like with like.
+- Support-agent figures come from each agent's own chat records, dated, anonymised by trade and country. Time saved is
+  never measured: show it only as "up to", labelled an estimate, with its method and source in the note.
 - No prices, fee structure, guarantees, contract length, "GDPR compliant", client names or testimonials.
 
-## Leads and legal
+## Leads
 
-- `api/lead.js` validates contact forms, drops honeypot hits, comments on an existing ClickUp card by email, or creates a card assigned to the owner with a 24-hour reply due date.
-- `api/cal-booking.js` checks the Cal.com `BOOKING_CREATED` signature and creates a card for new people only. `api/_clickup.js` contains shared ClickUp calls and is not deployed as a function.
-- Vercel Production and Preview need `CLICKUP_API_KEY` and `CAL_WEBHOOK_SECRET`. Never expose them as `VITE_*`.
-- `CAL_LINK` lives in `src/lib/cal.js`; preserve click-to-load calendar behavior for privacy.
-- Every page shows "FlowSync AI Solutions di Riccardo Casale", "P.IVA 18068831009" and "Roma, Italia" in the footer. Update the privacy or terms date when its content changes.
+- `api/lead.js`: the contact form. Validates, drops honeypot hits, finds an existing card by email and comments
+  on it, otherwise creates a card in the CRM (ClickUp) assigned to the owner with a 24-hour reply due date.
+- `api/cal-booking.js`: Cal.com `BOOKING_CREATED` webhook, signature checked, creates a card for new people only.
+- `api/_clickup.js`: shared ClickUp calls (not deployed as a function).
+- Env vars (Vercel, Production + Preview): `CLICKUP_API_KEY`, `CAL_WEBHOOK_SECRET`. Never expose them as `VITE_*`.
+- The Cal.com calendar loads only after the visitor clicks (privacy); `CAL_LINK` lives in `src/lib/cal.js` (not in the embed file, so Booking can link to it without loading the embed).
+
+## Legal
+
+Every page shows "FlowSync AI Solutions di Riccardo Casale", "P.IVA 18068831009", "Roma, Italia" in the footer
+(Italian law). Privacy and terms pages exist in English and Italian; update their date when their content changes.

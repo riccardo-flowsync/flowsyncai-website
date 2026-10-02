@@ -1,22 +1,5 @@
 {
-  "trailingSlash": false,
-  "redirects": [
-    { "source": "/results", "has": [{ "type": "query", "key": "view", "value": "support" }], "destination": "/customer-support#results", "permanent": true },
-    { "source": "/en/results", "has": [{ "type": "query", "key": "view", "value": "support" }], "destination": "/en/customer-support#results", "permanent": true },
-    { "source": "/it/results", "has": [{ "type": "query", "key": "view", "value": "support" }], "destination": "/it/customer-support#results", "permanent": true },
-    { "source": "/results", "has": [{ "type": "query", "key": "view", "value": "outbound" }], "destination": "/sales-outreach#results", "permanent": true },
-    { "source": "/en/results", "has": [{ "type": "query", "key": "view", "value": "outbound" }], "destination": "/en/sales-outreach#results", "permanent": true },
-    { "source": "/it/results", "has": [{ "type": "query", "key": "view", "value": "outbound" }], "destination": "/it/sales-outreach#results", "permanent": true },
-    { "source": "/results", "destination": "/#systems", "permanent": true },
-    { "source": "/en/results", "destination": "/en#systems", "permanent": true },
-    { "source": "/it/results", "destination": "/it#systems", "permanent": true },
-    { "source": "/how-we-work", "destination": "/#process", "permanent": true },
-    { "source": "/en/how-we-work", "destination": "/en#process", "permanent": true },
-    { "source": "/it/how-we-work", "destination": "/it#process", "permanent": true }
-  ],
   "rewrites": [
-    { "source": "/:lang(en|it)", "destination": "/:lang/index.html" },
-    { "source": "/:lang(en|it)/:page(sales-outreach|customer-support|contact|privacy|terms)", "destination": "/:lang/:page/index.html" },
-    { "source": "/:page(sales-outreach|customer-support|contact|privacy|terms)", "destination": "/:page/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

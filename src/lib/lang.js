@@ -1,8 +1,7 @@
 import { createContext, createElement, useContext, useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { pathLang, pagePath, localizedPath } from './routes';
 
 // Site language: saved choice, else the browser's language, else English.
+// ponytail: language lives in the browser, not the URL; add /it/ routes if Italian search traffic matters.
 const LangContext = createContext({ lang: 'en', setLang: () => {} });
 
 function initialLang() {
@@ -10,23 +9,19 @@ function initialLang() {
     const saved = localStorage.getItem('lang');
     if (saved === 'en' || saved === 'it') return saved;
   } catch { /* storage blocked: fall through */ }
-  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('it') ? 'it' : 'en';
+  return navigator.language?.toLowerCase().startsWith('it') ? 'it' : 'en';
 }
 
 export function LangProvider({ children }) {
-  const [preferred, setPreferred] = useState(initialLang);
-  const { pathname, search, hash } = useLocation();
-  const navigate = useNavigate();
-  const lang = pathLang(pathname) || preferred;
+  const [lang, setLangState] = useState(initialLang);
 
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
   const setLang = (next) => {
-    setPreferred(next);
+    setLangState(next);
     try { localStorage.setItem('lang', next); } catch { /* not persisted, still switches */ }
-    navigate(`${localizedPath(pagePath(pathname), next)}${search}${hash}`);
   };
 
   return createElement(LangContext.Provider, { value: { lang, setLang } }, children);

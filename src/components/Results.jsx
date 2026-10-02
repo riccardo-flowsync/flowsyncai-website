@@ -168,7 +168,7 @@ function Figure({ value, none }) {
   );
 }
 
-export default function Results({ view = 'all' }) {
+export default function Results() {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
@@ -187,23 +187,22 @@ export default function Results({ view = 'all' }) {
       gsap.utils.toArray('.res-chart').forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
         gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
-          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.25, ease: 'power2.out' })
-          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.45, stagger: 0.08, ease: 'power2.out' }, 0.15);
+          .from(bars[bars.length - 1], { scaleX: 0, duration: 0.4, ease: 'power2.out' })
+          .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' }, 0.3);
       });
       gsap.utils.toArray('.sup-card').forEach((card) => {
         gsap.from(card.querySelector('.sup-bar'), {
-          scaleX: 0, transformOrigin: 'left center', duration: 0.5, ease: 'power2.out',
+          scaleX: 0, transformOrigin: 'left center', duration: 1, ease: 'power2.out',
           scrollTrigger: { trigger: card, start: 'top 88%', once: true },
         });
       });
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang, view], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="rule py-20 lg:py-24">
+    <section id="results" ref={root} className="rule py-24 lg:py-32">
       <div className="page">
-        {view !== 'support' && <>
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
           <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
           <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
@@ -303,8 +302,8 @@ export default function Results({ view = 'all' }) {
               <p className="text-sm text-faint">{where}</p>
               <p className="mt-3 text-sm text-muted"><span className="mr-1.5 text-base font-semibold text-fg tabular-nums">{pct(ROWS[i].rate)}</span>{rateLabel}</p>
               <p className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
-                <span>{t.head[2]}: <span className="font-semibold text-fg tabular-nums">{ROWS[i].interested ?? t.none}</span></span>
-                <span>{t.head[3]}: <span className="font-semibold text-fg tabular-nums">{ROWS[i].meetings ?? t.none}</span></span>
+                {ROWS[i].interested !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].interested}</span> {t.head[2].toLowerCase()}</span>}
+                {ROWS[i].meetings !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].meetings}</span> {t.head[3].toLowerCase()}</span>}
               </p>
             </li>
           ))}
@@ -313,10 +312,8 @@ export default function Results({ view = 'all' }) {
           <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
         </details>
 
-        </>}
-        {view !== 'outbound' && <>
-        {view === 'support' ? <h2 key={lang} className="res-title t-h2">{t.support.title}</h2> : <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>}
-        <p className={`mt-3 max-w-[40rem] text-muted ${view === 'support' ? 't-lead' : ''}`}>{t.support.intro}</p>
+        <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>
+        <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {t.support.cases.map((c, ci) => {
             const s = SUPPORT[ci];
@@ -365,7 +362,6 @@ export default function Results({ view = 'all' }) {
           })}
         </div>
         <details className="mt-6 text-sm text-muted"><summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.method}</summary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
-        </>}
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 // Responsive layout check. Run from the repo root:
 //   npm run build && node scripts/check-layout.mjs
 //   node scripts/check-layout.mjs https://example.com    (audit a live URL instead of dist/)
-// Opens the four main pages at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
+// Opens the home page at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
 // one line each: "ok" or "FAIL <what is wrong>". Checks several pages at once, one Chrome per worker, and prints the
 // lines in the usual order. Takes 2-4 minutes on 8 cores (about 13 with --concurrency=1). Exit code: 0 all
 // ok, 1 something failed, 2 could not start (no dist/, no Chrome, bad option). Uses Puppeteer's separate test browser
@@ -17,7 +17,6 @@ import { availableParallelism, homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
 import { preview } from 'vite';
-import { localizedPath } from '../src/lib/routes.js';
 
 const SIZES = [
   [320, 568], [360, 740], [375, 812], [390, 844], [414, 896], // phones, portrait
@@ -52,15 +51,12 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
     if (pins) problems.push(`scroll pinning is still on (${pins} .pin-spacer)`);
     const main = document.querySelector('main');
     if (!main) return [...problems, 'no <main> found'];
-    for (const scene of main.querySelectorAll('.tool-theatre')) {
-      if (scene.dataset.step !== '3') problems.push(`reduced-motion story is not complete (step ${scene.dataset.step})`);
-    }
     const invisible = (e) => { const s = getComputedStyle(e); return s.opacity === '0' || s.visibility === 'hidden'; };
     const fixed = (e) => { for (let a = e; a; a = a.parentElement) if (getComputedStyle(a).position === 'fixed') return true; return false; };
     const suspects = [main, ...main.querySelectorAll('*')].filter((e) => {
       const r = e.getBoundingClientRect(); // hidden on purpose: tiny boxes (honeypots), closed panels, fixed overlays (closed menus)
       // data-motion-only: a state that only exists inside an animation (a chip lighting up, a label that swaps), not content
-      return invisible(e) && (e === main || !invisible(e.parentElement)) && r.width > 2 && r.height > 2 && !e.closest('details:not([open])') && !e.closest('[data-motion-only], [aria-hidden="true"]') && !fixed(e);
+      return invisible(e) && (e === main || !invisible(e.parentElement)) && r.width > 2 && r.height > 2 && !e.closest('details:not([open])') && !e.closest('[data-motion-only]') && !fixed(e);
     }).slice(0, 50);
     const stuck = [];
     for (const e of suspects) {
@@ -98,31 +94,11 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
   // Top bar: the fixed <header> (the old design only has a <nav>)
   const bar = document.querySelector('header, nav');
   const barBottom = () => bar.getBoundingClientRect().bottom;
-  if (w >= 1000 && h >= 700) {
-    for (const track of document.querySelectorAll('.story-track')) {
-      if (getComputedStyle(track.querySelector('.story-stage')).position !== 'sticky') problems.push('desktop story stage is not sticky');
-      if (track.getBoundingClientRect().height < h * 1.4 || track.getBoundingClientRect().height > h * 1.7) problems.push('desktop story must have a short readable scroll hold');
-    }
-  }
 
   // 2. The headline starts below the fixed header
   const h1 = document.querySelector('h1');
   if (!bar || !h1) problems.push(`no ${bar ? '<h1>' : '<header>'} found`);
   else if (h1.getBoundingClientRect().top < barBottom()) problems.push(`headline sits under the header (starts ${px(h1.getBoundingClientRect().top)}, header ends ${px(barBottom())})`);
-
-  // SplitText masks must fit their finished lines, including after a cold font load.
-  for (const line of h1?.querySelectorAll('[aria-hidden] > [aria-hidden]') || []) {
-    if (line.children.length || !line.textContent.trim()) continue;
-    const range = document.createRange();
-    range.selectNodeContents(line);
-    if (line.firstChild?.nodeType === 3) {
-      const value = line.firstChild.textContent;
-      range.setStart(line.firstChild, value.length - value.trimStart().length);
-      range.setEnd(line.firstChild, value.trimEnd().length);
-    }
-    const box = line.parentElement.getBoundingClientRect();
-    if (range.getBoundingClientRect().width > box.width + 1) problems.push(`headline line is clipped: ${text(line)}`);
-  }
 
   // 3. Portrait phones: the main button is fully visible without scrolling
   if (portraitPhone) {
@@ -192,13 +168,13 @@ async function withTimeout(promise, ms) {
   try { return await Promise.race([promise, timeout]); } finally { clearTimeout(timer); }
 }
 
-async function check(page, base, path, [w, h], lang, reduced) {
+async function check(page, base, [w, h], lang, reduced) {
   await page.bringToFront(); // background tabs get no animation frames, so GSAP would never run; hence one page per browser
   const phone = Math.min(w, h) <= 430;
   await page.setViewport({ width: w, height: h, isMobile: phone, hasTouch: phone || w <= 1180, isLandscape: w > h });
   if (reduced) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
   await page.evaluateOnNewDocument((l) => { try { localStorage.setItem('lang', l); } catch { /* storage blocked */ } }, lang);
-  await page.goto(new URL(localizedPath(path, lang), base).href, { waitUntil: 'load', timeout: 30_000 });
+  await page.goto(base, { waitUntil: 'load', timeout: 30_000 });
   await page.evaluate(async () => { await document.fonts.ready; });
   await sleep(1600); // intro animations
   return page.evaluate(pageChecks, { reduced, lang, w, h, touch: phone || w <= 1180, portraitPhone: w < 500 && h > w });
@@ -208,11 +184,10 @@ const args = process.argv.slice(2);
 const opt = Object.fromEntries(args.filter((a) => a.startsWith('--')).map((a) => a.slice(2).split('=')));
 const only = opt.only?.split(',').map((s) => s.split('x').map(Number));
 const langs = opt.lang ? [opt.lang] : LANGS;
-const concurrency = Number(opt.concurrency ?? Math.min(availableParallelism(), 4));
-const paths = opt.pages?.split(',') || ['/', '/sales-outreach', '/customer-support', '/contact'];
-if (Object.entries(opt).some(([k, v]) => v === undefined || !['only', 'lang', 'concurrency', 'pages'].includes(k)) || only?.some((s) => s.length !== 2 || !s.every((n) => n > 0))
-  || !paths.every((p) => p.startsWith('/') && !p.includes('..')) || !langs.every((l) => LANGS.includes(l)) || !(Number.isInteger(concurrency) && concurrency > 0)) {
-  console.error('Usage: node scripts/check-layout.mjs [url] [--concurrency=N] [--only=WxH[,WxH...]] [--lang=en|it] [--pages=/,/results]');
+const concurrency = Number(opt.concurrency ?? availableParallelism());
+if (Object.entries(opt).some(([k, v]) => v === undefined || !['only', 'lang', 'concurrency'].includes(k)) || only?.some((s) => s.length !== 2 || !s.every((n) => n > 0))
+  || !langs.every((l) => LANGS.includes(l)) || !(Number.isInteger(concurrency) && concurrency > 0)) {
+  console.error('Usage: node scripts/check-layout.mjs [url] [--concurrency=N] [--only=WxH[,WxH...]] [--lang=en|it]');
   process.exit(2);
 }
 
@@ -229,10 +204,7 @@ const out = [`Layout check of ${base}`];
 const jobs = [];
 for (const [title, sizes, reduced] of [['Normal motion', SIZES, false], ['Reduced motion (prefers-reduced-motion: reduce)', REDUCED_SIZES, true]]) {
   out.push(`\n${title}`);
-  for (const path of paths) {
-    out.push(`  Page ${path}`);
-    for (const size of only || sizes) for (const lang of langs) jobs.push({ at: out.push(null) - 1, path, size, lang, reduced });
-  }
+  for (const size of only || sizes) for (const lang of langs) jobs.push({ at: out.push(null) - 1, size, lang, reduced });
 }
 
 // The newest chrome-headless-shell Puppeteer has downloaded, if any
@@ -262,11 +234,11 @@ const flush = () => { while (printed < out.length && out[printed] !== null) cons
 flush();
 await Promise.all(browsers.map(async (browser) => {
   while (next < jobs.length) {
-    const { at, path, size, lang, reduced } = jobs[next++];
+    const { at, size, lang, reduced } = jobs[next++];
     let page, problems;
     try {
       page = await browser.newPage();
-      problems = await withTimeout(check(page, base, path, size, lang, reduced), RUN_TIMEOUT);
+      problems = await withTimeout(check(page, base, size, lang, reduced), RUN_TIMEOUT);
     } catch (e) { problems = [`could not run: ${e.message.split('\n')[0]}`]; }
     await page?.close().catch(() => {});
     problems.length ? failed++ : ok++;

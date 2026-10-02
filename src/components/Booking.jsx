@@ -1,8 +1,8 @@
 import { lazy, Suspense, useRef, useState } from 'react';
-import Link from './SiteLink';
+import { Link } from 'react-router-dom';
 import LeadForm from './LeadForm';
 import { useCopy, useLang } from '../lib/lang';
-import { scrollToEl } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, HOLD, riseOnScroll, drawRule, scrollToEl, later } from '../lib/motion';
 import { CAL_LINK } from '../lib/cal';
 
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
@@ -67,7 +67,7 @@ function CalendarLink() {
 }
 
 // A quiet, static picture of this month so the frame reads as a calendar before it loads. No availability implied.
-function MonthPreview() {
+function MonthPreview({ animate }) {
   const { lang } = useLang();
   const locale = lang === 'it' ? 'it-IT' : 'en-GB';
   const now = new Date();
@@ -77,9 +77,31 @@ function MonthPreview() {
   const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const weekdays = [...Array(7)].map((_, i) => new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2024, 0, 1 + i)));
   const cells = [...Array(offset).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+  const box = useRef(null);
+
+  // The grid builds at a steady pace when it comes into view, then today’s ring is drawn.
+  // Its own scope: the preview unmounts when the real calendar opens, and its triggers go with it. On /contact it stays as drawn.
+  useGSAP((context) => animate && later(context, () => {
+    const mm = gsap.matchMedia(box.current);
+    mm.add(MOTION_OK, () => {
+      const tl = gsap.timeline({
+        defaults: { ease: 'none' },
+        scrollTrigger: { trigger: box.current, start: 'top 88%', once: true },
+      });
+      tl.from('.cal-wd', { opacity: 0, duration: 0.3, stagger: 0.03 })
+        .from('.cal-day', { opacity: 0, scale: 0.8, duration: 0.5, stagger: 0.05 }, '>-0.1');
+      // A dashed copy draws the ring; once it is done a plain copy takes over, so the finished ring has no seam at the start point.
+      // (Two layers instead of an onUpdate that clears the dash: ScrollTrigger refreshes render without callbacks.)
+      if (box.current.querySelector('.cal-ring')) {
+        tl.fromTo('.cal-ring-draw', { strokeDasharray: 1, strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2 }, '>-0.2')
+          .fromTo('.cal-ring-done', { opacity: 0 }, { opacity: 1, duration: 0.05 }, '>');
+      }
+    });
+    return () => mm.revert();
+  }), { scope: box });
 
   return (
-    <div aria-hidden="true" className="select-none">
+    <div ref={box} aria-hidden="true" className="select-none">
       <p className="mb-3 text-sm font-medium capitalize text-muted">
         {new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(month)}
       </p>
@@ -108,12 +130,58 @@ function MonthPreview() {
   );
 }
 
-export default function Booking() {
+export default function Booking({ heading = 'h2', formOpen = false }) {
+  const Heading = heading; // h1 on the contact page
   const t = useCopy(copy);
+  const { lang } = useLang();
   const [calOpen, setCalOpen] = useState(false);
   const [prefill, setPrefill] = useState(null);
-  const [writing, setWriting] = useState(false);
+  const [writing, setWriting] = useState(formOpen);
   const frame = useRef(null);
+  const root = useRef(null);
+
+  // Only the home page section moves: on /contact the heading is the h1 at the top of the page and everything stays still
+  useGSAP((context) => heading === 'h2' && later(context, () => {
+    const mm = gsap.matchMedia(root.current);
+    mm.add(MOTION_OK, () => {
+      riseOnScroll('.book-title');
+      drawRule(root.current);
+      // The agenda and its marks draw once, independently of scroll speed.
+      gsap.fromTo('.book-agenda', { '--rule': 0 }, {
+        '--rule': 1,
+        ease: 'none',
+        duration: 0.7, scrollTrigger: { trigger: '.book-agenda', start: 'top 90%', once: true },
+      });
+      gsap.utils.toArray('.book-agenda li').forEach((li) => gsap.from(li.querySelector('.book-mark'), {
+        scaleX: 0,
+        transformOrigin: 'left center',
+        ease: 'none',
+        duration: 0.5, scrollTrigger: { trigger: li, start: 'top 95%', once: true },
+      }));
+    });
+    return () => mm.revert();
+  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+
+  // The page's one WebGL moment (a dot field settling into the calendar's grid, see lib/dotField.js). Desktop with a mouse
+  // and motion allowed only, fetched when the section is a screen away. Phones, touch and reduced motion get nothing:
+  // the settled grid is quiet by design, and a static copy could not keep clear of the text without the same measuring.
+  useGSAP(() => {
+    if (heading !== 'h2') return undefined;
+    const mm = gsap.matchMedia();
+    mm.add(HOLD, () => {
+      let stop;
+      let gone = false;
+      const io = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        import('../lib/dotField').then(({ default: mount }) => { if (!gone) stop = mount(root.current); }).catch(() => {});
+      }, { rootMargin: '100% 0px' });
+      io.observe(root.current);
+      return () => { gone = true; io.disconnect(); stop?.(); };
+    });
+    return () => mm.revert();
+  }, { scope: root });
+
   const openCalendar = () => {
     setWriting(false);
     setCalOpen(true);
@@ -121,12 +189,11 @@ export default function Booking() {
   };
 
   return (
-    <section id="book" className="rule isolate py-20 lg:py-24">
+    <section id="book" ref={root} className="rule isolate py-24 lg:py-32">
       <div className="page grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-5">
-          <h1 className="book-title t-h2">{t.title}</h1>
+          <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
           <p className="t-lead mt-5 text-muted">{t.sub}</p>
-          <div className="mt-6"><button type="button" onClick={openCalendar} className="btn-primary">{t.see}</button><p className="mt-3 text-xs leading-relaxed text-faint">{t.note} <Link to="/privacy" className="link">{t.privacy}</Link></p></div>
 
           <div className="mt-8 flex items-center gap-4">
             {PHOTO ? (
@@ -177,7 +244,7 @@ export default function Booking() {
                     {t.note} <Link to="/privacy" className="link">{t.privacy}</Link>
                   </p>
                 </div>
-                <button type="button" onClick={openCalendar} aria-label={t.see} className="rounded-lg text-left transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-accent"><MonthPreview /></button>
+                <button type="button" onClick={openCalendar} aria-label={t.see} className="rounded-lg text-left transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-accent"><MonthPreview animate={heading === 'h2'} /></button>
               </div>
             )}
           </div>

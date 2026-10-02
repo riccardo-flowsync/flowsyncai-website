@@ -1,11 +1,12 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
+import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import { CustomEase } from 'gsap/CustomEase';
 import { useGSAP } from '@gsap/react';
 import Lenis from 'lenis';
 
-gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase, useGSAP);
+gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, CustomEase, useGSAP);
 
 // A phone address bar sliding in and out must not re-measure every trigger
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -75,13 +76,11 @@ export function startAt(targets, styles) {
 // A height that a refresh has already measured (late fonts: their own refresh in App.jsx ran first) needs no second one.
 let settling;
 let measured = -1;
-if (typeof document !== 'undefined') {
 ScrollTrigger.addEventListener('refresh', () => { measured = document.body.offsetHeight; });
 new ResizeObserver(() => {
   clearTimeout(settling);
   settling = setTimeout(() => document.body.offsetHeight !== measured && ScrollTrigger.refresh(), 300);
 }).observe(document.body);
-}
 
 // The signature ease of the site: every heading rise uses it (a fast start that settles softly)
 export const RISE = 'rise';
@@ -92,7 +91,7 @@ let lenis = null;
 // Smooth scrolling for mouse and trackpad only. Touch keeps native scrolling, reduced motion gets none.
 export function startSmoothScroll() {
   if (lenis || matchMedia(`${REDUCED}, (pointer: coarse)`).matches) return undefined;
-  lenis = new Lenis({ lerp: 0.22 });
+  lenis = new Lenis();
   lenis.on('scroll', ScrollTrigger.update);
   const tick = (time) => lenis.raf(time * 1000);
   gsap.ticker.add(tick);
@@ -109,7 +108,7 @@ export function scrollToEl(el) {
   if (!el) return;
   if (lenis) {
     lenis.resize(); // after a route change Lenis still has the previous page's height as its scroll limit
-    lenis.scrollTo(el, { duration: 0.65, easing: (t) => 1 - (1 - t) ** 3, immediate: matchMedia(REDUCED).matches });
+    lenis.scrollTo(el);
   } else el.scrollIntoView({ behavior: matchMedia(REDUCED).matches ? 'auto' : 'smooth' });
 }
 
@@ -134,9 +133,9 @@ export function riseOnScroll(target) {
     reduceWhiteSpace: false, // the default turns the non-breaking space in "30 minuti" into a breakable one
     onSplit: (self) => gsap.from(self.lines, {
       yPercent: 110,
-      duration: 0.55,
+      duration: 1.1,
       ease: RISE,
-      stagger: 0.055,
+      stagger: 0.09,
       scrollTrigger: { trigger: target, start: 'top 85%', once: true },
     }),
   });

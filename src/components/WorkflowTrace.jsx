@@ -58,14 +58,14 @@ export default function WorkflowTrace() {
       // It plays once when it comes into view and pauses off screen.
       function playOnce() {
         const tl = gsap.timeline({ paused: true });
-        tl.to({}, { duration: 0.3 }); // let the headline lead
+        tl.to({}, { duration: 0.7 }); // let the headline land first
         steps.forEach((step, i) => {
           const q = gsap.utils.selector(step);
-          tl.to(q('.trace-fill'), { scale: 1, duration: 0.18, ease: 'power2.out' })
-            .fromTo(q('.trace-label'), { color: '#82817c' }, { color: '#f4f3ed', duration: 0.18 }, '<')
-            .fromTo(q('.trace-detail'), { y: 3 }, { y: 0, duration: 0.22, ease: 'power2.out' }, '<');
-          if (i < steps.length - 1) tl.to(q('.trace-seg'), { scaleY: 1, duration: 0.22, ease: 'power1.inOut' }, '+=0.08')
-            .to(ring, { y: () => steps[i + 1].offsetTop - steps[0].offsetTop, duration: 0.22, ease: 'power1.inOut' }, '<'); // the last step has no line below it
+          tl.to(q('.trace-fill'), { scale: 1, duration: 0.3, ease: 'back.out(3)' })
+            .fromTo(q('.trace-label'), { color: '#82817c' }, { color: '#f4f3ed', duration: 0.25 }, '<')
+            .fromTo(q('.trace-detail'), { y: 3 }, { y: 0, duration: 0.55, ease: 'power2.out' }, '<0.1');
+          if (i < steps.length - 1) tl.to(q('.trace-seg'), { scaleY: 1, duration: 0.5, ease: 'power1.inOut' }, '+=0.35')
+            .to(ring, { y: () => steps[i + 1].offsetTop - steps[0].offsetTop, duration: 0.5, ease: 'power1.inOut' }, '<'); // the last step has no line below it
         });
 
         // Only run while visible

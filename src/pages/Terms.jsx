@@ -1,4 +1,4 @@
-import Link from '../components/SiteLink';
+import { Link } from 'react-router-dom';
 import PageLayout, { PageSection } from '../components/PageLayout';
 import { useCopy } from '../lib/lang';
 
@@ -165,6 +165,7 @@ export default function Terms() {
   const t = useCopy(copy);
   return (
     <PageLayout title={t.title} updated={t.updated}>
+      <title>{t.docTitle}</title>
       {t.sections.map((s) => (
         <PageSection key={s.title} title={s.title}>{s.body}</PageSection>
       ))}
