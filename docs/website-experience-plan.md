@@ -184,3 +184,29 @@ Build, lint, and all 42 layout configurations pass. Desktop and phone views conf
 clear figures, headings, service copy, and visible routes in the gaps. Mobile
 Lighthouse: performance 94, accessibility 100, best practices 100, SEO 100,
 LCP 2.6 seconds, blocking time 50 milliseconds, layout shift 0.
+
+## Replace the process timeline with a founder introduction
+
+Owner approval, 2026-10-03: replace the crowded launch illustrations with the
+founder section proposed in review, using the approved portrait composite that
+preserves the original face.
+
+- [x] Replace the timeline with a spacious portrait, factual EN/IT introduction, and booking link.
+- [x] Update navigation and remove the repeated home-page founder block.
+- [x] Verify portrait fidelity, responsive layouts, links, and mobile performance.
+- [x] Update the existing review preview, keeping production unchanged.
+
+The About section replaces the illustrated launch steps. It uses the approved
+portrait, a short founder introduction, and one booking CTA. Header and footer
+links now point to About / Chi siamo. The home booking block no longer repeats
+the founder profile; the standalone contact page retains the name and portrait.
+No LinkedIn link is shown because none was supplied.
+
+The portrait is lazy-loaded on the home page and encoded as lossless WebP;
+decoded pixels match the approved PNG exactly. Build and lint pass. All 42 layout
+configurations are covered successfully after rerunning one browser-error case
+at 375 x 812 in English. Its normal and reduced-motion reruns both pass.
+Desktop and phone visual review passed, with both language menus and the booking
+CTA checked through computer use. The design detector reported no findings.
+Mobile Lighthouse: performance 94, accessibility 100, best practices 100,
+SEO 100; LCP 2.6 seconds, blocking time 60 milliseconds, layout shift 0.

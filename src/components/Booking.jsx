@@ -8,8 +8,6 @@ import { CAL_LINK } from '../lib/cal';
 // If the calendar code cannot be fetched (a tab left open across a deploy), the visitor gets the Cal.com page itself
 const CalendarEmbed = lazy(() => import('./CalendarEmbed').catch(() => ({ default: CalendarLink })));
 const CAL_URL = `https://cal.com/${CAL_LINK}`;
-const PHOTO = null; // '/founder.jpg' once Riccardo sends it
-const LINKEDIN = null; // his profile URL once provided
 
 const copy = {
   en: {
@@ -175,18 +173,13 @@ export default function Booking({ heading = 'h2', formOpen = false }) {
           <Heading key={lang} className="book-title t-h2">{t.title}</Heading>
           <p className="t-lead mt-5 text-muted">{t.sub}</p>
 
-          <div className="mt-8 flex items-center gap-4">
-            {PHOTO ? (
-              <img src={PHOTO} alt="" width="56" height="56" className="h-14 w-14 rounded-full object-cover" />
-            ) : (
-              <span aria-hidden="true" className="grid h-14 w-14 place-items-center rounded-full border border-line bg-raised font-semibold text-muted">RC</span>
-            )}
+          {heading === 'h1' && <div className="mt-8 flex items-center gap-4">
+            <img src="/riccardo-casale.webp" alt="" width="56" height="56" className="h-14 w-14 rounded-full object-cover" />
             <div>
               <p className="font-semibold">Riccardo Casale</p>
               <p className="text-sm text-muted">{t.role}</p>
-              {LINKEDIN && <a href={LINKEDIN} target="_blank" rel="noreferrer" className="link text-sm">LinkedIn</a>}
             </div>
-          </div>
+          </div>}
 
           <ul className="book-agenda rule mt-8 grid gap-3 pt-6 text-muted">
             {t.agenda.map((item) => (
