@@ -30,3 +30,6 @@ dist-ssr
 
 # Temporary server bundle used only to render static pages
 .prerender-*/
+
+# Local visual review captures and recordings
+.impeccable/review/

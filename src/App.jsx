@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { LangProvider, useCopy } from './lib/lang';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { LangProvider, useCopy, useLang } from './lib/lang';
 import Metadata from './components/Metadata';
 import { pagePath } from './lib/routes';
 import { ScrollTrigger, startSmoothScroll, scrollToEl, scrollToTop, scenesReady } from './lib/motion';
@@ -12,9 +12,21 @@ const Contact = lazy(loaders['/contact']);
 const Privacy = lazy(loaders['/privacy']);
 const Terms = lazy(loaders['/terms']);
 const ServicePage = lazy(loaders['/sales-outreach']);
-const ResultsPage = lazy(loaders['/results']);
-const HowWeWork = lazy(loaders['/how-we-work']);
 import NotFound from './pages/NotFound';
+
+function LegacyRedirect() {
+  const location = useLocation();
+  const { lang } = useLang();
+  const path = pagePath(location.pathname);
+  const destination = path === '/how-we-work'
+    ? '/#process'
+    : new URLSearchParams(location.search).get('view') === 'support'
+      ? '/customer-support#results'
+      : new URLSearchParams(location.search).get('view') === 'outbound'
+        ? '/sales-outreach#results'
+        : '/#systems';
+  return <Navigate replace to={`/${lang}${destination}`} />;
+}
 
 // ScrollTrigger re-measures the page when the fonts and the page finish loading and when a pinned scene is set up,
 // which cancels a scroll under way
@@ -71,8 +83,8 @@ export function Site({ page, initialPage, initialPath }) {
                 <Route key={`${prefix}/`} path={prefix || '/'} element={<Home />} />,
                 <Route key={`${prefix}/sales-outreach`} path={`${prefix}/sales-outreach`} element={<ServicePage key="outbound" service="outbound" />} />,
                 <Route key={`${prefix}/customer-support`} path={`${prefix}/customer-support`} element={<ServicePage key="support" service="support" />} />,
-                <Route key={`${prefix}/results`} path={`${prefix}/results`} element={<ResultsPage />} />,
-                <Route key={`${prefix}/how-we-work`} path={`${prefix}/how-we-work`} element={<HowWeWork />} />,
+                <Route key={`${prefix}/results`} path={`${prefix}/results`} element={<LegacyRedirect />} />,
+                <Route key={`${prefix}/how-we-work`} path={`${prefix}/how-we-work`} element={<LegacyRedirect />} />,
                 <Route key={`${prefix}/contact`} path={`${prefix}/contact`} element={<Contact />} />,
                 <Route key={`${prefix}/privacy`} path={`${prefix}/privacy`} element={<Privacy />} />,
                 <Route key={`${prefix}/terms`} path={`${prefix}/terms`} element={<Terms />} />,
@@ -82,7 +94,6 @@ export function Site({ page, initialPage, initialPath }) {
           </Suspense>}
         </main>
         <Footer />
-        <div className="grain" aria-hidden="true" />
       </LangProvider>
   );
 }

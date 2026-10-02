@@ -183,7 +183,7 @@ export default function Results({ view = 'all' }) {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
       drawRule(root.current);
-      if (view !== 'support') riseOnScroll('.res-title');
+      riseOnScroll('.res-title');
       gsap.utils.toArray('.res-chart').forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
         gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
@@ -315,8 +315,8 @@ export default function Results({ view = 'all' }) {
 
         </>}
         {view !== 'outbound' && <>
-        <h3 className={`t-h3 ${view === 'support' ? 'mt-0' : 'mt-24'} text-[1.5rem]`}>{t.support.title}</h3>
-        <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
+        {view === 'support' ? <h2 key={lang} className="res-title t-h2">{t.support.title}</h2> : <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>}
+        <p className={`mt-3 max-w-[40rem] text-muted ${view === 'support' ? 't-lead' : ''}`}>{t.support.intro}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {t.support.cases.map((c, ci) => {
             const s = SUPPORT[ci];

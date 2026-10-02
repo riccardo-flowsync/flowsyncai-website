@@ -1,12 +1,11 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
-import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import { CustomEase } from 'gsap/CustomEase';
 import { useGSAP } from '@gsap/react';
 import Lenis from 'lenis';
 
-gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, CustomEase, useGSAP);
+gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase, useGSAP);
 
 // A phone address bar sliding in and out must not re-measure every trigger
 ScrollTrigger.config({ ignoreMobileResize: true });

@@ -1,50 +1,29 @@
+import { useRef } from 'react';
 import Hero from '../components/Hero';
-import ProofPreview from '../components/ProofPreview';
-import FAQ from '../components/FAQ';
-import { PageClose } from '../components/PageIntro';
+import CinematicStory from '../components/CinematicStory';
+import WorkspaceEnvironment from '../components/WorkspaceEnvironment';
 import Link from '../components/SiteLink';
 import { useCopy } from '../lib/lang';
-
+import { gsap, useGSAP, MOTION_OK, later } from '../lib/motion';
 const copy = {
-  en: {
-    title: 'Two jobs. Two systems built to do them.',
-    sales: 'Bring the right buyers to a conversation.',
-    salesBody: 'Find relevant businesses, send personal cold emails and sort the replies. A person approves replies by default.',
-    salesLink: 'Explore sales outreach',
-    support: 'Give customers an answer, and your team context.',
-    supportBody: 'An assistant for your website and Instagram. It answers from your information, takes connected actions and hands over by ticket.',
-    supportLink: 'Explore customer support',
-    method: 'Built around your work. Run every day.',
-    methodBody: 'We start with a call, prepare the system with you and get your approval before launch. Then it handles the daily work and passes the right decisions to your team.',
-    methodLink: 'See how we work',
-    steps: ['Understand your work', 'Prepare and approve', 'Run and hand over'],
-  },
-  it: {
-    title: 'Due lavori. Due sistemi per farli.',
-    sales: 'Porta chi compra a una conversazione.',
-    salesBody: 'Troviamo aziende adatte, inviamo email personali e ordiniamo le risposte. Di norma le approva una persona.',
-    salesLink: 'Scopri come trovare clienti',
-    support: 'Una risposta ai clienti, tutto il contesto al team.',
-    supportBody: 'Un assistente per il sito e Instagram. Risponde dalle tue informazioni, esegue le azioni collegate e passa la mano con un ticket.',
-    supportLink: 'Scopri l’assistenza clienti',
-    method: 'Parte dal tuo lavoro. Lo porta avanti ogni giorno.',
-    methodBody: 'Partiamo da una call, prepariamo il sistema con te e riceviamo la tua approvazione prima del lancio. Poi gestisce il lavoro quotidiano e passa le decisioni giuste al team.',
-    methodLink: 'Scopri come lavoriamo',
-    steps: ['Capiamo il tuo lavoro', 'Prepariamo e approvi', 'Gestiamo e passiamo la mano'],
-  },
+  en: { process: 'Your process. Built to run.', intro: 'We build around the way your business works.', steps: [['Understand the work', 'We map the task, the tools and where your team makes decisions.'], ['Connect and configure', 'We connect the right tools and set the rules for your business.'], ['Test and launch', 'You see it working, approve the setup and we put it to work.']], close: 'What should your business stop doing by hand?', book: 'Let’s talk', note: 'A 30-minute call about your work and what we can automate.' },
+  it: { process: 'Il tuo processo. Pronto a lavorare.', intro: 'Costruiamo intorno al modo in cui lavora la tua azienda.', steps: [['Capiamo il lavoro', 'Mappiamo attività, strumenti e decisioni del tuo team.'], ['Colleghiamo e configuriamo', 'Colleghiamo gli strumenti giusti e impostiamo le regole per la tua azienda.'], ['Testiamo e lanciamo', 'Lo vedi funzionare, approvi la configurazione e lo mettiamo al lavoro.']], close: 'Quale lavoro non vuoi più fare a mano?', book: 'Parliamone', note: 'Una call di 30 minuti sul tuo lavoro e su cosa possiamo automatizzare.' },
 };
-
 export default function Home() {
-  const t = useCopy(copy);
+  const t = useCopy(copy), process = useRef(null);
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+    mm.add(MOTION_OK, (ctx) => {
+      later(ctx, () => {
+      gsap.from('.process-rail', { scaleY: 0, transformOrigin: 'top', ease: 'none', scrollTrigger: { trigger: process.current, start: 'top 70%', end: 'bottom 80%', scrub: 0.25 } });
+      gsap.from('.process-step', { y: 18, stagger: 0.15, ease: 'none', scrollTrigger: { trigger: process.current, start: 'top 80%', end: 'bottom 80%', scrub: 0.3 } });
+      });
+    });
+    return () => mm.revert();
+  }, { scope: process });
   return <>
-    <Hero />
-    <section id="systems" className="border-t border-line py-16 sm:py-20"><div className="page"><h2 className="t-h2 max-w-[22ch]">{t.title}</h2><div className="mt-10 grid gap-0 md:grid-cols-2 md:gap-14">
-      <article id="system-outbound" className="service-door border-t border-line py-8"><h3 className="t-h2 max-w-[19ch]">{t.sales}</h3><p className="mt-5 max-w-[48ch] text-muted">{t.salesBody}</p><Link to="/sales-outreach" className="link mt-6 inline-flex min-h-11 items-center">{t.salesLink}</Link></article>
-      <article id="system-support" className="service-door border-t border-line py-8"><h3 className="t-h2 max-w-[19ch]">{t.support}</h3><p className="mt-5 max-w-[48ch] text-muted">{t.supportBody}</p><Link to="/customer-support" className="link mt-6 inline-flex min-h-11 items-center">{t.supportLink}</Link></article>
-    </div></div></section>
-    <ProofPreview />
-    <section id="process" className="border-t border-line py-16 sm:py-20"><div className="page grid gap-10 lg:grid-cols-2 lg:gap-20"><div><h2 className="t-h2 max-w-[22ch]">{t.method}</h2><p className="mt-5 max-w-[52ch] text-muted">{t.methodBody}</p><Link to="/how-we-work" className="link mt-6 inline-flex min-h-11 items-center">{t.methodLink}</Link></div><ol className="self-center">{t.steps.map((s, i) => <li key={s} className="flex gap-6 border-t border-line py-5 text-lg"><span className="text-faint">{i + 1}</span><span>{s}</span></li>)}</ol></div></section>
-    <FAQ kind="home" />
-    <PageClose />
+    <div className="workspace-world home-workspace"><WorkspaceEnvironment /><Hero /><div id="systems"><CinematicStory service="outbound" /><CinematicStory service="support" /></div></div>
+    <section id="process" ref={process} className="cinematic-process page"><div><h2>{t.process}</h2><p>{t.intro}</p></div><div className="process-sequence"><span className="process-rail" aria-hidden="true"/><ol>{t.steps.map(([title, body], i) => <li className="process-step" key={title}><span className="process-number">{i + 1}</span><div><h3>{title}</h3><p>{body}</p></div></li>)}</ol></div></section>
+    <section id="book" className="cinematic-close page"><h2>{t.close}</h2><div><Link to="/contact" className="btn-primary">{t.book}</Link><p>{t.note}</p></div></section>
   </>;
 }

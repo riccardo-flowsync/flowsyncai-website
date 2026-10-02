@@ -12,7 +12,7 @@ const copy = {
     replay: 'Replay example',
     try: 'Choose a customer question',
     show: 'See it in action',
-    serviceIntro: 'Try the example. See where the system acts and where a person takes over.',
+    serviceIntro: 'Try the example. See what an agent does in connected tools, and where your team takes over.',
     scenarios: {
       order: { label: 'Order and return' },
       question: { label: 'A routine question', user: 'Where can I find your returns policy?', agent: 'You can find the returns policy in the help section. I can also help you check the steps for your order.', actions: ['help information found', 'answer prepared from that information', 'no ticket needed'] },
@@ -21,15 +21,15 @@ const copy = {
     systems: [
       {
         id: 'outbound',
-        name: 'Sales outreach',
+        name: 'AI outreach',
         body: 'For B2B businesses with a clear offer and customers worth €1,000 or more. We find buyers, send personal emails and handle replies. A person approves replies by default. Your main email domain stays untouched.',
         points: ['Replies sorted for you', 'You approve by default', 'Calls booked into your calendar'],
       },
       {
         id: 'support',
-        name: 'Customer support assistant',
-        body: 'For teams handling customer questions on their website and Instagram. The assistant answers from your information, checks orders and starts returns. Your team gets anything it cannot solve, with the conversation attached.',
-        points: ['Answers customer questions', 'Checks orders and returns', 'Hands over with the full context'],
+        name: 'AI agents',
+        body: 'For repeatable work in tools your team uses. Each agent has a defined role and only the actions enabled for its setup. This example shows an online-shop order and return.',
+        points: ['Uses approved information', 'Takes actions enabled for its role', 'Hands over with full context'],
       },
     ],
     inbox: {
@@ -47,6 +47,7 @@ const copy = {
       approved: 'Example approved',
     },
     chat: {
+      activity: 'Actions taken',
       title: 'Website chat',
       user: 'Where is my order 4821? And can I send back the blue one?',
       agent: 'Order 4821 left the warehouse yesterday and should arrive on Thursday. I have logged the return for the blue one, and the team will email you the label today.',
@@ -61,7 +62,7 @@ const copy = {
     replay: 'Rivedi l’esempio',
     try: 'Scegli una domanda del cliente',
     show: 'Provalo con un esempio.',
-    serviceIntro: 'Prova l’esempio. Guarda cosa fa il sistema e quando passa la mano a una persona.',
+    serviceIntro: 'Prova l’esempio. Guarda cosa fa l’agente negli strumenti collegati e quando passa la mano al team.',
     scenarios: {
       order: { label: 'Ordine e reso' },
       question: { label: 'Una domanda comune', user: 'Dove trovo le condizioni per i resi?', agent: 'Trovi le condizioni per i resi nella sezione assistenza. Posso anche aiutarti a controllare i passaggi per il tuo ordine.', actions: ['informazioni trovate', 'risposta preparata da quelle informazioni', 'nessun ticket necessario'] },
@@ -70,15 +71,15 @@ const copy = {
     systems: [
       {
         id: 'outbound',
-        name: 'Trova nuovi clienti',
+        name: 'AI outreach',
         body: 'Per aziende B2B con un’offerta chiara e clienti da €1.000 o più. Troviamo chi compra, inviamo email personali e gestiamo le risposte. Di norma le approva una persona. Il tuo dominio principale resta intatto.',
         points: ['Risposte ordinate per te', 'Di norma approvi tu', 'Call prenotate nel tuo calendario'],
       },
       {
         id: 'support',
-        name: 'Assistente clienti',
-        body: 'Per team che rispondono ai clienti sul sito e su Instagram. L’assistente usa le tue informazioni, controlla ordini e avvia resi. Al tuo team arriva quello che non può risolvere, con la conversazione allegata.',
-        points: ['Risponde ai clienti', 'Controlla ordini e resi', 'Passa la mano con tutto il contesto'],
+        name: 'Agenti AI',
+        body: 'Per attività ripetitive negli strumenti che usa il tuo team. Ogni agente ha un ruolo definito e può eseguire solo le azioni abilitate per la sua configurazione. Questo esempio mostra un ordine e un reso in un negozio online.',
+        points: ['Usa informazioni approvate', 'Esegue le azioni abilitate per il ruolo', 'Passa la mano con tutto il contesto'],
       },
     ],
     inbox: {
@@ -96,6 +97,7 @@ const copy = {
       approved: 'Esempio approvato',
     },
     chat: {
+      activity: 'Azioni eseguite',
       title: 'Chat del sito',
       user: 'Dov’è il mio ordine 4821? E posso restituire quello blu?',
       agent: 'L’ordine 4821 è partito ieri dal magazzino e dovrebbe arrivare giovedì. Ho registrato il reso di quello blu: il team ti manda l’etichetta via email oggi.',
@@ -228,14 +230,17 @@ function Chat({ t, ...panel }) {
     <Panel title={t.title} cls="ch-panel" {...panel}>
       <p className="ch-user ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-raised px-3.5 py-2.5 text-sm text-muted">{t.user}</p>
       <p className="ch-agent mt-3 max-w-[85%] rounded-lg rounded-bl-sm border border-line px-3.5 py-2.5 text-sm"><Words cls="ch-w" text={t.agent} /></p>
-      <ul className="mt-4 grid gap-1.5 border-t border-line pt-4">
-        {t.actions.map((a) => (
-          <li key={a} className="ch-act flex items-center gap-2 font-mono text-[0.75rem] text-muted">
-            <span className="ch-dot h-1.5 w-1.5 rounded-full bg-accent" />
-            {a}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-5 overflow-hidden rounded-lg border border-line bg-raised">
+        <h4 className="border-b border-line px-4 py-3 text-sm font-medium">{t.activity}</h4>
+        <ul className="grid divide-y divide-line">
+          {t.actions.map((a) => (
+            <li key={a} className="ch-act flex items-center gap-3 px-4 py-3 font-mono text-xs text-muted">
+              <span className="ch-dot h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+              <span>{a}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </Panel>
   );
 }

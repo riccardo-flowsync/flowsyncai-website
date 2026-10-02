@@ -6,7 +6,17 @@ import { preview } from 'vite';
 const server = process.argv[2] ? null : await preview({ logLevel: 'silent' });
 const base = process.argv[2] || server.resolvedUrls.local[0];
 const browser = await puppeteer.launch({ channel: process.env.CHROME_PATH ? undefined : 'chrome', executablePath: process.env.CHROME_PATH, headless: true });
+let fallbackBrowser;
 try {
+  fallbackBrowser = await puppeteer.launch({ channel: process.env.CHROME_PATH ? undefined : 'chrome', executablePath: process.env.CHROME_PATH, headless: true, args: ['--disable-webgl', '--disable-gpu', '--disable-software-rasterizer'] });
+  const failedWebGL = await fallbackBrowser.newPage();
+  await failedWebGL.setViewport({ width: 1440, height: 900 });
+  await failedWebGL.goto(new URL('/en', base).href, { waitUntil: 'networkidle0' });
+  await failedWebGL.waitForFunction(() => document.querySelector('.workspace-environment')?.dataset.render === 'fallback', { timeout: 5000 });
+  assert.deepEqual(await failedWebGL.$$eval('.hero-line', (lines) => lines.map((line) => line.textContent.trim())), ['AI that gets', 'work done.']);
+  assert(await failedWebGL.$('.tool-theatre .tool-question'), 'Stories remain readable when WebGL is unavailable');
+  await failedWebGL.close();
+
   for (const reduced of [false, true]) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 900 });
@@ -15,6 +25,33 @@ try {
     const writes = [];
     page.on('request', (req) => { if (req.method() !== 'GET') writes.push(req.url()); });
     await page.goto(new URL('/en/sales-outreach', base).href, { waitUntil: 'networkidle0' });
+    const initialStep = reduced ? '3' : '0';
+    await page.waitForFunction((step) => [...document.querySelectorAll('.tool-theatre')].every((scene) => scene.dataset.step === step), { timeout: 5000 }, initialStep);
+    assert.equal(await page.$$eval('.tool-theatre', (scenes, step) => scenes.every((scene) => scene.dataset.step === step), initialStep), true, `Story starts at step ${initialStep}`);
+    if (!reduced) {
+      const range = await page.$eval('.story-track', (track) => {
+        const top = track.getBoundingClientRect().top + scrollY;
+        return [top - 88, top + track.offsetHeight - innerHeight];
+      });
+      const positions = [0.18, 0.42, 0.68, 0.92].map((part) => range[0] + (range[1] - range[0]) * part);
+      for (const [index, y] of positions.entries()) {
+        await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), y);
+        await page.waitForFunction((step) => Number(document.querySelector('.tool-theatre').dataset.step) === step, { timeout: 2500 }, Math.min(3, index));
+      }
+      await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), positions[1]);
+      await page.waitForFunction(() => Number(document.querySelector('.tool-theatre').dataset.step) < 3, { timeout: 2500 });
+      assert.equal(await page.$eval('.tool-theatre', (el) => el.dataset.step), '1', 'Scrolling backwards rewinds the story state');
+      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+      await page.waitForFunction(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+      assert.equal(await page.$eval('.tool-question', (el) => getComputedStyle(el).visibility === 'visible' && el.textContent.trim().length > 0), true, 'Story content stays readable after resizing to a phone');
+      await page.setViewport({ width: 1440, height: 900, isMobile: false, hasTouch: false });
+      await page.waitForFunction(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+      await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+      await page.waitForFunction(() => document.querySelector('.tool-theatre')?.dataset.step === '3', { timeout: 2500 });
+      assert.equal(await page.$eval('.tool-result strong', (el) => getComputedStyle(el).visibility === 'visible' && el.textContent.trim().length > 0), true, 'Reduced motion completes the scene mid-session');
+      await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'no-preference' }]);
+      await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    }
     await page.$eval('.ib-panel', (el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
     // Both illustrations should be readable in under 2.5 seconds, independent of scrolling.
     await page.waitForFunction(() => [...document.querySelectorAll('.ib-w')].every((el) => getComputedStyle(el).visibility === 'visible'), { timeout: 2500 });
@@ -49,6 +86,7 @@ try {
     await page.close();
   }
 } finally {
+  await fallbackBrowser?.close();
   await browser.close();
   await server?.close();
 }

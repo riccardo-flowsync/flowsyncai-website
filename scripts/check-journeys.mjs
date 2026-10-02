@@ -48,15 +48,18 @@ try {
     assert(html.includes('P.IVA 18068831009'), `${url}: legal footer`);
   }
   const sitemap = await readFile('dist/sitemap.xml', 'utf8');
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 16);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 12);
   for (const path of Object.keys(PAGES)) {
     const legacy = await fetch(new URL(path, base));
     assert((await legacy.text()).includes('<h1'), `${path}: legacy page has content`);
   }
   await page.setJavaScriptEnabled(false);
   await go('/it/customer-support', false);
-  assert.match(await page.$eval('h1', (el) => el.textContent), /Risponde alle domande/);
-  assert.equal(await page.$$eval('.ch-w', (els) => els.every((e) => getComputedStyle(e).visibility !== 'hidden')), true);
+  assert.match(await page.$eval('h1', (el) => el.textContent), /Agenti AI/);
+  assert.equal(await page.$$eval('.tool-theatre', (els) => els.every((e) => e.dataset.step === '3')), true, 'No-JS stories show their completed state');
+  assert.equal(await page.$eval('h1', (el) => getComputedStyle(el).visibility !== 'hidden' && getComputedStyle(el).opacity !== '0'), true, 'No-JS service headline stays readable');
+  await go('/en', false);
+  assert.equal(await page.$$eval('.hero-line', (els) => els.length === 2 && els.every((el) => getComputedStyle(el).visibility !== 'hidden')), true, 'No-JS home headline stays readable');
   await page.setJavaScriptEnabled(true);
 
   await page.setViewport({ width: 1440, height: 900 });
@@ -64,17 +67,31 @@ try {
   // Height-only resizes must not leave a larger headline inside old line masks.
   for (const height of [680, 900]) {
     await page.setViewport({ width: 1440, height });
-    await page.waitForFunction(() => [...document.querySelectorAll('.hero-title > div > div')].every((line) => {
+    await page.waitForFunction(() => [...document.querySelectorAll('.hero-line')].every((line) => {
       const node = line.firstChild;
       if (!node || node.nodeType !== 3) return true;
       const text = node.textContent;
       const range = document.createRange();
       range.setStart(node, text.length - text.trimStart().length);
       range.setEnd(node, text.trimEnd().length);
-      return range.getBoundingClientRect().width <= line.parentElement.clientWidth + 1;
+      return range.getBoundingClientRect().width <= line.clientWidth + 1;
     }), { timeout: 3500 });
   }
-  await click('Customer support', 'header a');
+  const services = await page.$('header button[aria-controls="services-menu"]');
+  await services.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.waitForSelector('#services-menu a');
+  assert.deepEqual(await page.$$eval('#services-menu a', (links) => links.map((a) => a.textContent.trim())), ['AI outreach', 'AI agents'], 'Services menu contains only the two services');
+  assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), 'AI outreach', 'ArrowDown opens and focuses the first service');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$('#services-menu'), null, 'Escape closes the services menu');
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-controls')), 'services-menu', 'Escape returns focus to the services button');
+  await services.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.waitForFunction(() => document.activeElement?.textContent.trim() === 'AI outreach');
+  await page.keyboard.press('ArrowDown');
+  await page.waitForFunction(() => document.activeElement?.textContent.trim() === 'AI agents');
+  await page.keyboard.press('Enter');
   await page.waitForSelector('.ch-panel');
   assert.equal(await page.$eval('main', (el) => document.activeElement === el), true, 'New page receives focus');
   await page.$eval('.ch-panel', (el) => el.scrollIntoView({ block: 'center' }));
@@ -82,24 +99,30 @@ try {
     await click(choice);
     await page.waitForFunction((part) => document.querySelector('.ch-agent').textContent.includes(part) && [...document.querySelectorAll('.ch-w')].every((el) => getComputedStyle(el).visibility === 'visible'), { timeout: 3500 }, text);
   }
-  await click('See the support records', 'main a');
+  await page.$eval('#results', (el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
   await page.waitForSelector('.sup-card');
-  assert.equal(await page.$('.res-chart'), null, 'Support results exclude sales charts');
-  await click('Sales outreach');
+  assert.equal(await page.$('.res-chart'), null, 'Support page embeds support results only');
+  await go('/en/sales-outreach');
   await page.waitForSelector('.res-chart');
-  assert.equal(await page.$('.sup-card'), null, 'Sales results exclude support records');
-  await page.goBack({ waitUntil: 'networkidle0' });
-  assert.equal(await page.$('.res-chart'), null, 'Back restores the selected result group');
-  await click('All results');
-  await page.waitForSelector('.res-chart');
-  assert(await page.$('.sup-card'));
+  assert.equal(await page.$('.sup-card'), null, 'Sales page embeds sales results only');
+  await page.goto(new URL('/en/results?view=support', base).href, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => location.pathname === '/en/customer-support' && location.hash === '#results');
+  await page.goto(new URL('/en/results?view=outbound', base).href, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => location.pathname === '/en/sales-outreach' && location.hash === '#results');
+  await page.goto(new URL('/en/results', base).href, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => /^\/en\/?$/.test(location.pathname) && location.hash === '#systems');
+  await page.goto(new URL('/en/how-we-work', base).href, { waitUntil: 'networkidle0' });
+  await page.waitForFunction(() => /^\/en\/?$/.test(location.pathname) && location.hash === '#process');
+  await go('/en/customer-support');
   await page.click('header button[aria-label="Italiano"]');
-  await page.waitForFunction(() => location.pathname === '/it/results' && document.documentElement.lang === 'it');
+  await page.waitForFunction(() => location.pathname === '/it/customer-support' && document.documentElement.lang === 'it');
   await page.reload({ waitUntil: 'networkidle0' });
   await ready();
-  assert.match(await page.$eval('h1', (el) => el.textContent), /Il lavoro/);
+  assert.match(await page.$eval('h1', (el) => el.textContent), /Agenti AI/);
 
+  await go('/it/sales-outreach');
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.$eval('#results', (el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
   await click('Dettagli delle campagne', 'summary');
   const campaignRows = await page.$$eval('.res-li', (rows) => rows.map((row) => row.textContent));
   assert.match(campaignRows[1], /Appuntamenti: non rilevato/, 'Missing meeting count is explicit on phones');
@@ -110,7 +133,8 @@ try {
   await page.click('header button[aria-label="Menu"]');
   await page.waitForFunction(() => document.querySelector('main').inert);
   assert.equal(await page.$eval('main', (el) => el.inert), true);
-  await click('Nuovi clienti', '#mobile-menu a');
+  assert.equal(await page.$$eval('#mobile-menu ul a', (links) => links.length), 2, 'Mobile services group contains exactly two services');
+  await click('AI outreach', '#mobile-menu a');
   await page.waitForSelector('.ib-panel');
   assert.equal(await page.$('#mobile-menu'), null);
   assert.equal(await page.$eval('main', (el) => el.inert), false);
@@ -140,7 +164,7 @@ try {
   await go('/en/not-a-page');
   assert.equal(await page.$eval('meta[name="robots"]', (el) => el.content), 'noindex,follow');
   assert.deepEqual(errors, []);
-  console.log('Static pages, language URLs, navigation, focus, examples, result filters, booking privacy, form retry and calendar fallback passed.');
+  console.log('Static pages, language URLs, service navigation, examples, embedded results, redirects, booking privacy, form retry and calendar fallback passed.');
 } finally {
   await browser.close();
   await server.close();

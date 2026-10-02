@@ -1,7 +1,7 @@
 // Responsive layout check. Run from the repo root:
 //   npm run build && node scripts/check-layout.mjs
 //   node scripts/check-layout.mjs https://example.com    (audit a live URL instead of dist/)
-// Opens the home page at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
+// Opens the four main pages at 19 screen sizes in English and Italian, plus a reduced-motion pass, and prints
 // one line each: "ok" or "FAIL <what is wrong>". Checks several pages at once, one Chrome per worker, and prints the
 // lines in the usual order. Takes 2-4 minutes on 8 cores (about 13 with --concurrency=1). Exit code: 0 all
 // ok, 1 something failed, 2 could not start (no dist/, no Chrome, bad option). Uses Puppeteer's separate test browser
@@ -52,6 +52,9 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
     if (pins) problems.push(`scroll pinning is still on (${pins} .pin-spacer)`);
     const main = document.querySelector('main');
     if (!main) return [...problems, 'no <main> found'];
+    for (const scene of main.querySelectorAll('.tool-theatre')) {
+      if (scene.dataset.step !== '3') problems.push(`reduced-motion story is not complete (step ${scene.dataset.step})`);
+    }
     const invisible = (e) => { const s = getComputedStyle(e); return s.opacity === '0' || s.visibility === 'hidden'; };
     const fixed = (e) => { for (let a = e; a; a = a.parentElement) if (getComputedStyle(a).position === 'fixed') return true; return false; };
     const suspects = [main, ...main.querySelectorAll('*')].filter((e) => {
@@ -95,6 +98,12 @@ async function pageChecks({ reduced, touch, portraitPhone, lang, w, h }) { // w 
   // Top bar: the fixed <header> (the old design only has a <nav>)
   const bar = document.querySelector('header, nav');
   const barBottom = () => bar.getBoundingClientRect().bottom;
+  if (w >= 1000 && h >= 700) {
+    for (const track of document.querySelectorAll('.story-track')) {
+      if (getComputedStyle(track.querySelector('.story-stage')).position !== 'sticky') problems.push('desktop story stage is not sticky');
+      if (track.getBoundingClientRect().height < h * 1.8) problems.push('desktop story track is too short to scrub');
+    }
+  }
 
   // 2. The headline starts below the fixed header
   const h1 = document.querySelector('h1');
@@ -200,7 +209,7 @@ const opt = Object.fromEntries(args.filter((a) => a.startsWith('--')).map((a) =>
 const only = opt.only?.split(',').map((s) => s.split('x').map(Number));
 const langs = opt.lang ? [opt.lang] : LANGS;
 const concurrency = Number(opt.concurrency ?? Math.min(availableParallelism(), 4));
-const paths = opt.pages?.split(',') || ['/', '/sales-outreach', '/customer-support', '/results', '/how-we-work', '/contact'];
+const paths = opt.pages?.split(',') || ['/', '/sales-outreach', '/customer-support', '/contact'];
 if (Object.entries(opt).some(([k, v]) => v === undefined || !['only', 'lang', 'concurrency', 'pages'].includes(k)) || only?.some((s) => s.length !== 2 || !s.every((n) => n > 0))
   || !paths.every((p) => p.startsWith('/') && !p.includes('..')) || !langs.every((l) => LANGS.includes(l)) || !(Number.isInteger(concurrency) && concurrency > 0)) {
   console.error('Usage: node scripts/check-layout.mjs [url] [--concurrency=N] [--only=WxH[,WxH...]] [--lang=en|it] [--pages=/,/results]');

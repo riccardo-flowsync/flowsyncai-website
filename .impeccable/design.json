@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T18:10:00+02:00",
+  "title": "Design System: FlowSync AI Solutions",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "Canvas black", "canonical": "#0a0a0b" },
+      "surface": { "role": "neutral", "displayName": "Surface graphite", "canonical": "#121214" },
+      "raised": { "role": "neutral", "displayName": "Raised graphite", "canonical": "#17161b" },
+      "line": { "role": "neutral", "displayName": "Line graphite", "canonical": "#232227" },
+      "fg": { "role": "neutral", "displayName": "Warm white", "canonical": "#f4f3ed" },
+      "muted": { "role": "neutral", "displayName": "Muted stone", "canonical": "#b3b1aa" },
+      "faint": { "role": "neutral", "displayName": "Faint stone", "canonical": "#82817c" },
+      "accent": { "role": "primary", "displayName": "Signal lavender", "canonical": "#9d7cff" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Large opening headlines." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings." },
+      "scene-headline": { "displayName": "Scene headline", "purpose": "Independent service scene titles." },
+      "title": { "displayName": "Title", "purpose": "Component and card headings." },
+      "body": { "displayName": "Body", "purpose": "Interface copy, labels and controls." },
+      "action": { "displayName": "Action", "purpose": "Buttons and compact calls to action." },
+      "machine": { "displayName": "Machine output", "purpose": "IBM Plex Mono inside illustrations only." }
+    },
+    "shadows": [
+      { "name": "workspace-plane", "value": "0 38px 65px -20px #000b", "purpose": "Separate the angled hero workbench from the environment." },
+      { "name": "tool-plane", "value": "0 22px 45px -20px #000c", "purpose": "Separate layered request, record and action surfaces." }
+    ],
+    "motion": [
+      { "name": "rise", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Headings and small interface transitions settle quickly." },
+      { "name": "cinematic-scroll", "value": "ScrollTrigger scrub: 0.3", "purpose": "Work surfaces follow scroll and reverse naturally on the way back." },
+      { "name": "button-state", "value": "160ms", "purpose": "Button color and press feedback." }
+    ],
+    "breakpoints": [
+      { "name": "phone-layout", "value": "600px" },
+      { "name": "story-layout", "value": "999px" },
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "cinematic-wide", "value": "1000px wide and 700px tall" }
+    ],
+    "layout": {
+      "contentMaxWidth": "1200px",
+      "pageGutters": "20px; 32px from 640px; 48px from 1024px",
+      "mobileStory": "One column; shorter scene travel; service steps remain visible",
+      "desktopStory": "Two columns; the story stage holds in view on tall desktop screens"
+    },
+    "rendering": {
+      "content": "All meaningful text, progress and controls are HTML. The canvas is aria-hidden decoration.",
+      "start": "Load scene code when its workspace nears the viewport, after the first paint and during idle time.",
+      "worker": "Transfer the canvas to a module worker using OffscreenCanvas; cap pixel ratio at 1 on narrow screens and 1.5 elsewhere.",
+      "fallback": "Reduced motion, unsupported OffscreenCanvas, worker errors and WebGL errors leave the CSS atmosphere and complete HTML scene available.",
+      "pause": "Stop drawing while the scene is outside the viewport or the tab is hidden. Scroll progress is clamped from 0 to 1."
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The lavender booking or primary action.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Book a call</button>",
+      "css": ".ds-btn-primary { background: #9d7cff; color: #0a0a0b; padding: 12px 20px; border: 0; border-radius: 8px; font: 600 0.95rem/1.6 'Mona Sans Variable', system-ui, sans-serif; transition: background-color 160ms, color 160ms, scale 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #b09aff; } .ds-btn-primary:focus-visible { outline: 2px solid #9d7cff; outline-offset: 3px; border-radius: 6px; } .ds-btn-primary:active:not(:focus-visible) { scale: 0.97; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "A secondary action on the dark canvas.",
+      "html": "<button class=\"ds-btn-quiet\" type=\"button\">Explore services</button>",
+      "css": ".ds-btn-quiet { background: #0a0a0b; color: #f4f3ed; padding: 12px 20px; border: 1px solid #232227; border-radius: 8px; font: 600 0.95rem/1.6 'Mona Sans Variable', system-ui, sans-serif; transition: background-color 160ms, color 160ms, scale 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-quiet:hover { background: #17161b; } .ds-btn-quiet:focus-visible { outline: 2px solid #9d7cff; outline-offset: 3px; border-radius: 6px; } .ds-btn-quiet:active:not(:focus-visible) { scale: 0.97; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A labelled form field for the contact flow.",
+      "html": "<label class=\"ds-field-label\">Work email<input class=\"ds-field\" type=\"email\" placeholder=\"you@company.com\"></label>",
+      "css": ".ds-field-label { display: grid; gap: 8px; color: #b3b1aa; font: 400 0.875rem/1.5 'Mona Sans Variable', system-ui, sans-serif; } .ds-field { width: 100%; padding: 12px 14px; background: #0a0a0b; color: #f4f3ed; border: 1px solid #82817c; border-radius: 8px; font: 400 1rem/1.6 'Mona Sans Variable', system-ui, sans-serif; transition: border-color 160ms; } .ds-field::placeholder { color: #82817c; } .ds-field:focus-visible { border-color: #9d7cff; outline: 2px solid #9d7cff; outline-offset: 3px; }"
+    },
+    {
+      "name": "Services Menu Link",
+      "kind": "nav",
+      "description": "A grouped service link with raised graphite hover feedback.",
+      "html": "<a class=\"ds-nav-link\" href=\"#services\">Services</a>",
+      "css": ".ds-nav-link { display: block; min-height: 44px; padding: 10px 12px; border-radius: 8px; color: #b3b1aa; font: 400 0.88rem/1.5 'Mona Sans Variable', system-ui, sans-serif; text-decoration: none; transition: background-color 160ms, color 160ms; } .ds-nav-link:hover { background: #17161b; color: #f4f3ed; } .ds-nav-link:focus-visible { outline: 2px solid #9d7cff; outline-offset: 3px; border-radius: 6px; }"
+    },
+    {
+      "name": "Work Card",
+      "kind": "card",
+      "refersTo": "work-surface",
+      "description": "A contained record or evidence panel on the dark canvas.",
+      "html": "<article class=\"ds-card\"><h3>Company record</h3><p>Operations director</p><p class=\"ds-card-state\">Second warehouse</p></article>",
+      "css": ".ds-card { padding: 24px; background: linear-gradient(145deg, #34313b, #1b1921 75%); color: #f4f3ed; border: 1px solid #ffffff16; border-radius: 12px; box-shadow: 0 22px 45px -20px #000c; font: 400 1rem/1.6 'Mona Sans Variable', system-ui, sans-serif; } .ds-card h3 { margin: 0; color: #e8e2f3; font-size: 1.1rem; font-weight: 600; } .ds-card p { margin: 12px 0 0; color: #b3b1aa; } .ds-card .ds-card-state { padding-top: 12px; border-top: 1px solid #ffffff20; color: #c1aaff; }"
+    },
+    {
+      "name": "Workspace Workflow",
+      "kind": "custom",
+      "description": "A layered request, record and action scene with explicit illustrative labeling.",
+      "html": "<section class=\"ds-workflow\" aria-label=\"Illustrative workflow\"><p class=\"ds-workflow-note\">Illustrative example. Names and records are invented.</p><article class=\"ds-workflow-layer ds-request\"><small>Customer request</small><p>Can I return the blue item from order 4821?</p></article><article class=\"ds-workflow-layer ds-record\"><small>Order 4821</small><p>Blue cotton shirt · Shipped</p></article><article class=\"ds-workflow-layer ds-action\"><small>Action record</small><h3>Return registered</h3><p>The team receives the label request with the full context.</p></article></section>",
+      "css": ".ds-workflow { display: grid; gap: 16px; color: #f4f3ed; font: 400 1rem/1.6 'Mona Sans Variable', system-ui, sans-serif; } .ds-workflow-note { margin: 0; color: #a29ca9; font-size: 0.7rem; } .ds-workflow-layer { padding: 16px 20px; background: linear-gradient(145deg, #34313b, #1b1921 75%); border: 1px solid #ffffff16; border-radius: 12px; box-shadow: 0 22px 45px -20px #000c; } .ds-workflow-layer small { color: #d7d3de; font-size: 0.73rem; } .ds-workflow-layer p { margin: 8px 0 0; color: #bcb6c5; } .ds-workflow .ds-record { margin-left: 8%; background: linear-gradient(145deg, #413b4e, #24202c); } .ds-workflow .ds-action { margin-left: 4%; background: linear-gradient(145deg, #28242e, #141217); } .ds-workflow h3 { margin: 12px 0 0; font-size: 1.08rem; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Cinematic workspace.",
+    "overview": "FlowSync is shown as a place where business work moves through real tools. Graphite architecture, sculpted work surfaces and directional white and lavender light give the pages depth; large, readable Mona Sans keeps the work in front. The existing FlowSync mark remains part of the header.\n\nMotion follows the visitor's scroll and reverses with it. Work surfaces settle into readable holds. The scenes use native HTML for their words and controls, so the experience remains useful without WebGL or when motion is reduced. English and Italian are both first-class layouts.",
+    "keyCharacteristics": [
+      "Graphite base with lavender reserved for calls to action and meaningful states.",
+      "Layered architecture around readable HTML work surfaces.",
+      "Purposeful, reversible scroll movement with a complete static fallback."
+    ],
+    "rules": [
+      { "name": "The Interface Signal Rule", "body": "In interface details, lavender marks an action or meaningful state. The workspace may also use lavender as architectural light.", "section": "colors" },
+      { "name": "The Readable Scale Rule", "body": "Display type may be expansive; body copy and controls remain practical at every viewport.", "section": "typography" }
+    ],
+    "dos": [
+      "Do keep the FlowSync logo, graphite architecture, sculpted surfaces and directional white/lavender light.",
+      "Do use Mona Sans Variable for interface text and IBM Plex Mono only for machine output in illustrations.",
+      "Do keep focus visible, keyboard and touch operation complete, and reduced-motion content readable.",
+      "Do keep English and Italian copy within the same flexible layout rules.",
+      "Do label invented examples as illustrative and preserve the evidence source and limits beside real figures."
+    ],
+    "donts": [
+      "Don't use lavender as general interface decoration or invent figures, client claims or promises.",
+      "Don't make WebGL, motion or a worker necessary to read or use the page.",
+      "Don't capture scrolling, add endless animation or hide meaningful content behind a scene.",
+      "Don't use fixed-height text boxes or clip text at small sizes."
+    ]
+  }
+}

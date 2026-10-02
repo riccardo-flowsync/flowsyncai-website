@@ -8,7 +8,7 @@ const copy = {
   en: {
     tagline: 'AI systems for B2B outbound and customer support.',
     site: 'Site',
-    sections: [['/sales-outreach', 'Sales outreach'], ['/customer-support', 'Customer support'], ['/results', 'Results'], ['/how-we-work', 'How we work'], ['/contact', 'Book a call']],
+    sections: [['/sales-outreach', 'AI outreach'], ['/customer-support', 'AI agents'], ['/#process', 'How it works'], ['/contact', 'Book a call']],
     legal: 'Legal',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Terms'], ['/contact', 'Contact']],
     city: 'Rome, Italy',
@@ -16,7 +16,7 @@ const copy = {
   it: {
     tagline: 'Sistemi AI per l’outbound B2B e l’assistenza clienti.',
     site: 'Sito',
-    sections: [['/sales-outreach', 'Nuovi clienti'], ['/customer-support', 'Assistenza clienti'], ['/results', 'Risultati'], ['/how-we-work', 'Come lavoriamo'], ['/contact', 'Prenota una call']],
+    sections: [['/sales-outreach', 'AI outreach'], ['/customer-support', 'Agenti AI'], ['/#process', 'Come funziona'], ['/contact', 'Prenota una call']],
     legal: 'Legale',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Termini di servizio'], ['/contact', 'Contatti']],
     city: 'Roma, Italia',
