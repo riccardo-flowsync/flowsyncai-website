@@ -98,7 +98,7 @@ export default function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-[100] border-b transition-colors duration-300 ${
-        scrolled || open ? 'border-line bg-canvas/95' : 'border-transparent'
+        scrolled || open ? 'border-line bg-canvas' : 'border-transparent'
       }`}
     >
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[120] focus:px-5 focus:py-3 btn-quiet bg-canvas">

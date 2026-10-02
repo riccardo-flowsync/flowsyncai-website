@@ -73,6 +73,26 @@ async function checkLanding(page, id, source = 'service link') {
   await checkIndex(page, `${source} to ${id}`);
 }
 
+async function checkCircuit(page, reduced) {
+  // The illuminated edge must stay in view, not simply animate somewhere off-screen.
+  await page.waitForFunction((reducedMotion) => [...document.querySelectorAll('.circuit-reveal')].every((rect) => {
+    const height = Number(rect.getAttribute('height'));
+    if (reducedMotion) return height === 1440;
+    const rail = rect.ownerSVGElement.getBoundingClientRect();
+    return Math.abs(rail.top + height / 1440 * rail.height - innerHeight * 0.65) < 20;
+  }), { timeout: 1500 }, reduced);
+  const guttersClear = await page.evaluate(() => {
+    const page = document.querySelector('.hero-section .page');
+    const box = page.getBoundingClientRect();
+    const style = getComputedStyle(page);
+    const rails = [...document.querySelectorAll('.circuit-rail')].map((el) => el.getBoundingClientRect());
+    return rails.length === 2 && rails[0].right <= box.left + parseFloat(style.paddingLeft) - 7
+      && rails[1].left >= box.right - parseFloat(style.paddingRight) + 7;
+  });
+  assert(guttersClear, 'circuit traces cross the reading area');
+  return page.$eval('.circuit-reveal', (rect) => Number(rect.getAttribute('height')));
+}
+
 async function check(page, base, width, lang, reduced) {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -82,9 +102,8 @@ async function check(page, base, width, lang, reduced) {
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(() => document.fonts.ready);
   await sleep(1500);
-  const circuitAtTop = await page.$$eval('.circuit-active', (paths) => paths.map((path) => parseFloat(getComputedStyle(path).strokeDashoffset)));
-  assert.equal(circuitAtTop.length, 4, 'circuit traces are missing');
-  if (reduced) assert(circuitAtTop.every((offset) => offset === 0), 'reduced motion must show completed circuit traces');
+  assert.equal(await page.$$eval('.circuit-active', (paths) => paths.length), 4, 'circuit traces are missing');
+  await checkCircuit(page, reduced);
 
   const opening = await page.$eval('h1', (el) => el.closest('section').textContent);
   assert.match(opening, lang === 'en' ? /automation agency/i : /agenzia.*automaz/is, 'opening must identify the AI automation agency');
@@ -106,15 +125,15 @@ async function check(page, base, width, lang, reduced) {
   }
 
   // Exercise the actual links in both directions, including the sticky mobile service navigation.
-  for (const id of ['outbound', 'support']) {
+  const illumination = [];
+  for (const id of ['outbound', 'support', 'outbound']) {
     await clickVisible(page, `[data-index="${id}"] a`);
     await checkLanding(page, id);
     assert.equal(new URL(page.url()).hash, `#system-${id}`);
+    illumination.push(await checkCircuit(page, reduced));
   }
-  await page.waitForFunction((before, reducedMotion) => [...document.querySelectorAll('.circuit-active')].every((path, index) => {
-    const offset = parseFloat(getComputedStyle(path).strokeDashoffset);
-    return reducedMotion ? offset === before[index] : offset < before[index] - 0.15;
-  }), { timeout: 1000 }, circuitAtTop, reduced);
+  if (!reduced) assert(illumination[1] > illumination[0] && illumination[2] < illumination[1],
+    'circuit illumination must advance down the page and rewind on upward scroll');
 
   // Switch while midway down the page, where stale ScrollTrigger callbacks used to be easy to miss.
   const next = lang === 'en' ? 'it' : 'en';
@@ -127,6 +146,7 @@ async function check(page, base, width, lang, reduced) {
   await checkIndex(page, `language switched to ${next}`);
   await clickVisible(page, '[data-index="outbound"] a');
   await checkLanding(page, 'outbound', 'link after language switch');
+  await checkCircuit(page, reduced);
 
   // A shared link must also work when opened directly, without clicking through the home page first.
   await page.goto(new URL('#system-support', base).href, { waitUntil: 'load' });

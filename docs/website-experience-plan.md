@@ -77,3 +77,23 @@ Keep legal/contact routes and the existing booking and lead behavior.
 - Local production-build preview: http://127.0.0.1:4177/ while this session's server runs.
 - Vercel reports a successful preview deployment. Its served page references the
   same production JavaScript bundle as the locally tested build.
+
+## Browser polish follow-up
+
+Owner feedback, 2026-10-02: inspect the preview directly, fix small visual flaws,
+and make the circuit paths clearly light up while scrolling. Keep this in preview.
+
+- [x] Inspect the page with computer use at desktop and phone widths.
+- [x] Keep brighter circuit traces in the margins and tie illumination to the visible scroll position.
+- [x] Remove text showing through the header; align support figures and improve disclosure controls.
+- [x] Confirm the changes in the browser, check layouts and reduced motion, and measure mobile performance.
+- [x] Save and push the refinements to the existing preview pull request.
+
+Follow-up verification: build and lint pass; 42 layout configurations and all 8
+interaction combinations pass. The interaction check now verifies that the light
+reaches 65% of the viewport, reverses on upward scrolling, stays outside the text,
+and remains fully drawn for reduced motion. Desktop and phone views confirmed with
+computer use, including service navigation and opening the result details.
+
+Latest local mobile Lighthouse: performance 95, accessibility 100, best practices
+100, SEO 100. LCP 2.4 seconds, blocking time 50 milliseconds, layout shift 0.

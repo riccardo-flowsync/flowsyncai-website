@@ -174,6 +174,18 @@ function Figure({ value, none }) {
   );
 }
 
+function DisclosureSummary({ children }) {
+  return (
+    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-6 py-2 focus-visible:outline focus-visible:outline-accent focus-visible:outline-offset-4 [&::-webkit-details-marker]:hidden">
+      {children}
+      <span aria-hidden="true" className="relative h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-open:rotate-45">
+        <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-muted transition-colors group-hover:bg-accent" />
+        <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-muted transition-colors group-hover:bg-accent" />
+      </span>
+    </summary>
+  );
+}
+
 export default function Results() {
   const t = useCopy(copy);
   const { lang } = useLang();
@@ -264,8 +276,8 @@ export default function Results() {
           })}
         </div>
 
-        <details className="mt-8 rounded-lg border border-line p-5">
-          <summary className="cursor-pointer font-medium focus-visible:outline focus-visible:outline-accent">{t.details}</summary>
+        <details className="group mt-8 rounded-lg border border-line px-5 py-3">
+          <DisclosureSummary><span className="font-medium">{t.details}</span></DisclosureSummary>
         {/* Ledger: a table from sm up, a list on phones (the columns do not fit at 320px) */}
         <table className="mt-6 hidden w-full text-left sm:table">
           <thead className="text-sm text-faint">
@@ -322,11 +334,11 @@ export default function Results() {
 
         <h3 className="t-h3 mt-16">{t.support.title}</h3>
         <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="mt-8 grid gap-4 lg:grid-cols-2 lg:gap-y-0">
           {t.support.cases.map((c, ci) => {
             const s = SUPPORT[ci];
             return (
-              <article key={c.name} className="sup-card flex flex-col rounded-[10px] border border-line bg-surface p-6">
+              <article key={c.name} className="sup-card flex flex-col rounded-[10px] border border-line bg-surface p-6 lg:row-span-6 lg:grid lg:grid-rows-subgrid">
                 <h4 className="font-medium">{c.name}</h4>
                 <p className="mt-1 text-sm text-faint">{c.scope}</p>
                 <dl className="mt-6 grid grid-cols-2 gap-6">
@@ -360,8 +372,8 @@ export default function Results() {
                     </li>
                   ))}
                 </ul>
-                <details className="mt-6 border-t border-line pt-4 text-sm text-muted">
-                  <summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.support.capabilities}</summary>
+                <details className="group mt-6 border-t border-line pt-2 text-sm text-muted">
+                  <DisclosureSummary>{t.support.capabilities}</DisclosureSummary>
                   <ul className="mt-3 grid list-disc gap-1.5 pl-4">
                     {c.does.map((d) => <li key={d}>{d}</li>)}
                   </ul>
@@ -370,7 +382,7 @@ export default function Results() {
             );
           })}
         </div>
-        <details className="mt-6 text-sm text-muted"><summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.method}</summary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
+        <details className="group mt-6 text-sm text-muted"><DisclosureSummary>{t.method}</DisclosureSummary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
       </div>
     </section>
   );

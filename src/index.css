@@ -142,12 +142,21 @@
   z-index: -1;
   overflow: clip;
   pointer-events: none;
-  color: rgb(157 124 255 / 0.42);
+  color: rgb(157 124 255 / 0.85);
 }
 
-/* Edge-only traces leave the reading area clear, also on narrow screens. */
-@media (max-width: 639px) {
-  .circuit-backdrop { opacity: 0.55; }
+/* Match .page gutters, leaving at least 8px between the traces and the text. */
+.circuit-rail {
+  position: absolute;
+  top: 0;
+  width: 12px;
+  height: 100%;
+}
+@media (min-width: 640px) {
+  .circuit-rail { width: 24px; }
+}
+@media (min-width: 1024px) {
+  .circuit-rail { width: max(40px, calc((100% - 1200px) / 2 + 40px)); }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
