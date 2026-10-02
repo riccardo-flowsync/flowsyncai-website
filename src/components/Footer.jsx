@@ -7,17 +7,17 @@ const EMAIL = 'riccardo@flowsyncaisolutions.com';
 
 const copy = {
   en: {
-    tagline: 'AI systems for B2B outbound and customer support.',
+    tagline: 'Your AI automation agency. New customers, better customer care.',
     site: 'Site',
-    sections: [['#systems', 'Systems'], ['#results', 'Results'], ['#process', 'Process'], ['#faq', 'FAQ'], ['#book', 'Book a call']],
+    sections: [['#systems', 'Services'], ['#results', 'Results'], ['#process', 'Process'], ['#faq', 'FAQ'], ['#book', 'Book a call']],
     legal: 'Legal',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Terms'], ['/contact', 'Contact']],
     city: 'Rome, Italy',
   },
   it: {
-    tagline: 'Sistemi AI per l’outbound B2B e l’assistenza clienti.',
+    tagline: 'La tua agenzia di automazione AI. Nuovi clienti, più cura per quelli che hai.',
     site: 'Sito',
-    sections: [['#systems', 'Sistemi'], ['#results', 'Risultati'], ['#process', 'Metodo'], ['#faq', 'FAQ'], ['#book', 'Prenota una call']],
+    sections: [['#systems', 'Servizi'], ['#results', 'Risultati'], ['#process', 'Metodo'], ['#faq', 'FAQ'], ['#book', 'Prenota una call']],
     legal: 'Legale',
     pages: [['/privacy', 'Privacy policy'], ['/terms', 'Termini di servizio'], ['/contact', 'Contatti']],
     city: 'Roma, Italia',

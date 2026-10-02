@@ -1,0 +1,164 @@
+// npm run build && node scripts/check-experience.mjs [optional preview URL]
+// Focused interaction regression. The full screen-size sweep lives in check-layout.mjs.
+import assert from 'node:assert/strict';
+import { existsSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import puppeteer from 'puppeteer';
+import { preview } from 'vite';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const root = fileURLToPath(new URL('..', import.meta.url));
+const shellDir = `${homedir()}/.cache/puppeteer/chrome-headless-shell`;
+const shell = (existsSync(shellDir) ? readdirSync(shellDir).sort().reverse() : [])
+  .flatMap((version) => readdirSync(`${shellDir}/${version}`).map((folder) => `${shellDir}/${version}/${folder}/chrome-headless-shell`))
+  .find(existsSync);
+const chrome = process.env.CHROME_PATH || shell;
+let server, browser;
+
+// Executed inside Chrome. Off-screen content counts as readable; hidden content does not.
+function readable(selector) {
+  const elements = [...document.querySelectorAll(selector)];
+  return elements.length > 0 && elements.every((el) => {
+    if (!el.getBoundingClientRect().width || !el.getBoundingClientRect().height) return false;
+    for (let node = el; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (Number(style.opacity) < 0.99 || style.visibility !== 'visible' || style.display === 'none') return false;
+    }
+    return true;
+  });
+}
+
+async function clickVisible(page, selector) {
+  for (const element of await page.$$(selector)) {
+    if (await element.boundingBox()) { await element.click(); return; }
+  }
+  throw new Error(`No visible control: ${selector}`);
+}
+
+async function checkIndex(page, checkpoint) {
+  // Native instant scrolling changes geometry before ScrollTrigger's next animation frame.
+  await page.waitForFunction(() => {
+    const section = document.querySelector('#systems');
+    const middle = innerHeight * 0.55;
+    let current = null;
+    section.querySelectorAll('[data-system]').forEach((article) => {
+      if (article.getBoundingClientRect().top <= middle) current = article.dataset.system;
+    });
+    if (section.querySelector('[data-note]').getBoundingClientRect().top <= middle) current = null;
+    return [...section.querySelectorAll('[data-index]')].every((item) => {
+      const expected = item.dataset.index === current;
+      return item.classList.contains('is-active') === expected
+        && item.querySelector('a').getAttribute('aria-current') === String(expected);
+    });
+  }, { timeout: 1000 }).catch(() => {
+    throw new Error(`service index is stale or disagrees with the visible service (${checkpoint})`);
+  });
+}
+
+async function checkLanding(page, id, source = 'service link') {
+  await page.waitForFunction((service) => {
+    const article = document.getElementById(`system-${service}`);
+    const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)
+      + (parseFloat(getComputedStyle(article).scrollMarginTop) || 0);
+    return Math.abs(article.getBoundingClientRect().top - offset) < 2;
+  }, { timeout: 6000 }, id);
+  const covered = await page.evaluate((service) => {
+    const heading = document.querySelector(`#system-${service} h3`).getBoundingClientRect();
+    const overlays = [...document.querySelectorAll('header, #systems nav')]
+      .map((el) => el.getBoundingClientRect()).filter((rect) => rect.width && rect.top <= heading.top);
+    return heading.top < Math.max(...overlays.map((rect) => rect.bottom)) - 1;
+  }, id);
+  assert.equal(covered, false, `${id} heading is covered by navigation`);
+  await checkIndex(page, `${source} to ${id}`);
+}
+
+async function check(page, base, width, lang, reduced) {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewport({ width, height: width < 500 ? 844 : 900, isMobile: width < 500, hasTouch: width < 500 });
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: reduced ? 'reduce' : 'no-preference' }]);
+  await page.evaluateOnNewDocument((language) => localStorage.setItem('lang', language), lang);
+  await page.goto(base, { waitUntil: 'load' });
+  await page.evaluate(() => document.fonts.ready);
+  await sleep(1500);
+  const circuitAtTop = await page.$$eval('.circuit-active', (paths) => paths.map((path) => parseFloat(getComputedStyle(path).strokeDashoffset)));
+  assert.equal(circuitAtTop.length, 4, 'circuit traces are missing');
+  if (reduced) assert(circuitAtTop.every((offset) => offset === 0), 'reduced motion must show completed circuit traces');
+
+  const opening = await page.$eval('h1', (el) => el.closest('section').textContent);
+  assert.match(opening, lang === 'en' ? /automation agency/i : /agenzia.*automaz/is, 'opening must identify the AI automation agency');
+  const services = await page.$$eval('[data-system]', (articles) => articles.map((article) => ({
+    id: article.id, name: article.querySelector('h3')?.textContent.trim(),
+  })));
+  assert.deepEqual(services.map((service) => service.id), ['system-outbound', 'system-support']);
+  assert.deepEqual(services.map((service) => service.name), ['AI outreach', 'AI agent']);
+  assert(await page.evaluate(readable, '[data-system] h3'), 'both service headings must remain visible');
+
+  if (reduced) {
+    assert(await page.evaluate(readable, 'main h1, main h2, main h3, .ib-row, .ib-draft, .ib-btns, .ch-user, .ch-agent, .ch-act'),
+      'reduced motion hides content or an illustration');
+  } else {
+    for (const [id, final] of [['outbound', '.ib-sent, .ib-row, .ib-draft'], ['support', '.ch-agent, .ch-act']]) {
+      await page.$eval(`#system-${id} [data-stage]`, (el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await page.waitForFunction(readable, { timeout: 3000 }, final);
+    }
+  }
+
+  // Exercise the actual links in both directions, including the sticky mobile service navigation.
+  for (const id of ['outbound', 'support']) {
+    await clickVisible(page, `[data-index="${id}"] a`);
+    await checkLanding(page, id);
+    assert.equal(new URL(page.url()).hash, `#system-${id}`);
+  }
+  await page.waitForFunction((before, reducedMotion) => [...document.querySelectorAll('.circuit-active')].every((path, index) => {
+    const offset = parseFloat(getComputedStyle(path).strokeDashoffset);
+    return reducedMotion ? offset === before[index] : offset < before[index] - 0.15;
+  }), { timeout: 1000 }, circuitAtTop, reduced);
+
+  // Switch while midway down the page, where stale ScrollTrigger callbacks used to be easy to miss.
+  const next = lang === 'en' ? 'it' : 'en';
+  if (width < 1280) await clickVisible(page, 'button[aria-controls="mobile-menu"]');
+  await clickVisible(page, `button[lang="${next}"]`);
+  if (width < 1280) await clickVisible(page, 'button[aria-controls="mobile-menu"]');
+  await page.waitForFunction((language) => document.documentElement.lang === language, {}, next);
+  await sleep(500);
+  assert(await page.evaluate(readable, '[data-system] h3'), 'language switch hides service headings');
+  await checkIndex(page, `language switched to ${next}`);
+  await clickVisible(page, '[data-index="outbound"] a');
+  await checkLanding(page, 'outbound', 'link after language switch');
+
+  // A shared link must also work when opened directly, without clicking through the home page first.
+  await page.goto(new URL('#system-support', base).href, { waitUntil: 'load' });
+  await checkLanding(page, 'support', 'direct URL');
+  assert.equal(await page.$$eval('.pin-spacer', (els) => els.length), 0, 'an animation pins the page');
+  assert.deepEqual(errors, [], 'uncaught browser errors');
+}
+
+try {
+  let base = process.argv[2];
+  if (!base) {
+    assert(existsSync(`${root}dist/index.html`), 'Run npm run build first');
+    server = await preview({ root, logLevel: 'silent' });
+    base = server.resolvedUrls.local[0];
+  }
+  browser = await puppeteer.launch({ headless: true, executablePath: chrome, channel: chrome ? undefined : 'chrome' });
+  for (const width of [1440, 390]) for (const lang of ['en', 'it']) for (const reduced of [false, true]) {
+    const page = await browser.newPage();
+    const label = `${width}px ${lang} ${reduced ? 'reduced' : 'normal'} motion`;
+    try {
+      await page.bringToFront();
+      await check(page, base, width, lang, reduced);
+      console.log(`ok ${label}`);
+    } catch (error) {
+      console.error(`FAIL ${label}: ${error.message}`);
+      process.exitCode = 1;
+    } finally { await page.close(); }
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 1;
+} finally {
+  await browser?.close();
+  await server?.close();
+}

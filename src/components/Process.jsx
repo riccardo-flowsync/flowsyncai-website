@@ -4,19 +4,19 @@ import { gsap, useGSAP, MOTION_OK, RISE, riseOnScroll, drawRule, later } from '.
 
 const copy = {
   en: {
-    title: 'From the first call to a system that runs every day.',
+    title: 'A clear route to launch.',
     steps: [
       {
         title: 'A 30\u2011minute call', // non-breaking hyphen
-        body: 'We look at your sales or support work and tell you whether a system fits.',
+        body: 'We look at your sales or support work and choose the right place to automate.',
       },
       {
-        title: 'We build it around how you work',
-        body: 'We connect your tools and prepare the emails or support answers. You approve them before launch.',
+        title: 'A focused setup',
+        body: 'We connect your tools and prepare the content for a quick launch. Outreach inboxes warm up first. You approve before launch.',
       },
       {
         title: 'It runs every day',
-        body: 'Sales: personal emails, approved replies by default, booked calls. Support: automatic answers, order checks and returns, with unresolved questions handed to your team.',
+        body: 'AI outreach brings prospects to your calendar. Your AI agent answers customers and hands unresolved cases to your team.',
       },
     ],
     tools: ['Your inbox', 'Your calendar', 'Your shop'],
@@ -24,19 +24,19 @@ const copy = {
     note: 'Illustrations.',
   },
   it: {
-    title: 'Dalla prima call a un sistema che lavora ogni giorno.',
+    title: 'Un percorso chiaro per partire.',
     steps: [
       {
         title: 'Una call di 30\u00a0minuti',
-        body: 'Guardiamo come trovi clienti o gestisci l’assistenza e ti diciamo se un sistema fa per te.',
+        body: 'Guardiamo come trovi clienti o gestisci l’assistenza e scegliamo da dove iniziare ad automatizzare.',
       },
       {
-        title: 'Lo costruiamo sul tuo modo di lavorare',
-        body: 'Colleghiamo i tuoi strumenti e prepariamo email o risposte per l’assistenza. Approvi tutto prima del lancio.',
+        title: 'Una preparazione mirata',
+        body: 'Colleghiamo i tuoi strumenti e prepariamo i contenuti per partire in fretta. Prima scaldiamo le caselle per l’outreach. Approvi tu prima del lancio.',
       },
       {
         title: 'Lavora ogni giorno',
-        body: 'Vendite: email personali, risposte di norma approvate, call prenotate. Assistenza: risposte automatiche, ordini e resi, con i casi irrisolti passati al tuo team.',
+        body: 'AI outreach porta potenziali clienti nel tuo calendario. Il tuo AI agent risponde ai clienti e passa i casi irrisolti al tuo team.',
       },
     ],
     tools: ['La tua posta', 'Il calendario', 'Il negozio'],
@@ -130,13 +130,13 @@ export default function Process() {
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="process" ref={root} className="rule py-24 lg:py-32">
+    <section id="process" ref={root} className="rule py-20 lg:py-24">
       <div className="page">
         <h2 key={lang} className="proc-title t-h2 max-w-[22ch]">{t.title}</h2>
-        <div className="proc-list relative mt-14 lg:mt-10">
+        <div className="proc-list relative mt-10">
           {/* From lg the three steps share three rows (subgrid): pictures, then the line with its nodes, then the text.
               Phones and tablets: one column per step, the picture under the text. */}
-          <ol className="relative grid gap-12 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-0">
+          <ol className="relative grid gap-9 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-0">
             {/* The line: vertical on phones and tablets, horizontal from lg in the nodes' row */}
             <li aria-hidden="true" className="absolute bottom-2 left-[5px] top-2 w-px bg-line lg:bottom-auto lg:left-0 lg:right-0 lg:row-start-2 lg:row-end-3 lg:top-[5px] lg:h-px lg:w-auto">
               <div className="proc-fill h-full w-full origin-top bg-accent lg:origin-left" />
@@ -146,7 +146,7 @@ export default function Process() {
                 <span aria-hidden="true" className="relative mt-2 grid h-[11px] w-[11px] place-items-center rounded-full border border-line bg-canvas lg:row-start-2 lg:mt-0">
                   <span className="proc-node h-[5px] w-[5px] rounded-full bg-accent" />
                 </span>
-                <div className="proc-text lg:row-start-3 lg:mt-9 lg:pr-4">
+                <div className="proc-text lg:row-start-3 lg:mt-6 lg:pr-4">
                   <h3 className="t-h3">{s.title}</h3>
                   <p className="mt-3 text-muted">{s.body}</p>
                 </div>

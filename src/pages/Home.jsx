@@ -5,11 +5,12 @@ import Process from '../components/Process';
 import FAQ from '../components/FAQ';
 import Booking from '../components/Booking';
 import ScrollProgress from '../components/ScrollProgress';
+import CircuitBackdrop from '../components/CircuitBackdrop';
 import { useCopy } from '../lib/lang';
 
 const copy = {
-  en: { docTitle: 'FlowSync AI Solutions: AI for sales and customer support' },
-  it: { docTitle: 'FlowSync AI Solutions: AI per vendite e assistenza clienti' },
+  en: { docTitle: 'FlowSync AI Solutions: AI automation agency' },
+  it: { docTitle: 'FlowSync AI Solutions: agenzia di automazione AI' },
 };
 
 export default function Home() {
@@ -18,8 +19,11 @@ export default function Home() {
     <>
       <title>{t.docTitle}</title>
       <ScrollProgress />
-      <Hero />
-      <Systems />
+      <div className="relative isolate">
+        <CircuitBackdrop />
+        <Hero />
+        <Systems />
+      </div>
       <Results />
       <Process />
       <FAQ />

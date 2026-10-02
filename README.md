@@ -12,6 +12,7 @@ npm run build          # production build
 npm run lint
 npm test               # lead functions, ClickUp calls stubbed
 npm run check:layout   # after a build: 16 screen sizes in EN and IT
+npm run check:experience # service navigation, quick demos, language changes, reduced motion
 ```
 
 ## Motion

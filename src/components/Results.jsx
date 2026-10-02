@@ -29,8 +29,10 @@ const SPLIT_COLORS = ['bg-accent', 'bg-accent/50', 'bg-faint/60'];
 
 const copy = {
   en: {
-    title: 'The results, campaign by campaign.',
-    intro: 'Five real B2B campaigns on cold email and LinkedIn, in the UK, Europe and the UAE. Names withheld.',
+    title: 'Real work. Measurable results.',
+    intro: 'Sales conversations started. Customer questions handled. Here is what our systems have done.',
+    outreach: 'AI outreach: more sales conversations',
+    campaigns: 'Five past B2B campaigns on cold email and LinkedIn, in the UK, Europe and the UAE. Names withheld.',
     totals: [
       [49, '', 'meetings booked'],
       [155, '', 'interested prospects'],
@@ -71,8 +73,9 @@ const copy = {
     ],
     note: 'Past results: yours depend on your offer and your market. Reply rates as reported by the sending platform for each campaign’s period. Interested means the person replied asking for details, a price or a call. Updated 23 September 2026.',
     support: {
-      title: 'Support agents in two online shops',
-      intro: 'Each one answers customers on its own and passes what it cannot solve to the team as a ticket. Names withheld.',
+      title: 'AI agent: less routine support work',
+      intro: 'Two online shops. Each agent answers on its own and passes unresolved cases to the team as a ticket. Names withheld.',
+      capabilities: 'What the agent handles',
       chats: 'customer chats',
       upTo: 'up to',
       hours: 'hours of staff time saved a month (estimate)',
@@ -93,8 +96,10 @@ const copy = {
     },
   },
   it: {
-    title: 'I risultati, campagna per campagna.',
-    intro: 'Cinque campagne B2B reali, via email a freddo e LinkedIn, tra Regno Unito, Europa ed Emirati. Nomi riservati.',
+    title: 'Lavoro reale. Risultati misurabili.',
+    intro: 'Conversazioni commerciali avviate. Domande dei clienti risolte. Ecco cosa hanno fatto i nostri sistemi.',
+    outreach: 'AI outreach: più conversazioni commerciali',
+    campaigns: 'Cinque campagne B2B passate, via email a freddo e LinkedIn, tra Regno Unito, Europa ed Emirati. Nomi riservati.',
     totals: [
       [49, '', 'appuntamenti fissati'],
       [155, '', 'contatti interessati'],
@@ -135,8 +140,9 @@ const copy = {
     ],
     note: 'Risultati passati: i tuoi dipendono dalla tua offerta e dal tuo mercato. Tassi di risposta come riportati dalla piattaforma di invio per il periodo di ciascuna campagna. Interessato significa che la persona ha risposto chiedendo dettagli, un prezzo o una call. Aggiornato il 23 settembre 2026.',
     support: {
-      title: 'Agenti di assistenza in due negozi online',
-      intro: 'Ognuno risponde ai clienti da solo e passa al team, con un ticket, quello che non può risolvere. Nomi riservati.',
+      title: 'AI agent: meno assistenza ripetitiva',
+      intro: 'Due negozi online. Ogni agente risponde da solo e passa i casi irrisolti al team con un ticket. Nomi riservati.',
+      capabilities: 'Di cosa si occupa l’agente',
       chats: 'chat dei clienti',
       upTo: 'fino a',
       hours: 'ore di lavoro risparmiate al mese (stima)',
@@ -201,14 +207,16 @@ export default function Results() {
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="rule py-24 lg:py-32">
+    <section id="results" ref={root} className="rule py-20 lg:py-24">
       <div className="page">
         <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
           <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
           <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
         </div>
 
-        <dl className="res-totals mt-14 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
+        <h3 className="t-h3 mt-12">{t.outreach}</h3>
+        <p className="mt-3 max-w-[70ch] text-sm text-muted">{t.campaigns}</p>
+        <dl className="res-totals mt-6 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
           {t.totals.map(([n, unit, label]) => (
             <div key={label} className="flex flex-col-reverse justify-end gap-2 border-line py-7 [&:not(:first-child)]:border-t sm:px-8 sm:first:pl-0 sm:[&:not(:first-child)]:border-t-0">
               <dt className="max-w-[24ch] text-sm text-muted">{label}</dt>
@@ -219,7 +227,7 @@ export default function Results() {
           ))}
         </dl>
 
-        <h3 className="t-h3 mt-20">{t.market}</h3>
+        <h3 className="t-h3 mt-12">{t.market}</h3>
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           {t.charts.map((c, ci) => {
             const values = CHARTS[ci];
@@ -312,7 +320,7 @@ export default function Results() {
           <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
         </details>
 
-        <h3 className="t-h3 mt-24 text-[1.5rem]">{t.support.title}</h3>
+        <h3 className="t-h3 mt-16">{t.support.title}</h3>
         <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {t.support.cases.map((c, ci) => {
@@ -352,11 +360,12 @@ export default function Results() {
                     </li>
                   ))}
                 </ul>
-                <ul className="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
-                  {c.does.map((d) => (
-                    <li key={d} className="sup-do rounded-lg border border-line px-3 py-1.5 text-sm text-muted">{d}</li>
-                  ))}
-                </ul>
+                <details className="mt-6 border-t border-line pt-4 text-sm text-muted">
+                  <summary className="cursor-pointer focus-visible:outline focus-visible:outline-accent">{t.support.capabilities}</summary>
+                  <ul className="mt-3 grid list-disc gap-1.5 pl-4">
+                    {c.does.map((d) => <li key={d}>{d}</li>)}
+                  </ul>
+                </details>
               </article>
             );
           })}
