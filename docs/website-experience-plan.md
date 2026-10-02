@@ -45,7 +45,8 @@ Keep legal/contact routes and the existing booking and lead behavior.
 
 ## Motion specification
 
-- Focal sequence: a compact two-service illustration, understandable at rest.
+- Focal sequence: one outreach example, completed over 240 pixels of scrolling,
+  with all labels readable at rest.
 - Continuity: keep the service index and animate the shift between its two symbols.
 - Background: a small set of SVG circuit paths across the full home page and footer.
   Light up with scrolling; never add extra scrolling distance.
@@ -121,3 +122,32 @@ cleanup, and reduced motion. Desktop and phone renders confirmed with computer u
 
 Current local mobile Lighthouse: performance 94, accessibility 100, best practices
 100, SEO 100. LCP 2.6 seconds, blocking time 60 milliseconds, layout shift 0.
+
+## Separate services and improve reading contrast
+
+Owner feedback, 2026-10-02: lead with AI outreach, remove the suggestion that the
+two services work together, keep the two-services introduction, and place each
+service's results with that service. Keep the full-page circuit background but
+reduce its competition with text and small purple elements.
+
+- [x] Restore a single outreach example in the opening, completed over a short scroll.
+- [x] Keep the agency identity and present the two services as separate choices.
+- [x] Group outreach with outreach results, then AI agent with support results.
+- [x] Soften circuit contrast and give content and labels solid dark surfaces.
+- [x] Verify responsive layouts, service navigation, motion, reading contrast, and loading speed.
+- [x] Update the existing review preview; keep production unchanged.
+
+The opening now shows a single outreach example with readable labels and a short,
+reversible scroll trace. The two-services introduction is followed by a complete
+outreach chapter and a complete AI agent chapter, each with its own proof. Neutral
+opaque surfaces keep circuit lines out of the service copy, labels, and figures.
+The smaller service index retains its envelope-to-chat transition. All existing
+case-study figures, dates, source notes, and estimate labels remain intact.
+
+Build and lint pass. All 42 layout cases and 8 interaction configurations pass.
+The added interaction coverage checks the short workflow and its rewind, results
+ownership, and both results anchors clearing the mobile navigation. Desktop and
+phone views were inspected with computer use. No runtime dependencies were added.
+
+Latest local mobile Lighthouse: performance 94, accessibility 100, best practices
+100, SEO 100. LCP 2.4 seconds, blocking time 120 milliseconds, layout shift 0.

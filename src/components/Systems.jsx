@@ -1,12 +1,13 @@
 import { useRef } from 'react';
 import ScrollLink from './ScrollLink';
+import Results from './Results';
 import { useCopy, useLang } from '../lib/lang';
 import { gsap, useGSAP, ScrollTrigger, MOTION_OK, HOLD, riseOnScroll, drawRule, later } from '../lib/motion';
 
 const copy = {
   en: {
     title: 'Two services. Built and run for you.',
-    intro: 'One brings in new business. The other takes care of customer questions. Choose what your team needs.',
+    intro: 'Two separate services for two different needs. AI outreach brings in new business. AI agent handles customer questions. Choose the one your team needs.',
     note: 'Illustrations. Names and messages are invented.',
     systems: [
       {
@@ -48,7 +49,7 @@ const copy = {
   },
   it: {
     title: 'Due servizi. Costruiti e gestiti per te.',
-    intro: 'Uno trova nuovi clienti. L’altro risponde alle loro domande. Scegli quello che serve al tuo team.',
+    intro: 'Due servizi separati per due esigenze diverse. AI outreach trova nuovi clienti. AI agent risponde alle domande dei clienti. Scegli quello che serve al tuo team.',
     note: 'Illustrazioni. Nomi e messaggi sono inventati.',
     systems: [
       {
@@ -174,7 +175,7 @@ function Inbox({ t, lang }) {
           <li key={who} className={`ib-row rounded-lg px-3.5 py-3 ${i === 0 ? 'bg-raised' : ''}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium">{who}</span>
-              <span key={lang} data-handover={i === 0 ? 'to' : undefined} className={`ib-tag rounded-md px-2 py-0.5 font-mono text-[0.72rem] ${i === 0 ? 'bg-accent/15 text-accent' : 'bg-raised text-faint'}`}>{tag}</span>
+              <span key={lang} className={`ib-tag rounded-md border border-line bg-canvas px-2 py-0.5 font-mono text-[0.72rem] ${i === 0 ? 'text-accent' : 'text-muted'}`}>{tag}</span>
             </div>
             <p className="mt-1 text-sm text-muted">{text}</p>
           </li>
@@ -215,8 +216,6 @@ function Chat({ t }) {
     </Panel>
   );
 }
-
-let handover; // lib/handover.js once fetched: a language switch then remounts it in the same frame, not a few frames later
 
 export default function Systems() {
   const t = useCopy(copy);
@@ -277,34 +276,22 @@ export default function Systems() {
     return () => mm.revert();
   }), { scope: root, dependencies: [lang], revertOnUpdate: true });
 
-  // The "interested" tag of the hero's example run files itself on the first reply here (lib/handover.js). Mouse screens only.
-  useGSAP((context) => later(context, () => {
-    const mm = gsap.matchMedia();
-    mm.add(HOLD, () => {
-      let stop;
-      let gone = false;
-      const go = (m) => { handover = m; if (!gone) stop = m.default(); };
-      if (handover) go(handover);
-      else import('../lib/handover').then(go).catch(() => {});
-      return () => { gone = true; stop?.(); };
-    });
-    return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
-
   return (
     <section id="systems" ref={root} className="rule py-24 lg:py-32">
-      <div className="page grid gap-14 lg:grid-cols-12 lg:gap-16">
-        <div className="lg:col-span-5">
-          <div className="lg:sticky lg:top-28">
-            <h2 key={lang} className="sys-title t-h2">{t.title}</h2>
-            <p className="t-lead mt-5 max-w-[34rem] text-muted">{t.intro}</p>
-            <div className="mt-8 hidden items-center gap-8 lg:flex">
+      <div className="page grid gap-12 lg:grid-cols-12 lg:gap-x-10 lg:gap-y-16">
+        <div className="grid gap-5 lg:col-span-12 lg:grid-cols-2 lg:items-end lg:gap-16">
+          <h2 key={lang} className="sys-title t-h2 max-w-[18ch]">{t.title}</h2>
+          <p className="t-lead max-w-[34rem] text-muted">{t.intro}</p>
+        </div>
+        <div className="hidden lg:col-span-2 lg:block">
+          <div className="sticky top-8">
+            <div className="flex flex-col items-start gap-6 bg-canvas py-2">
               <ul className="grid gap-3 border-l border-line">
                 {t.systems.map((s) => (
                   <li
                     key={s.id}
                     data-index={s.id}
-                    className="-ml-px border-l border-transparent pl-5 text-faint transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
+                    className="-ml-px border-l border-transparent pl-3 text-muted transition-colors duration-300 [&.is-active]:border-accent [&.is-active]:text-fg"
                   >
                     <ScrollLink to={`#system-${s.id}`} className="inline-flex min-h-11 items-center rounded px-1 hover:text-fg focus-visible:outline focus-visible:outline-accent">{s.name}</ScrollLink>
                   </li>
@@ -327,26 +314,29 @@ export default function Systems() {
             </div>
           ))}
         </nav>
-        <div className="grid gap-20 lg:col-span-7 lg:gap-28">
+        <div className="grid gap-20 lg:col-span-10 lg:gap-28">
           {t.systems.map((s) => (
-            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="grid scroll-mt-24 gap-5 border-t border-line pt-8 first:border-t-0 first:pt-0 lg:scroll-mt-0">
-              <div>
-                <h3 className="t-h3 text-[1.75rem]">{s.name}</h3>
-                <p className="mt-3 text-lg font-medium leading-snug text-fg">{s.outcome}</p>
-                <p className="mt-3 text-muted">{s.body}</p>
-                {s.setup && <p className="mt-3 text-sm text-muted">{s.setup}</p>}
+            <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="scroll-mt-24 border-t border-faint/40 bg-canvas pt-12 first:border-t-0 first:pt-0 lg:scroll-mt-0">
+              <div className="grid items-start gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+                <div>
+                  <h3 className="t-h2">{s.name}</h3>
+                  <p className="mt-3 text-lg font-medium leading-snug text-fg">{s.outcome}</p>
+                  <p className="mt-3 text-muted">{s.body}</p>
+                  {s.setup && <p className="mt-3 text-sm text-muted">{s.setup}</p>}
+                </div>
+                <div data-stage className="grid gap-7">
+                  <ul className="flex flex-wrap gap-2">
+                    {s.points.map((p) => (
+                      <li key={p} className="relative rounded-lg border border-line bg-raised px-3 py-1.5 text-sm text-fg">
+                        {p}
+                        <span aria-hidden="true" data-motion-only className="pt-lit pointer-events-none absolute -inset-px rounded-lg border border-accent opacity-0" />
+                      </li>
+                    ))}
+                  </ul>
+                  {artifacts[s.id]}
+                </div>
               </div>
-              <div data-stage className="grid gap-7">
-                <ul className="flex flex-wrap gap-2">
-                  {s.points.map((p) => (
-                    <li key={p} className="relative rounded-lg border border-line px-3 py-1.5 text-sm text-muted">
-                      {p}
-                      <span aria-hidden="true" data-motion-only className="pt-lit pointer-events-none absolute -inset-px rounded-lg border border-accent bg-accent/10 opacity-0" />
-                    </li>
-                  ))}
-                </ul>
-                {artifacts[s.id]}
-              </div>
+              <Results service={s.id} />
             </article>
           ))}
           <p data-note className="-mt-10 text-xs text-faint lg:-mt-16">{t.note}</p>

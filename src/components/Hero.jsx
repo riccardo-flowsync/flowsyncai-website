@@ -7,19 +7,19 @@ import { gsap, useGSAP, SplitText, MOTION_OK, RISE, later, startAt } from '../li
 const copy = {
   en: {
     title: 'AI automation. More time to grow.',
-    sub: 'We’re an AI automation agency. AI outreach finds your next customers. AI agent takes care of the ones you have. Built and run for you.',
+    sub: 'We’re an AI automation agency. Our AI outreach service finds the right buyers, starts conversations and books calls. Built and run for you.',
     book: 'Book a call',
     results: 'See the results',
     proof: 'meetings booked across 5 past B2B campaigns.',
-    supportProof: 'of chats closed without a ticket for an online shop.',
+    supportLink: 'Looking for customer support? Explore AI agent.',
   },
   it: {
     title: 'Automazioni AI. Più tempo per crescere.',
-    sub: 'Siamo un’agenzia di automazione AI. AI outreach trova i tuoi prossimi clienti. AI agent si prende cura di quelli che hai. Li costruiamo e gestiamo per te.',
+    sub: 'Siamo un’agenzia di automazione AI. Il nostro servizio AI outreach trova i contatti giusti, avvia conversazioni e prenota call. Lo costruiamo e gestiamo per te.',
     book: 'Prenota una call',
     results: 'Guarda i risultati',
     proof: 'appuntamenti fissati in 5 campagne B2B passate.',
-    supportProof: 'delle chat chiuse senza ticket per un negozio online.',
+    supportLink: 'Ti serve assistenza clienti? Scopri AI agent.',
   },
 };
 
@@ -92,10 +92,8 @@ export default function Hero() {
               <ScrollLink ref={book} to="#book" className="btn-primary">{t.book}</ScrollLink>
               <ScrollLink to="#results" className="btn-quiet">{t.results}</ScrollLink>
             </div>
-            <div className="hero-rise mt-9 grid max-w-[34rem] grid-cols-2 gap-5 border-t border-line pt-5 text-sm text-muted">
-              <p><strong className="mb-1 block text-xl font-semibold text-fg tabular-nums">49</strong>{t.proof}</p>
-              <p><strong className="mb-1 block text-xl font-semibold text-fg tabular-nums">92%</strong>{t.supportProof}</p>
-            </div>
+            <p className="hero-rise mt-8 max-w-[34rem] text-sm text-muted"><strong className="font-semibold text-fg">49</strong> {t.proof}</p>
+            <ScrollLink to="#system-support" className="hero-rise link mt-5 inline-flex min-h-11 items-center text-sm text-muted">{t.supportLink}</ScrollLink>
           </div>
           <div className="lg:col-span-5">
             <WorkflowTrace />

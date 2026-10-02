@@ -98,7 +98,7 @@
   }
 
   .btn-quiet {
-    @apply btn text-fg ring-1 ring-inset ring-line hover:bg-raised;
+    @apply btn bg-canvas text-fg ring-1 ring-inset ring-line hover:bg-raised;
   }
 
   .link {

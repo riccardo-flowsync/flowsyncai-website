@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, riseOnScroll, drawRule, later } from '../lib/motion';
+import { gsap, useGSAP, MOTION_OK, later } from '../lib/motion';
 
 // Source: the outbound case studies, updated 2026-09-23. Interested and meetings add up to the totals.
 const ROWS = [
@@ -29,9 +29,7 @@ const SPLIT_COLORS = ['bg-accent', 'bg-accent/50', 'bg-faint/60'];
 
 const copy = {
   en: {
-    title: 'Real work. Measurable results.',
-    intro: 'Sales conversations started. Customer questions handled. Here is what our systems have done.',
-    outreach: 'AI outreach: more sales conversations',
+    outreach: 'AI outreach results',
     campaigns: 'Five past B2B campaigns on cold email and LinkedIn, in the UK, Europe and the UAE. Names withheld.',
     totals: [
       [49, '', 'meetings booked'],
@@ -73,7 +71,7 @@ const copy = {
     ],
     note: 'Past results: yours depend on your offer and your market. Reply rates as reported by the sending platform for each campaign’s period. Interested means the person replied asking for details, a price or a call. Updated 23 September 2026.',
     support: {
-      title: 'AI agent: less routine support work',
+      title: 'AI agent results',
       intro: 'Two online shops. Each agent answers on its own and passes unresolved cases to the team as a ticket. Names withheld.',
       capabilities: 'What the agent handles',
       chats: 'customer chats',
@@ -96,9 +94,7 @@ const copy = {
     },
   },
   it: {
-    title: 'Lavoro reale. Risultati misurabili.',
-    intro: 'Conversazioni commerciali avviate. Domande dei clienti risolte. Ecco cosa hanno fatto i nostri sistemi.',
-    outreach: 'AI outreach: più conversazioni commerciali',
+    outreach: 'Risultati di AI outreach',
     campaigns: 'Cinque campagne B2B passate, via email a freddo e LinkedIn, tra Regno Unito, Europa ed Emirati. Nomi riservati.',
     totals: [
       [49, '', 'appuntamenti fissati'],
@@ -140,7 +136,7 @@ const copy = {
     ],
     note: 'Risultati passati: i tuoi dipendono dalla tua offerta e dal tuo mercato. Tassi di risposta come riportati dalla piattaforma di invio per il periodo di ciascuna campagna. Interessato significa che la persona ha risposto chiedendo dettagli, un prezzo o una call. Aggiornato il 23 settembre 2026.',
     support: {
-      title: 'AI agent: meno assistenza ripetitiva',
+      title: 'Risultati di AI agent',
       intro: 'Due negozi online. Ogni agente risponde da solo e passa i casi irrisolti al team con un ticket. Nomi riservati.',
       capabilities: 'Di cosa si occupa l’agente',
       chats: 'chat dei clienti',
@@ -168,7 +164,7 @@ function Figure({ value, none }) {
   if (value !== null) return value;
   return (
     <>
-      <span aria-hidden="true" className="text-faint">–</span>
+      <span aria-hidden="true" className="text-muted">–</span>
       <span className="sr-only">{none}</span>
     </>
   );
@@ -186,29 +182,29 @@ function DisclosureSummary({ children }) {
   );
 }
 
-export default function Results() {
+export default function Results({ service }) {
   const t = useCopy(copy);
   const { lang } = useLang();
   const root = useRef(null);
+  const outbound = service === 'outbound';
+  const id = outbound ? 'results' : 'results-support';
   const locale = lang === 'it' ? 'it-IT' : 'en-GB';
   const pf = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   const nf = new Intl.NumberFormat(locale, { useGrouping: 'always' }); // Italian leaves 4-digit numbers ungrouped by default
   const pct = (v) => `${pf.format(v)}%`;
   const num = (v) => nf.format(v);
 
-  // Real figures stay printed. Only supporting bars and rules animate, at a fixed pace.
+  // Real figures stay printed. Only supporting bars animate, at a fixed pace.
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
-      drawRule(root.current);
-      riseOnScroll('.res-title');
-      gsap.utils.toArray('.res-chart').forEach((chart) => {
+      gsap.utils.toArray('.res-chart', root.current).forEach((chart) => {
         const bars = chart.querySelectorAll('.res-bar');
         gsap.timeline({ scrollTrigger: { trigger: chart, start: 'top 88%', once: true } })
           .from(bars[bars.length - 1], { scaleX: 0, duration: 0.4, ease: 'power2.out' })
           .from([...bars].slice(0, -1), { scaleX: 0, duration: 0.8, stagger: 0.15, ease: 'power2.out' }, 0.3);
       });
-      gsap.utils.toArray('.sup-card').forEach((card) => {
+      gsap.utils.toArray('.sup-card', root.current).forEach((card) => {
         gsap.from(card.querySelector('.sup-bar'), {
           scaleX: 0, transformOrigin: 'left center', duration: 1, ease: 'power2.out',
           scrollTrigger: { trigger: card, start: 'top 88%', once: true },
@@ -216,17 +212,12 @@ export default function Results() {
       });
     });
     return () => mm.revert();
-  }), { scope: root, dependencies: [lang], revertOnUpdate: true });
+  }), { scope: root, dependencies: [lang, service], revertOnUpdate: true });
 
   return (
-    <section id="results" ref={root} className="rule py-20 lg:py-24">
-      <div className="page">
-        <div className="grid gap-5 lg:grid-cols-12 lg:items-end lg:gap-16">
-          <h2 key={lang} className="res-title t-h2 lg:col-span-7">{t.title}</h2>
-          <p className="t-lead text-muted lg:col-span-5">{t.intro}</p>
-        </div>
-
-        <h3 className="t-h3 mt-12">{t.outreach}</h3>
+    <section id={id} data-results={service} aria-labelledby={`${id}-heading`} ref={root} className="relative mt-10 scroll-mt-24 border-t border-line bg-canvas pt-8 text-fg lg:scroll-mt-0">
+      <h4 id={`${id}-heading`} className="t-h3 font-semibold">{outbound ? t.outreach : t.support.title}</h4>
+      {outbound ? <>
         <p className="mt-3 max-w-[70ch] text-sm text-muted">{t.campaigns}</p>
         <dl className="res-totals mt-6 grid border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-line">
           {t.totals.map(([n, unit, label]) => (
@@ -239,7 +230,7 @@ export default function Results() {
           ))}
         </dl>
 
-        <h3 className="t-h3 mt-12">{t.market}</h3>
+        <h5 className="mt-8 text-lg font-medium">{t.market}</h5>
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           {t.charts.map((c, ci) => {
             const values = CHARTS[ci];
@@ -257,8 +248,8 @@ export default function Results() {
                     return (
                       <li key={c.bars[i]}>
                         <div className="flex items-baseline justify-between gap-3 text-sm">
-                          <span className={isMarket ? 'text-faint' : 'text-muted'}>{c.bars[i]}</span>
-                          <span className={`tabular-nums ${isMarket ? 'text-faint' : 'font-medium'}`}>{pct(v)}</span>
+                          <span className="text-muted">{c.bars[i]}</span>
+                          <span className={`tabular-nums ${isMarket ? 'text-muted' : 'font-medium'}`}>{pct(v)}</span>
                         </div>
                         <div aria-hidden="true" className="mt-1.5 h-1.5 rounded-full bg-raised">
                           <div
@@ -270,17 +261,17 @@ export default function Results() {
                     );
                   })}
                 </ul>
-                <p className="mt-auto border-t border-line pt-4 text-xs leading-relaxed text-faint">{c.source}</p>
+                <p className="mt-auto border-t border-line pt-4 text-xs leading-relaxed text-muted">{c.source}</p>
               </figure>
             );
           })}
         </div>
 
-        <details className="group mt-8 rounded-lg border border-line px-5 py-3">
+        <details className="group mt-8 rounded-lg border border-line bg-surface px-5 py-3">
           <DisclosureSummary><span className="font-medium">{t.details}</span></DisclosureSummary>
         {/* Ledger: a table from sm up, a list on phones (the columns do not fit at 320px) */}
         <table className="mt-6 hidden w-full text-left sm:table">
-          <thead className="text-sm text-faint">
+          <thead className="text-sm text-muted">
             <tr className="border-b border-line">
               <th scope="col" className="pb-3 font-normal">{t.head[0]}</th>
               <th scope="col" className="pb-3 pl-6 font-normal">{t.head[1]}</th>
@@ -294,7 +285,7 @@ export default function Results() {
                 <th scope="row" className="py-5 pr-4 font-normal">
                   <span className="font-medium">{name}</span>
                   <span className="mt-1 block text-sm text-muted">{what}</span>
-                  <span className="block text-sm text-faint">{where}</span>
+                  <span className="block text-sm text-muted">{where}</span>
                 </th>
                 <td className="py-5 pl-6">
                   <span className="text-lg font-semibold tabular-nums">{pct(ROWS[i].rate)}</span>
@@ -319,7 +310,7 @@ export default function Results() {
             <li key={name} className={`res-li ${ROW_RULE} py-5`}>
               <p className="font-medium">{name}</p>
               <p className="mt-1 text-sm text-muted">{what}</p>
-              <p className="text-sm text-faint">{where}</p>
+              <p className="text-sm text-muted">{where}</p>
               <p className="mt-3 text-sm text-muted"><span className="mr-1.5 text-base font-semibold text-fg tabular-nums">{pct(ROWS[i].rate)}</span>{rateLabel}</p>
               <p className="mt-1 flex flex-wrap gap-x-5 text-sm text-muted">
                 {ROWS[i].interested !== null && <span><span className="font-semibold text-fg tabular-nums">{ROWS[i].interested}</span> {t.head[2].toLowerCase()}</span>}
@@ -329,18 +320,18 @@ export default function Results() {
           ))}
         </ul>
 
-          <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-faint">{t.note}</p>
+          <p className="mt-6 max-w-[80ch] text-xs leading-relaxed text-muted">{t.note}</p>
         </details>
 
-        <h3 className="t-h3 mt-16">{t.support.title}</h3>
+      </> : <>
         <p className="mt-3 max-w-[40rem] text-muted">{t.support.intro}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2 lg:gap-y-0">
           {t.support.cases.map((c, ci) => {
             const s = SUPPORT[ci];
             return (
               <article key={c.name} className="sup-card flex flex-col rounded-[10px] border border-line bg-surface p-6 lg:row-span-6 lg:grid lg:grid-rows-subgrid">
-                <h4 className="font-medium">{c.name}</h4>
-                <p className="mt-1 text-sm text-faint">{c.scope}</p>
+                <h5 className="font-medium">{c.name}</h5>
+                <p className="mt-1 text-sm text-muted">{c.scope}</p>
                 <dl className="mt-6 grid grid-cols-2 gap-6">
                   <div className="flex flex-col-reverse justify-end gap-2">
                     <dt className="text-sm text-muted">{t.support.chats}</dt>
@@ -382,8 +373,8 @@ export default function Results() {
             );
           })}
         </div>
-        <details className="group mt-6 text-sm text-muted"><DisclosureSummary>{t.method}</DisclosureSummary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-faint">{t.support.note}</p></details>
-      </div>
+        <details className="group mt-6 text-sm text-muted"><DisclosureSummary>{t.method}</DisclosureSummary><p className="mt-3 max-w-[80ch] text-xs leading-relaxed text-muted">{t.support.note}</p></details>
+      </>}
     </section>
   );
 }

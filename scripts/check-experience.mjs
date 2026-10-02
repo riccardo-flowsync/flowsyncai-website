@@ -46,6 +46,53 @@ async function scrollPage(page, bottom) {
     ? document.documentElement.scrollHeight - innerHeight : 0)) < 2, { timeout: 6000 }, bottom);
 }
 
+async function scrollToY(page, target) {
+  if (target === 0) return scrollPage(page, false);
+  if (await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce), (pointer: coarse)').matches)) {
+    await page.evaluate((top) => scrollTo({ top, behavior: 'instant' }), target);
+  } else await page.mouse.wheel({ deltaY: target - await page.evaluate(() => scrollY) });
+  await page.waitForFunction((top) => Math.abs(scrollY - top) < 2, { timeout: 6000 }, target);
+}
+
+function workflowAt(value) {
+  const fills = [...document.querySelectorAll('.workflow-figure .trace-fill')];
+  const segments = [...document.querySelectorAll('.workflow-figure .trace-seg')];
+  return fills.length > 0 && segments.length > 0
+    && fills.every((el) => Math.abs(Number(getComputedStyle(el).opacity) - value) < 0.01)
+    && segments.every((el) => Math.abs(new DOMMatrixReadOnly(getComputedStyle(el).transform).d - value) < 0.01);
+}
+
+async function checkWorkflow(page, reduced) {
+  const story = await page.$eval('.workflow-figure', (el) => el.textContent);
+  assert.match(story, /AI outreach/, 'hero workflow must name AI outreach');
+  assert.doesNotMatch(story, /AI agent|Two services|Due servizi/i, 'hero workflow must show only outreach');
+  assert.equal(await page.$$eval('.workflow-figure .trace-step', (steps) => steps.length), 5, 'outreach workflow must reach the booked meeting');
+  assert(await page.evaluate(readable, '.workflow-figure .trace-step p'), 'workflow text is hidden before scrolling');
+
+  const start = await page.$eval('.workflow-figure', (el) => Math.max(0, Math.floor(el.getBoundingClientRect().top + scrollY - innerHeight * 0.72)));
+  if (reduced) assert(await page.evaluate(workflowAt, 1), 'reduced motion must show the finished outreach workflow');
+  else {
+    await scrollToY(page, start);
+    await page.waitForFunction(workflowAt, { timeout: 1500 }, 0).catch(() => { throw new Error('outreach workflow is not at its starting state'); });
+    await scrollToY(page, start + 245);
+    await page.waitForFunction(workflowAt, { timeout: 1500 }, 1).catch(() => { throw new Error('outreach workflow does not finish within a short scroll'); });
+  }
+
+  // A phone can show less than the full panel at once; its completed final step must remain reachable.
+  const finalTop = await page.$eval('.trace-step:last-child', (el) => Math.max(0, scrollY + el.getBoundingClientRect().bottom - innerHeight + 24));
+  if (finalTop > await page.evaluate(() => scrollY)) await scrollToY(page, finalTop);
+  assert(await page.$eval('.trace-step:last-child', (el) => {
+    const box = el.getBoundingClientRect();
+    return box.top >= 0 && box.bottom <= innerHeight;
+  }), 'the completed meeting step is not visible');
+  assert(await page.evaluate(readable, '.workflow-figure .trace-step p'), 'workflow text is hidden after scrolling');
+
+  if (!reduced) {
+    await scrollToY(page, start);
+    await page.waitForFunction(workflowAt, { timeout: 1500 }, 0).catch(() => { throw new Error('outreach workflow does not reverse with scrolling'); });
+  }
+}
+
 async function checkIndex(page, checkpoint) {
   // Native instant scrolling changes geometry before ScrollTrigger's next animation frame.
   await page.waitForFunction(() => {
@@ -67,14 +114,14 @@ async function checkIndex(page, checkpoint) {
 }
 
 async function checkLanding(page, id, source = 'service link') {
-  await page.waitForFunction((service) => {
-    const article = document.getElementById(`system-${service}`);
+  await page.waitForFunction((anchor) => {
+    const article = document.getElementById(anchor);
     const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)
       + (parseFloat(getComputedStyle(article).scrollMarginTop) || 0);
     return Math.abs(article.getBoundingClientRect().top - offset) < 2;
   }, { timeout: 6000 }, id);
-  const covered = await page.evaluate((service) => {
-    const heading = document.querySelector(`#system-${service} h3`).getBoundingClientRect();
+  const covered = await page.evaluate((anchor) => {
+    const heading = document.getElementById(anchor).querySelector('h3, h4').getBoundingClientRect();
     const overlays = [...document.querySelectorAll('header, #systems nav')]
       .map((el) => el.getBoundingClientRect()).filter((rect) => rect.width && rect.top <= heading.top);
     return heading.top < Math.max(...overlays.map((rect) => rect.bottom)) - 1;
@@ -124,19 +171,36 @@ async function check(page, base, width, lang, reduced) {
 
   const opening = await page.$eval('h1', (el) => el.closest('section').textContent);
   assert.match(opening, lang === 'en' ? /automation agency/i : /agenzia.*automaz/is, 'opening must identify the AI automation agency');
+  const intro = await page.$eval('.hero-section .t-lead', (el) => el.textContent);
+  assert.match(intro, /AI outreach/, 'agency introduction must retain AI outreach');
+  assert.match(await page.$eval('.hero-section a[href="/#system-support"]', (el) => el.textContent),
+    /AI agent/, 'the hero must retain a separate link to AI agent');
+  await checkWorkflow(page, reduced);
   const services = await page.$$eval('[data-system]', (articles) => articles.map((article) => ({
     id: article.id, name: article.querySelector('h3')?.textContent.trim(),
   })));
   assert.deepEqual(services.map((service) => service.id), ['system-outbound', 'system-support']);
   assert.deepEqual(services.map((service) => service.name), ['AI outreach', 'AI agent']);
   assert(await page.evaluate(readable, '[data-system] h3'), 'both service headings must remain visible');
+  const results = await page.$$eval('[data-results]', (sections) => sections.map((el) => ({
+    id: el.id, service: el.dataset.results, chapter: el.closest('[data-system]')?.dataset.system,
+    charts: el.querySelectorAll('.res-chart').length > 0, support: el.querySelectorAll('.sup-card').length > 0,
+  })));
+  assert.deepEqual(results, [
+    { id: 'results', service: 'outbound', chapter: 'outbound', charts: true, support: false },
+    { id: 'results-support', service: 'support', chapter: 'support', charts: false, support: true },
+  ], 'each service must contain its own results with a unique anchor');
 
   if (reduced) {
     assert(await page.evaluate(readable, 'main h1, main h2, main h3, .ib-row, .ib-draft, .ib-btns, .ch-user, .ch-agent, .ch-act'),
       'reduced motion hides content or an illustration');
   } else {
     for (const [id, final] of [['outbound', '.ib-sent, .ib-row, .ib-draft'], ['support', '.ch-agent, .ch-act']]) {
-      await page.$eval(`#system-${id} [data-stage]`, (el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      const top = await page.$eval(`#system-${id} [data-stage]`, (el) => {
+        const box = el.getBoundingClientRect();
+        return Math.max(0, scrollY + box.top - (innerHeight - box.height) / 2);
+      });
+      await scrollToY(page, top);
       await page.waitForFunction(readable, { timeout: 3000 }, final);
     }
   }
@@ -145,12 +209,16 @@ async function check(page, base, width, lang, reduced) {
   const illumination = [];
   for (const id of ['outbound', 'support', 'outbound']) {
     await clickVisible(page, `[data-index="${id}"] a`);
-    await checkLanding(page, id);
+    await checkLanding(page, `system-${id}`);
     assert.equal(new URL(page.url()).hash, `#system-${id}`);
     illumination.push(await checkCircuit(page, reduced, `service ${id}`));
   }
   if (!reduced) assert(illumination[1] > illumination[0] && illumination[2] < illumination[1],
     'circuit illumination must advance down the page and rewind on upward scroll');
+
+  await scrollPage(page, false);
+  await clickVisible(page, '.hero-section a[href="/#results"]');
+  await checkLanding(page, 'results', 'hero results link');
 
   await scrollPage(page, true);
   await page.waitForFunction(() => {
@@ -175,12 +243,14 @@ async function check(page, base, width, lang, reduced) {
   assert(await page.evaluate(readable, '[data-system] h3'), 'language switch hides service headings');
   await checkIndex(page, `language switched to ${next}`);
   await clickVisible(page, '[data-index="outbound"] a');
-  await checkLanding(page, 'outbound', 'link after language switch');
+  await checkLanding(page, 'system-outbound', 'link after language switch');
   await checkCircuit(page, reduced, 'language change');
 
   // A shared link must also work when opened directly, without clicking through the home page first.
   await page.goto(new URL('#system-support', base).href, { waitUntil: 'load' });
-  await checkLanding(page, 'support', 'direct URL');
+  await checkLanding(page, 'system-support', 'direct URL');
+  await page.goto(new URL('#results-support', base).href, { waitUntil: 'load' });
+  await checkLanding(page, 'results-support', 'direct results URL');
   assert.equal(await page.$$eval('.pin-spacer', (els) => els.length), 0, 'an animation pins the page');
 
   // Route changes remove the home backdrop and restore it without leaking an old animation.

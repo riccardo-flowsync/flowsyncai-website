@@ -16,10 +16,10 @@ const copy = {
       },
       {
         title: 'It runs every day',
-        body: 'AI outreach brings prospects to your calendar. Your AI agent answers customers and hands unresolved cases to your team.',
+        body: 'Your chosen service handles outreach or customer support. We keep it running for you.',
       },
     ],
-    tools: ['Your inbox', 'Your calendar', 'Your shop'],
+    tools: ['Your tools', 'Your data', 'Your workflow'],
     outcomes: ['Calls booked', 'Customers answered'],
     note: 'Illustrations.',
   },
@@ -36,10 +36,10 @@ const copy = {
       },
       {
         title: 'Lavora ogni giorno',
-        body: 'AI outreach porta potenziali clienti nel tuo calendario. Il tuo AI agent risponde ai clienti e passa i casi irrisolti al tuo team.',
+        body: 'Il servizio che scegli gestisce l’outreach o l’assistenza clienti. Noi ci occupiamo di farlo funzionare.',
       },
     ],
-    tools: ['La tua posta', 'Il calendario', 'Il negozio'],
+    tools: ['Strumenti', 'Informazioni', 'Processo'],
     outcomes: ['Call prenotate', 'Clienti assistiti'],
     note: 'Illustrazioni.',
   },
@@ -48,7 +48,7 @@ const copy = {
 // One small picture per step, each a row of chips: a 30-minute slot being booked, your tools joined into one system,
 // the sales and support outcomes. The .pic-in parts appear, then the .pic-draw parts draw along their length.
 // Below 360 px the tools stack, so their connectors run down instead of across.
-const chip = 'pic-in relative whitespace-nowrap rounded-md px-1.5 py-1 text-xs ring-1 ring-inset ring-line';
+const chip = 'pic-in relative whitespace-nowrap rounded-md bg-raised px-1.5 py-1 text-xs ring-1 ring-inset ring-line';
 const SLOTS = ['10:00', '10:30', '11:00', '11:30'];
 const pictures = [
   () => (
@@ -56,7 +56,7 @@ const pictures = [
     <div className="grid w-max grid-cols-4 gap-1.5 text-center">
       {SLOTS.map((s, i) => (
         <span key={s} className={`${chip} ${i === 1 ? 'text-accent' : 'text-faint'}`}>
-          {i === 1 && <span className="pic-draw absolute -inset-px origin-left rounded-md border border-accent bg-accent/15" />}
+          {i === 1 && <span className="pic-draw absolute -inset-px origin-left rounded-md border border-accent" />}
           <span className="relative">{s}</span>
         </span>
       ))}
@@ -76,7 +76,7 @@ const pictures = [
     <div className="flex gap-1.5">
       {t.outcomes.map((outcome) => (
         <span key={outcome} className={`${chip} text-muted`}>
-          <span aria-hidden="true" className="pic-draw absolute -inset-px origin-left rounded-md border border-accent bg-accent/10" />
+          <span aria-hidden="true" className="pic-draw absolute -inset-px origin-left rounded-md border border-accent" />
           <span className="relative">{outcome}</span>
         </span>
       ))}
