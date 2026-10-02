@@ -5,7 +5,7 @@
 - [x] Make the outreach approval and illustration replay controls usable.
 - [x] Refine button, navigation, and FAQ feedback.
 - [x] Verify both languages, responsive layouts, reduced motion, and mobile performance.
-- [ ] Open a pull request and inspect the deployed preview. Production merge requires owner approval.
+- [x] Open a pull request and inspect the deployed preview. Production merge requires owner approval.
 
 ## Validation
 
@@ -15,3 +15,4 @@
 - `node scripts/check-booking-dots.mjs` passed, preserving the existing calendar interaction.
 - Lighthouse mobile performance: 95/100, 2.5-second largest contentful paint, 60 ms total blocking time, no layout shift. Measured on the production build with other browser checks stopped.
 - Desktop and mobile examples, mobile navigation, and FAQ opening were also checked visually.
+- [Pull request #4](https://github.com/riccardo-flowsync/flowsyncai-website/pull/4) has a ready Vercel preview. The demo-control checks passed against the deployed preview in both normal and reduced motion.
