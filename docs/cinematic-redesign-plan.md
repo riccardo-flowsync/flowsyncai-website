@@ -12,7 +12,7 @@ Approved: 2026-10-02. Build on the existing preview branch; production requires 
 - [x] Verify desktop/mobile motion, reverse scroll, fallback, keyboard and booking.
 - [x] Run layout, journey, API, lint/build and repeated mobile performance checks.
 - [x] Complete fresh design review and documentation.
-- [ ] Push draft PR and inspect deployed preview.
+- [x] Push draft PR and inspect deployed preview.
 - [ ] Obtain owner approval for production.
 
 ## Direction contract
@@ -46,3 +46,4 @@ The owner selected cinematic workspace and approved the implementation plan. The
 - Repeated mobile Lighthouse on the local production build: Home 97/97; AI outreach 95/95; AI agents 95/97; Book a call 96/96.
 
 - Final complete layout matrix: 168/168 passed, including cinematic intermediate states, both languages, short screens and reduced motion. Final lint and production build pass.
+- Deployed preview verified for implementation commit 304f741: Vercel success; matching production asset hash; WebGL rendering; desktop/mobile Services and Escape; full mobile opening; connected order/return/ticket demo; Italian legacy Results redirect to agent evidence. PR 4 remains draft. Production awaits owner approval.
