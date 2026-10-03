@@ -2,6 +2,10 @@
 
 Date: 2026-10-02
 
+Current status, 2026-10-03: the approved design is published and the live
+contact and booking connections have been verified. Earlier sections preserve
+the preview review history; the completed release checklist is at the end.
+
 ## Objective
 
 One clear marketing page for an AI automation agency. Give AI outreach and the
@@ -231,3 +235,23 @@ review found no material issues; English/Italian signatures and removed About
 links were checked through computer use. The design detector reported no findings.
 Mobile Lighthouse: performance 94, accessibility 100, best practices 100,
 SEO 100; LCP 2.6 seconds, blocking time 50 milliseconds, layout shift 0.
+
+## Production release and connection verification
+
+Owner approval, 2026-10-03: publish the reviewed website, then connect and test
+the contact and booking paths using clearly labelled disposable records.
+
+- [x] Merge the approved website in PR #5 and publish it at https://flowsyncaisolutions.com.
+- [x] Verify the live homepage, contact, privacy and terms pages use the approved build.
+- [x] Submit the live contact form and verify the saved message, owner and 24-hour follow-up deadline.
+- [x] Enable signed new-booking notifications and verify the production endpoint.
+- [x] Complete a booking through the live website and verify a new lead record, calendar appointment and meeting link.
+- [x] Verify confirmation emails reach both the host and the test visitor.
+- [x] Cancel the test appointment, verify calendar cancellation and archive both test lead records.
+- [x] Remove the temporary signing-secret file; keep credentials in the services' protected settings.
+
+The connection setup required configuration changes only. The approved website
+code and design are unchanged. Contact-form messages create lead records and do
+not send automatic visitor email receipts; booking confirmations are emailed.
+Detailed test evidence and screenshots are saved privately outside this public
+repository, without adding credentials or test identities to Git.
