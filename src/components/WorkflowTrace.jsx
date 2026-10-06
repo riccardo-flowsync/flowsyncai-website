@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useCopy, useLang } from '../lib/lang';
-import { gsap, useGSAP, MOTION_OK, later } from '../lib/motion';
+import { gsap, useGSAP, ScrollTrigger, MOTION_OK, later } from '../lib/motion';
 
 const copy = {
   en: {
@@ -37,21 +37,24 @@ export default function WorkflowTrace() {
   useGSAP((context) => later(context, () => {
     const mm = gsap.matchMedia(root.current);
     mm.add(MOTION_OK, () => {
-      // A short scroll traces the whole example. Text stays readable, including at rest.
-      const tl = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: {
-          trigger: root.current,
-          // Resolve the start before adding the range, including when the figure is visible on load.
-          start: () => Math.max(0, root.current.getBoundingClientRect().top + scrollY - innerHeight * 0.72),
-          end: '+=240',
-          scrub: 0.15,
-        },
-      });
+      // The example runs on its own clock, not the scroll (owner's decision 2026-10-06): each step lights in turn, the
+      // finished run holds, the accent fades and it starts again. It pauses off screen. Text stays readable throughout.
+      const fills = gsap.utils.toArray('.trace-fill');
+      const segs = gsap.utils.toArray('.trace-seg');
+      const STEP = 0.9;
+      const tl = gsap.timeline({ paused: true, repeat: -1, defaults: { ease: 'power2.out' } });
+      tl.set(fills, { opacity: 0 }, 0).set(segs, { scaleY: 0, opacity: 1 }, 0);
       gsap.utils.toArray('.trace-step').forEach((step, i) => {
-        tl.fromTo(step.querySelector('.trace-fill'), { opacity: 0 }, { opacity: 1, duration: 0.12 }, i * 0.2);
+        const at = 0.4 + i * STEP;
+        tl.to(step.querySelector('.trace-fill'), { opacity: 1, duration: 0.3 }, at);
         const segment = step.querySelector('.trace-seg');
-        if (segment) tl.fromTo(segment, { scaleY: 0 }, { scaleY: 1, duration: 0.2 }, i * 0.2);
+        if (segment) tl.to(segment, { scaleY: 1, duration: STEP - 0.3, ease: 'power1.inOut' }, at + 0.3);
+      });
+      tl.to([...fills, ...segs], { opacity: 0, duration: 0.6, ease: 'power1.in' }, '+=2.6');
+      tl.progress(0).pause();
+      ScrollTrigger.create({
+        trigger: root.current, start: 'top bottom', end: 'bottom top',
+        onToggle: ({ isActive }) => (isActive ? tl.play() : tl.pause()),
       });
     });
     return () => mm.revert();

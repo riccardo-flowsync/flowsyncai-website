@@ -42,8 +42,9 @@ Every scroll shows something new: the moving parts follow the scroll (scrub, and
 just play once. Owner's decision 2026-09-30; built in levels, each only if Lighthouse stays >= 90: A scroll story with
 GSAP, then B illustrated extras (SVG morphs, a picture per Process step), then C one light WebGL moment.
 
-- Three held scenes, pinned and scrubbed: the hero trace walks one lead through the workflow step by step (a ring rides
-  the line, the primary button stays on screen; where it cannot be held it plays once); the Systems stage (the picture
+- The hero example card is the one exception to scroll-driven motion: it plays on its own and loops (each step lights in
+  turn, the finished run holds, then it restarts), paused off screen. Owner's decision 2026-10-06: scrubbing it felt off.
+- Held scenes, pinned and scrubbed: the Systems stage (the picture
   starts filling in as it scrolls up, the inbox sorts, a reply drafts, "Approve" is pressed last, then the chat reply
   types); the Process walk (the line draws, each step rises as the line reaches it).
 - Every other section gets one scroll moment of its own: Results bars grow against the market bar and the totals build
