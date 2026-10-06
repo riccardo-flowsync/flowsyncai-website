@@ -284,7 +284,8 @@ export default function Systems() {
           <p className="reading-surface t-lead max-w-[34rem] text-muted">{t.intro}</p>
         </div>
         <div className="hidden lg:col-span-2 lg:block">
-          <div className="sticky top-8">
+          {/* held around mid-screen (the list level with each service’s text: its own padding is 0.5rem) */}
+          <div className="sticky top-[max(1.5rem,calc(50vh_-_8.5rem))]">
             <div className="flex flex-col items-start gap-6 py-2">
               <ul className="reading-surface grid gap-3 border-l border-line">
                 {t.systems.map((s) => (
@@ -317,9 +318,9 @@ export default function Systems() {
         <div className="grid gap-20 lg:col-span-10 lg:gap-28">
           {t.systems.map((s) => (
             <article id={`system-${s.id}`} key={s.id} data-system={s.id} className="scroll-mt-24 border-t border-faint/40 pt-12 first:border-t-0 first:pt-0 lg:scroll-mt-0">
-              {/* The text rides along beside the picture on wide screens and stops where the picture ends, above the results */}
+              {/* The text rides along beside the picture on wide screens, level with the index, and stops where the picture ends, above the results */}
               <div className="grid items-start gap-8 lg:grid-cols-[0.85fr_1.15fr]">
-                <div className="reading-surface lg:sticky lg:top-8">
+                <div className="reading-surface lg:sticky lg:top-[max(2rem,calc(50vh_-_8rem))]">
                   <h3 className="t-h2">{s.name}</h3>
                   <p className="mt-3 text-lg font-medium leading-snug text-fg">{s.outcome}</p>
                   <p className="mt-3 text-muted">{s.body}</p>
