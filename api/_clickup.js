@@ -123,5 +123,44 @@ export async function createLead({ listId, name, email, company, serviceLine, du
   }
 }
 
+// Mail providers anyone can sign up to: a shared one says nothing about the company.
+const PUBLIC_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.it', 'outlook.com', 'outlook.it',
+  'live.com', 'live.it', 'yahoo.com', 'yahoo.it', 'icloud.com', 'me.com', 'libero.it',
+  'virgilio.it', 'alice.it', 'tiscali.it', 'pec.it', 'tin.it', 'fastwebnet.it', 'aruba.it',
+  'protonmail.com', 'proton.me',
+]);
+const MAX_PAGES = 20; // 2,000 open cards, far above both lists today
+
+// The company part of an email, or '' for a public mail provider.
+export const companyDomain = (email) => {
+  const domain = email.trim().toLowerCase().split('@')[1] ?? '';
+  return PUBLIC_DOMAINS.has(domain) ? '' : domain;
+};
+
+// Open cards (either list) whose Email or Tracker Row Key is at `domain`. A lead who books
+// from a second company address (info@ instead of their own) belongs on the card we already
+// have: a second card splits the deal and the follow-ups never find it. ClickUp cannot
+// filter a text field by suffix, so this pages through the open cards and matches here.
+// Throws past MAX_PAGES rather than quietly missing a card.
+export async function findOpenLeadsByDomain(domain) {
+  if (!domain) return [];
+  const atDomain = (f) =>
+    (f.id === FIELD.TRACKER_ROW_KEY || f.id === FIELD.EMAIL) &&
+    typeof f.value === 'string' &&
+    f.value.trim().toLowerCase().endsWith(`@${domain}`);
+  const found = [];
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const query = new URLSearchParams();
+    query.append('list_ids[]', LISTS.OUTREACH);
+    query.append('list_ids[]', LISTS.MARKETING);
+    query.set('page', String(page));
+    const { tasks = [], last_page: lastPage } = await clickup('GET', `/team/${TEAM}/task?${query}`);
+    found.push(...tasks.filter((t) => t.custom_fields?.some(atDomain)));
+    if (lastPage !== false || tasks.length === 0) return found;
+  }
+  throw new ClickUpError('too_many_pages');
+}
+
 export const commentOnTask = (taskId, text) =>
   clickup('POST', `/task/${taskId}/comment`, { comment_text: text, notify_all: true });

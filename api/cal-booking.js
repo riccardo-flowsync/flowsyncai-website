@@ -1,7 +1,15 @@
 // POST /api/cal-booking: Cal.com BOOKING_CREATED webhook -> ClickUp lead card.
 // Env: CLICKUP_API_KEY, CAL_WEBHOOK_SECRET (the secret set on the webhook in Cal.com).
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { LISTS, EMAIL_RE, findLeadByEmail, createLead } from './_clickup.js';
+import {
+  LISTS,
+  EMAIL_RE,
+  findLeadByEmail,
+  createLead,
+  companyDomain,
+  findOpenLeadsByDomain,
+  commentOnTask,
+} from './_clickup.js';
 
 const COMPANY_RE = /azienda|company|societ/i;
 
@@ -74,6 +82,15 @@ export async function POST(request) {
   try {
     // Existing card: another system advances its status, so leave it alone.
     if (await findLeadByEmail(email)) return Response.json({ ok: true, existing: true });
+    // Same company, other address: note the booking on that card instead of opening a
+    // duplicate. The calendar sync cannot match this address to the card, so the comment
+    // is what tells a human to move it.
+    const sameCompany = await findOpenLeadsByDomain(companyDomain(email));
+    if (sameCompany.length) {
+      const note = `${markdown}\n\nBooked from a different address than this card's: ${email}`;
+      for (const card of sameCompany) await commentOnTask(card.id, note);
+      return Response.json({ ok: true, existing: true, sameCompany: sameCompany.length });
+    }
     await createLead({ listId: LISTS.OUTREACH, name, email, company, due: start, markdown });
     return Response.json({ ok: true });
   } catch (err) {
