@@ -62,6 +62,8 @@ afterEach(() => mock.restoreAll());
 const field = (task, id) => task.custom_fields.find((f) => f.id === id)?.value;
 const hasField = (task, id) => task.custom_fields.some((f) => f.id === id);
 const card = (id, fieldId, value) => ({ id, custom_fields: [{ id: fieldId, value }] });
+// The open-cards page the same-company lookup reads: nobody else at the domain.
+const noCompanyCards = () => ok({ tasks: [], last_page: true });
 
 // ---------- website form ----------
 
@@ -367,14 +369,15 @@ test('BOOKING_CREATED without CAL_WEBHOOK_SECRET configured: 401', async () => {
 });
 
 test('valid booking: card in Outreach, due at the call start, company set', async () => {
-  willReturn(ok({ tasks: [] }), ok({ id: 'new1' }));
+  willReturn(ok({ tasks: [] }), noCompanyCards(), ok({ id: 'new1' }));
   const res = await sendSigned(booking);
 
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true });
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   assert.equal(calls[0].method, 'GET');
-  const create = calls[1];
+  assert.equal(calls[1].method, 'GET');
+  const create = calls[2];
   assert.equal(create.url, `https://api.clickup.com/api/v2/list/${OUTREACH}/task`);
   const task = create.body;
   assert.equal(task.name, 'Mario Rossi');
@@ -405,9 +408,9 @@ test('booking falls back to the attendee for name and email, and finds company b
     attendees: [{ name: 'Anna Bianchi', email: 'Anna@Bianchi.it' }],
     responses: { q1: { label: 'Nome della società', value: 'Bianchi SpA' }, location: { label: 'Location', value: { value: 'x' } } },
   });
-  willReturn(ok({ tasks: [] }), ok({ id: 'new1' }));
+  willReturn(ok({ tasks: [] }), noCompanyCards(), ok({ id: 'new1' }));
   assert.equal((await sendSigned(event)).status, 200);
-  const task = calls[1].body;
+  const task = calls[2].body;
   assert.equal(task.name, 'Anna Bianchi');
   assert.equal(field(task, FIELD.EMAIL), 'anna@bianchi.it');
   assert.equal(field(task, FIELD.COMPANY), 'Bianchi SpA');
@@ -428,8 +431,51 @@ test('booking without a usable start time: 400', async () => {
 });
 
 test('booking when ClickUp is down: 502', async () => {
-  willReturn(ok({ tasks: [] }), reply(500, {}), reply(500, {}));
+  willReturn(ok({ tasks: [] }), noCompanyCards(), reply(500, {}), reply(500, {}));
   const res = await sendSigned(booking);
   assert.equal(res.status, 502);
+  assert.equal(calls.length, 4);
+});
+
+// A lead booking from a second address at the same company (info@ instead of their own)
+// once got a second card: the deal split in two and the follow-ups never found it.
+test('booking from another address at a company we already have: comment on that card, no new card', async () => {
+  willReturn(
+    ok({ tasks: [] }),
+    ok({ tasks: [card('c1', FIELD.EMAIL, 'Luigi@Rossi.it')], last_page: true }),
+    ok({}),
+  );
+  const res = await sendSigned(booking);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { ok: true, existing: true, sameCompany: 1 });
   assert.equal(calls.length, 3);
+  assert.equal(calls.some((c) => c.method === 'POST' && c.url.includes('/list/')), false);
+  assert.equal(calls[2].url, 'https://api.clickup.com/api/v2/task/c1/comment');
+  assert.match(calls[2].body.comment_text, /different address than this card's: mario@rossi\.it/);
+  assert.match(calls[2].body.comment_text, /\*\*Booked a call\*\*/);
+});
+
+test('company lookup reads every page, and a look-alike domain is not the same company', async () => {
+  willReturn(
+    ok({ tasks: [] }),
+    ok({ tasks: [card('c1', FIELD.TRACKER_ROW_KEY, 'ceo@notrossi.it')], last_page: false }),
+    ok({ tasks: [], last_page: true }),
+    ok({ id: 'new1' }),
+  );
+  assert.equal((await sendSigned(booking)).status, 200);
+  assert.equal(calls.length, 4);
+  assert.match(calls[1].url, /[?&]page=0(&|$)/);
+  assert.match(calls[2].url, /[?&]page=1(&|$)/);
+  assert.equal(calls[3].url, `https://api.clickup.com/api/v2/list/${OUTREACH}/task`);
+});
+
+test('booking from a public mail provider: no company lookup, new card', async () => {
+  const event = withPayload({
+    attendees: [{ name: 'Anna Bianchi', email: 'anna.bianchi@gmail.com' }],
+    responses: { email: { label: 'Email', value: 'anna.bianchi@gmail.com' } },
+  });
+  willReturn(ok({ tasks: [] }), ok({ id: 'new1' }));
+  assert.equal((await sendSigned(event)).status, 200);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].url, `https://api.clickup.com/api/v2/list/${OUTREACH}/task`);
 });
